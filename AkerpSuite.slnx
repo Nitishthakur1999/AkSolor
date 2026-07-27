@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="akerpsuite.client/akerpsuite.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="AkerpSuite.Server/AkerpSuite.Server.csproj" />
+</Solution>

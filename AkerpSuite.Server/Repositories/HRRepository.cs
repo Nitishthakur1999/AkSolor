@@ -1,0 +1,1219 @@
+﻿using AkerpSuite.Server.Data;
+using AkerpSuite.Server.DTOs.Hr;
+using Dapper;
+using Microsoft.AspNetCore.Connections;
+using MySqlConnector;
+using System.Data;
+
+namespace AkerpSuite.Server.Repositories
+{
+    public class HRRepository : IHRRepository
+    {
+        private readonly DapperContext _context;
+
+        public HRRepository(DapperContext context)
+        {
+            _context = context;
+        }
+
+        #region Employee Documents
+
+        public async Task<EmployeeDocumentResponseDto> UploadDocumentAsync(EmployeeDocumentRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", request.EmpId);
+            parameters.Add("p_doc_type", request.DocType);
+            parameters.Add("p_doc_name", request.DocName);
+            parameters.Add("p_file_path", request.FilePath);
+            parameters.Add("p_uploaded_by", request.UploadedBy);
+
+            return await connection.QueryFirstAsync<EmployeeDocumentResponseDto>(
+                "sp_employee_document_create",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<EmployeeDocumentResponseDto>> GetEmployeeDocumentsAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryAsync<EmployeeDocumentResponseDto>(
+                "sp_employee_document_get_by_employee",
+                new { p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<EmployeeDocumentResponseDto?> GetDocumentByIdAsync(int docId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryFirstOrDefaultAsync<EmployeeDocumentResponseDto>(
+                "sp_employee_document_get_by_id",
+                new { p_doc_id = docId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateDocumentAsync(EmployeeDocumentRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_doc_id", request.DocId);
+            parameters.Add("p_doc_type", request.DocType);
+            parameters.Add("p_doc_name", request.DocName);
+            parameters.Add("p_file_path", request.FilePath);
+
+            // The Postgres function returns the number of affected rows.
+            var rows = await connection.QueryFirstOrDefaultAsync<int>(
+                "sp_employee_document_update",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteDocumentAsync(int docId)
+        {
+            using var connection = _context.CreateConnection();
+
+            var rows = await connection.QueryFirstOrDefaultAsync<int>(
+                "sp_employee_document_delete",
+                new { p_doc_id = docId },
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Employee Bank Details
+
+        public async Task<EmployeeBankDetailResponseDto> CreateBankDetailAsync(EmployeeBankDetailRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", request.EmpId);
+            parameters.Add("p_bank_name", request.BankName);
+            parameters.Add("p_account_no", request.AccountNo);
+            parameters.Add("p_ifsc_code", request.IfscCode);
+            parameters.Add("p_branch_name", request.BranchName);
+            parameters.Add("p_account_type", request.AccountType);
+            parameters.Add("p_is_primary", request.IsPrimary);
+
+            return await connection.QueryFirstAsync<EmployeeBankDetailResponseDto>(
+                "sp_employee_bank_create",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<EmployeeBankDetailResponseDto>> GetBankDetailsByEmployeeAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryAsync<EmployeeBankDetailResponseDto>(
+                "sp_employee_bank_get_by_employee",
+                new { p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<EmployeeBankDetailResponseDto?> GetBankDetailByIdAsync(int bankId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryFirstOrDefaultAsync<EmployeeBankDetailResponseDto>(
+                "sp_employee_bank_get_by_id",
+                new { p_bank_id = bankId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateBankDetailAsync(EmployeeBankDetailRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_bank_id", request.BankId);
+            parameters.Add("p_bank_name", request.BankName);
+            parameters.Add("p_account_no", request.AccountNo);
+            parameters.Add("p_ifsc_code", request.IfscCode);
+            parameters.Add("p_branch_name", request.BranchName);
+            parameters.Add("p_account_type", request.AccountType);
+            parameters.Add("p_is_primary", request.IsPrimary);
+
+            var rows = await connection.QueryFirstOrDefaultAsync<int>(
+                "sp_employee_bank_update",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteBankDetailAsync(int bankId)
+        {
+            using var connection = _context.CreateConnection();
+
+            var rows = await connection.QueryFirstOrDefaultAsync<int>(
+                "sp_employee_bank_delete",
+                new { p_bank_id = bankId },
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Self profile
+        public async Task<SelfProfileResponseDto?> GetProfileAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryFirstOrDefaultAsync<SelfProfileResponseDto>(
+                "sp_employee_get_by_id",
+                new { p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<int> UpdateProfileAsync(SelfProfileResponseDto current, SelfProfileRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", current.EmpId);
+            parameters.Add("p_first_name", current.FirstName);
+            parameters.Add("p_last_name", current.LastName);
+            parameters.Add("p_gender", current.Gender);
+            parameters.Add("p_date_of_birth", current.DateOfBirth);
+            parameters.Add("p_blood_group", request.BloodGroup ?? current.BloodGroup);
+            parameters.Add("p_marital_status", request.MaritalStatus ?? current.MaritalStatus);
+            parameters.Add("p_personal_email", request.PersonalEmail ?? current.PersonalEmail);
+            parameters.Add("p_official_email", current.OfficialEmail);
+            parameters.Add("p_mobile", request.Mobile ?? current.Mobile);
+            parameters.Add("p_alternate_mobile", request.AlternateMobile ?? current.AlternateMobile);
+            parameters.Add("p_address_line1", request.AddressLine1 ?? current.AddressLine1);
+            parameters.Add("p_address_line2", request.AddressLine2 ?? current.AddressLine2);
+            parameters.Add("p_city", request.City ?? current.City);
+            parameters.Add("p_state", request.State ?? current.State);
+            parameters.Add("p_pincode", request.Pincode ?? current.Pincode);
+            parameters.Add("p_country", request.Country ?? current.Country);
+            parameters.Add("p_aadhar_no", current.AadharNo);
+            parameters.Add("p_pan_no", current.PanNo);
+            parameters.Add("p_passport_no", current.PassportNo);
+            parameters.Add("p_uan_no", current.UanNo);
+            parameters.Add("p_esic_no", current.EsicNo);
+            parameters.Add("p_dept_id", current.DeptId);
+            parameters.Add("p_desig_id", current.DesigId);
+            parameters.Add("p_reporting_manager", current.ReportingManager);
+            parameters.Add("p_date_of_joining", current.DateOfJoining);
+            parameters.Add("p_employment_type", current.EmploymentType);
+            parameters.Add("p_employment_status", current.EmploymentStatus);
+            parameters.Add("p_current_ctc", current.CurrentCtc);
+            parameters.Add("p_photo_path", current.PhotoPath);
+            parameters.Add("p_probation_end_date", current.ProbationEndDate);
+            parameters.Add("p_confirmation_date", current.ConfirmationDate);
+            parameters.Add("p_resignation_date", (DateTime?)null);
+            parameters.Add("p_last_working_date", (DateTime?)null);
+            parameters.Add("p_exit_reason", (string?)null);
+            parameters.Add("p_role_id", current.RoleId);
+
+            return await connection.QueryFirstOrDefaultAsync<int>(
+                "sp_employee_update",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        // Leave
+
+        public async Task<IEnumerable<SelfLeaveBalanceResponseDto>> GetLeaveBalanceAsync(int empId, int year)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryAsync<SelfLeaveBalanceResponseDto>(
+                "sp_leave_balance_get",
+                new { p_emp_id = empId, p_year = year },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", empId);
+            parameters.Add("p_status", status);
+            parameters.Add("p_month", month);
+            parameters.Add("p_year", year);
+
+            return await connection.QueryAsync<SelfLeaveResponseDto>(
+                "sp_leave_request_getall",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", empId);
+            parameters.Add("p_leave_type_id", request.LeaveTypeId);
+            parameters.Add("p_from_date", request.FromDate);
+            parameters.Add("p_to_date", request.ToDate);
+            parameters.Add("p_total_days", request.TotalDays);
+            parameters.Add("p_reason", request.Reason);
+
+            return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
+                "sp_leave_request_create",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+        // Attendance
+
+        public async Task<IEnumerable<SelfAttendanceResponseDto>> GetMyAttendanceAsync(int empId, DateTime? fromDate, DateTime? toDate)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", empId);
+            parameters.Add("p_from_date", fromDate);
+            parameters.Add("p_to_date", toDate);
+
+            return await connection.QueryAsync<SelfAttendanceResponseDto>(
+                "sp_attendance_get_by_emp",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<int> CreateRegularizationRequestAsync(int empId, SelfAttendanceRegularizationRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", empId);
+            parameters.Add("p_request_date", request.RequestDate);
+            parameters.Add("p_reason", request.Reason);
+
+            return await connection.QueryFirstAsync<int>(
+                "sp_attendance_reg_create",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SelfAttendanceRegularizationResponseDto>> GetMyRegularizationRequestsAsync(
+           int empId, string? status, string? requestType = null)   // 🆕 optional param
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", empId);
+            parameters.Add("p_status", status);
+            parameters.Add("p_request_type", requestType);
+
+            return await connection.QueryAsync<SelfAttendanceRegularizationResponseDto>(
+                "sp_attendance_reg_get_all",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        //  Payslip
+
+        public async Task<SelfPayslipResponseDto?> GetMyPayslipAsync(int empId, int month, int year)
+        {
+            using var connection = _context.CreateConnection();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", empId);
+            parameters.Add("p_month", month);
+            parameters.Add("p_year", year);
+
+            var row = await connection.QueryFirstOrDefaultAsync(
+                "sp_payslip_get",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            if (row == null) return null;
+
+            var r = (IDictionary<string, object?>)row;
+
+            T Get<T>(string key, T fallback = default!) =>
+                r.TryGetValue(key, out var val) && val != null && val != DBNull.Value
+                    ? (T)Convert.ChangeType(val, typeof(T))
+                    : fallback;
+
+            string? GetStr(string key) =>
+                r.TryGetValue(key, out var val) && val != DBNull.Value ? val?.ToString() : null;
+
+            return new SelfPayslipResponseDto
+            {
+                DetailId = Get<int>("detail_id"),
+                PayrollId = Get<int>("payroll_id"),
+                EmpId = Get<int>("emp_id"),
+                EmpCode = GetStr("emp_code"),
+                FullName = $"{GetStr("first_name")} {GetStr("last_name")}".Trim(),
+                DeptName = GetStr("dept_name"),
+                DesigName = GetStr("desig_name"),
+                Month = Get<int>("month"),
+                Year = Get<int>("year"),
+                WorkingDays = Get<int>("working_days"),
+                PresentDays = Get<int>("present_days"),
+                AbsentDays = Get<int>("absent_days"),
+                HalfDays = Get<int>("half_days"),
+                LateMarks = Get<int>("late_marks"),
+                OvertimeHours = Get<decimal>("overtime_hours"),
+                Basic = Get<decimal>("basic"),
+                Hra = Get<decimal>("hra"),
+                Ta = Get<decimal>("ta"),
+                SpecialAllow = Get<decimal>("special_allow"),
+                OvertimeAmount = Get<decimal>("overtime_amount"),
+                GrossEarning = Get<decimal>("gross_earning"),
+                PfDeduction = Get<decimal>("pf_deduction"),
+                EsicDeduction = Get<decimal>("esic_deduction"),
+                TdsDeduction = Get<decimal>("tds_deduction"),
+                PtDeduction = Get<decimal>("pt_deduction"),
+                AbsentDeduction = Get<decimal>("absent_deduction"),
+                LateDeduction = Get<decimal>("late_deduction"),
+                LoanDeduction = Get<decimal>("loan_deduction"),
+                PenaltyDeduction = Get<decimal>("penalty_deduction"),
+                TotalDeduction = Get<decimal>("total_deduction"),
+                NetSalary = Get<decimal>("net_salary"),
+                PayrollStatus = GetStr("payroll_status"),
+                BankName = GetStr("bank_name"),
+                AccountNo = GetStr("account_no"),
+                IfscCode = GetStr("ifsc_code")
+            };
+        }
+
+        //Loans
+
+        public async Task<IEnumerable<SelfLoanResponseDto>> GetMyLoansAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+
+            var rows = await connection.QueryAsync(
+                "sp_loan_get_by_emp",
+                new { p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+
+            return rows.Select(row =>
+            {
+                var r = (IDictionary<string, object?>)row;
+
+                T Get<T>(string key, T fallback = default!) =>
+                    r.TryGetValue(key, out var val) && val != null && val != DBNull.Value
+                        ? (T)Convert.ChangeType(val, typeof(T))
+                        : fallback;
+
+                string? GetStr(string key) =>
+                    r.TryGetValue(key, out var val) && val != DBNull.Value ? val?.ToString() : null;
+
+                return new SelfLoanResponseDto
+                {
+                    LoanId = Get<int>("loan_id"),
+                    EmpId = Get<int>("emp_id"),
+                    LoanType = GetStr("loan_type"),
+                    TotalAmount = Get<decimal>("total_amount"),
+                    EmiAmount = Get<decimal>("emi_amount"),
+                    RemainingAmount = Get<decimal>("remaining_amount"),
+                    LoanDate = Get<DateTime>("loan_date"),
+                    Status = GetStr("status"),
+                    ApprovedBy = r.TryGetValue("approved_by", out var ab) && ab != DBNull.Value ? Convert.ToInt32(ab) : (int?)null,
+                    Remarks = GetStr("remarks")
+                };
+            });
+        }
+
+        //  Documents / Bank
+
+        public async Task<IEnumerable<EmployeeDocumentResponseDto>> GetMyDocumentsAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryAsync<EmployeeDocumentResponseDto>(
+                "sp_employee_document_get_by_employee",
+                new { p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<EmployeeBankDetailResponseDto>> GetMyBankDetailsAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryAsync<EmployeeBankDetailResponseDto>(
+                "sp_employee_bank_get_by_employee",
+                new { p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        #endregion
+
+        #region Sales
+        // ---------------- Segments ----------------
+        public async Task<int> CreateSegmentAsync(SalesSegmentRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_SegmentCode", request.SegmentCode);
+            p.Add("p_SegmentName", request.SegmentName);
+            p.Add("p_Description", request.Description);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesSegment", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesSegmentResponseDto>> GetAllSegmentsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<SalesSegmentResponseDto>(
+                "sp_GetAllSalesSegments", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateSegmentAsync(SalesSegmentUpdateRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_SegmentId", request.SegmentId);
+            p.Add("p_SegmentName", request.SegmentName);
+            p.Add("p_Description", request.Description);
+            p.Add("p_IsActive", request.IsActive);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_UpdateSalesSegment", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        // ---------------- Leads ----------------
+
+        public async Task<int> CreateLeadAsync(SalesLeadRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadDate", request.LeadDate);
+            p.Add("p_Name", request.Name);
+            p.Add("p_ContactNo", request.ContactNo);
+            p.Add("p_Email", request.Email);
+            p.Add("p_Address", request.Address);
+            p.Add("p_Reference", request.Reference);
+            p.Add("p_SegmentId", request.SegmentId);
+            p.Add("p_QueryType", request.QueryType);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_AssignedTo", request.AssignedTo);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateLeadAsync(SalesLeadUpdateRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_Name", request.Name);
+            p.Add("p_ContactNo", request.ContactNo);
+            p.Add("p_Email", request.Email);
+            p.Add("p_Address", request.Address);
+            p.Add("p_Reference", request.Reference);
+            p.Add("p_SegmentId", request.SegmentId);
+            p.Add("p_QueryType", request.QueryType);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_Label", request.Label);
+            p.Add("p_NextFollowup", request.NextFollowup);
+            p.Add("p_Status", request.Status);
+            p.Add("p_AssignedTo", request.AssignedTo);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_UpdateSalesLead", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> MarkLeadNotFeasibleAsync(int leadId, string? remarks)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+            p.Add("p_Remarks", remarks);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_MarkLeadNotFeasible", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<SalesLeadResponseDto?> GetLeadByIdAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryFirstOrDefaultAsync<SalesLeadResponseDto>(
+                "sp_GetSalesLeadById", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesLeadResponseDto>> SearchLeadsAsync(SalesLeadSearchRequestDto filter)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_SegmentId", filter.SegmentId);
+            p.Add("p_Status", filter.Status);
+            p.Add("p_AssignedTo", filter.AssignedTo);
+            p.Add("p_Label", filter.Label);
+            p.Add("p_FromDate", filter.FromDate);
+            p.Add("p_ToDate", filter.ToDate);
+            p.Add("p_Keyword", filter.Keyword);
+
+            return await conn.QueryAsync<SalesLeadResponseDto>(
+                "sp_SearchSalesLeads", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Followups ----------------
+
+        public async Task<int> CreateFollowupAsync(SalesFollowupRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+           // p.Add("p_FollowupDate", request.FollowupDate);
+            p.Add("p_FollowupDate", DateTime.UtcNow);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_Label", request.Label);
+            p.Add("p_NextFollowup", request.NextFollowup);
+            p.Add("p_DoneBy", request.DoneBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesFollowup", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesFollowupResponseDto>> GetFollowupsByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesFollowupResponseDto>(
+                "sp_GetFollowupsByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Survey ----------------
+
+        public async Task<int> CreateSurveyAsync(SalesSurveyRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_SurveyDate", request.SurveyDate);
+            p.Add("p_SurveyorId", request.SurveyorId);
+            p.Add("p_SiteAddress", request.SiteAddress);
+            p.Add("p_LoadKw", request.LoadKw);
+            p.Add("p_RoofAreaSqft", request.RoofAreaSqft);
+            p.Add("p_ShadowFree", request.ShadowFree);
+            p.Add("p_GridType", request.GridType);
+            p.Add("p_OtherDetails", request.OtherDetails);
+            p.Add("p_DocPath", request.DocPath);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesSurvey", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<int> UpdateSurveyFeasibilityAsync(SalesSurveyFeasibilityRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_SurveyId", request.SurveyId);
+            p.Add("p_IsFeasible", request.IsFeasible);
+            p.Add("p_Remarks", request.Remarks);
+
+            // sp_UpdateSurveyFeasibility returns the affected LeadId
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_UpdateSurveyFeasibility", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesSurveyResponseDto>> GetSurveysByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesSurveyResponseDto>(
+                "sp_GetSurveysByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Proposals ----------------
+
+        public async Task<int> CreateProposalAsync(SalesProposalRequestDto request, string proposalNo)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_ProposalNo", proposalNo);
+            p.Add("p_ProposalDate", request.ProposalDate);
+            p.Add("p_SystemSizeKw", request.SystemSizeKw);
+            p.Add("p_TotalAmount", request.TotalAmount);
+            p.Add("p_SubsidyAmount", request.SubsidyAmount);
+            p.Add("p_ValidityDays", request.ValidityDays);
+            p.Add("p_DocPath", request.DocPath);
+            p.Add("p_IsFinal", request.IsFinal);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesProposal", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<int?> ActionProposalAsync(SalesProposalActionDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ProposalId", request.ProposalId);
+            p.Add("p_Status", request.Status);
+
+            // Returns affected LeadId
+            return await conn.ExecuteScalarAsync<int?>(
+                "sp_ActionSalesProposal", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesProposalResponseDto>> GetProposalsByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesProposalResponseDto>(
+                "sp_GetProposalsByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Payments ----------------
+
+        public async Task<int> CreatePaymentAsync(SalesPaymentRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_ProposalId", request.ProposalId);
+            p.Add("p_PaymentDate", request.PaymentDate);
+            p.Add("p_Amount", request.Amount);
+            p.Add("p_PaymentMode", request.PaymentMode);
+            p.Add("p_ReferenceNo", request.ReferenceNo);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesPayment", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesPaymentResponseDto>> GetPaymentsByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesPaymentResponseDto>(
+                "sp_GetPaymentsByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- BOM / Material Booking ----------------
+
+        public async Task<SalesBomCreateResultDto> CreateBomAsync(SalesBomRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_ItemId", request.ItemId);
+            p.Add("p_RequiredQty", request.RequiredQty);
+
+            var result = await conn.QueryFirstAsync<SalesBomCreateResultDto>(
+                "sp_CreateSalesBom", p, commandType: CommandType.StoredProcedure);
+            return result;
+        }
+
+        public async Task<bool> UpdateBomBookingAsync(SalesBomBookingUpdateDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_BomId", request.BomId);
+            p.Add("p_AdditionalBookedQty", request.AdditionalBookedQty);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_UpdateSalesBomBooking", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<IEnumerable<SalesBomResponseDto>> GetBomByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesBomResponseDto>(
+                "sp_GetBomByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Dispatch ----------------
+
+        public async Task<int> CreateDispatchAsync(SalesDispatchRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_DispatchDate", request.DispatchDate);
+            p.Add("p_DispatchBy", request.DispatchBy);
+            p.Add("p_Transporter", request.Transporter);
+            p.Add("p_TrackingNo", request.TrackingNo);
+            p.Add("p_Remarks", request.Remarks);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesDispatch", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateDispatchStatusAsync(SalesDispatchStatusUpdateDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_DispatchId", request.DispatchId);
+            p.Add("p_Status", request.Status);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_UpdateSalesDispatchStatus", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<IEnumerable<SalesDispatchResponseDto>> GetDispatchByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesDispatchResponseDto>(
+                "sp_GetDispatchByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Documents ----------------
+
+        public async Task<int> CreateDocumentAsync(SalesDocumentRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_DocType", request.DocType);
+            p.Add("p_DocName", request.DocName);
+            p.Add("p_FilePath", request.FilePath);
+            p.Add("p_UploadedBy", request.UploadedBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesDocument", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesDocumentResponseDto>> GetDocumentsByLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            return await conn.QueryAsync<SalesDocumentResponseDto>(
+                "sp_GetDocumentsByLead", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Reminders ----------------
+
+        public async Task<int> CreateReminderAsync(SalesReminderRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", request.LeadId);
+            p.Add("p_ReminderType", request.ReminderType);
+            p.Add("p_ReminderDate", request.ReminderDate);
+            p.Add("p_Message", request.Message);
+            p.Add("p_AssignedTo", request.AssignedTo);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateSalesReminder", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalesReminderResponseDto>> GetPendingRemindersAsync(int? assignedTo)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_AssignedTo", assignedTo);
+
+            return await conn.QueryAsync<SalesReminderResponseDto>(
+                "sp_GetPendingReminders", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> MarkReminderDoneAsync(int reminderId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ReminderId", reminderId);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_MarkReminderDone", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+        #endregion
+
+        #region Inventory
+        // ---------------- Items ----------------
+
+        public async Task<int> CreateItemAsync(InventoryItemRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemCode", request.ItemCode);
+            p.Add("p_ItemName", request.ItemName);
+            p.Add("p_Category", request.Category);
+            p.Add("p_Unit", request.Unit);
+            p.Add("p_OpeningStock", request.OpeningStock);
+            p.Add("p_ReorderLevel", request.ReorderLevel);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_CreateInventoryItem", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateItemAsync(InventoryItemUpdateRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", request.ItemId);
+            p.Add("p_ItemName", request.ItemName);
+            p.Add("p_Category", request.Category);
+            p.Add("p_Unit", request.Unit);
+            p.Add("p_ReorderLevel", request.ReorderLevel);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_UpdateInventoryItem", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> ToggleItemStatusAsync(int itemId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", itemId);
+
+            var rows = await conn.ExecuteScalarAsync<int>(
+                "sp_ToggleInventoryItemStatus", p, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<InventoryItemResponseDto?> GetItemByIdAsync(int itemId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", itemId);
+
+            return await conn.QueryFirstOrDefaultAsync<InventoryItemResponseDto>(
+                "sp_GetInventoryItemById", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<InventoryItemResponseDto>> GetAllItemsAsync(InventoryItemSearchRequestDto filter)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_Category", filter.Category);
+            p.Add("p_IsActive", filter.IsActive);
+            p.Add("p_Keyword", filter.Keyword);
+
+            return await conn.QueryAsync<InventoryItemResponseDto>(
+                "sp_GetAllInventoryItems", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Stock transactions ----------------
+
+        public async Task<StockTransactionResultDto> StockInAsync(StockInRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", request.ItemId);
+            p.Add("p_Quantity", request.Quantity);
+            p.Add("p_ReferenceType", request.ReferenceType);
+            p.Add("p_ReferenceNo", request.ReferenceNo);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            return await conn.QueryFirstAsync<StockTransactionResultDto>(
+                "sp_StockIn", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<StockTransactionResultDto> StockOutAsync(StockOutRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", request.ItemId);
+            p.Add("p_Quantity", request.Quantity);
+            p.Add("p_ReferenceType", request.ReferenceType);
+            p.Add("p_ReferenceNo", request.ReferenceNo);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            try
+            {
+                return await conn.QueryFirstAsync<StockTransactionResultDto>(
+                    "sp_StockOut", p, commandType: CommandType.StoredProcedure);
+            }
+            catch (MySqlException ex) when (ex.Message.Contains("Insufficient stock"))
+            {
+                // Translate the SP's SIGNAL into a clean exception your
+                // GlobalExceptionMiddleware can map to a 400 response.
+                throw new InvalidOperationException("Insufficient stock for this issue quantity");
+            }
+        }
+
+        public async Task<StockTransactionResultDto> StockAdjustmentAsync(StockAdjustmentRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", request.ItemId);
+            p.Add("p_AdjustedQuantity", request.AdjustedQuantity);
+            p.Add("p_Reason", request.Reason);
+            p.Add("p_Remarks", request.Remarks);
+            p.Add("p_CreatedBy", request.CreatedBy);
+
+            return await conn.QueryFirstAsync<StockTransactionResultDto>(
+                "sp_StockAdjustment", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<InventoryTransactionResponseDto>> GetTransactionsByItemAsync(
+            int itemId, DateTime? fromDate, DateTime? toDate)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_ItemId", itemId);
+            p.Add("p_FromDate", fromDate);
+            p.Add("p_ToDate", toDate);
+
+            return await conn.QueryAsync<InventoryTransactionResponseDto>(
+                "sp_GetTransactionsByItem", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<InventoryTransactionResponseDto>> GetAllTransactionsAsync(
+            InventoryTransactionSearchRequestDto filter)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_TxnType", filter.TxnType);
+            p.Add("p_FromDate", filter.FromDate);
+            p.Add("p_ToDate", filter.ToDate);
+
+            return await conn.QueryAsync<InventoryTransactionResponseDto>(
+                "sp_GetAllTransactions", p, commandType: CommandType.StoredProcedure);
+        }
+
+        // ---------------- Reports ----------------
+
+        public async Task<IEnumerable<InventoryItemResponseDto>> GetLowStockItemsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<InventoryItemResponseDto>(
+                "sp_GetLowStockItems", commandType: CommandType.StoredProcedure);
+        }
+        #endregion
+
+        #region Employee Milestone Notifications (Probation / Anniversary)
+        public async Task<IEnumerable<EmployeeMilestoneResponseDto>> GetUpcomingProbationAlertsAsync(int daysAhead)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QueryAsync<EmployeeMilestoneResponseDto>(
+                "sp_GetUpcomingProbationAlerts",
+                new { p_DaysAhead = daysAhead },
+                commandType: CommandType.StoredProcedure);
+
+            foreach (var r in result) r.NotifType = "ProbationEnd";
+            return result;
+        }
+
+        public async Task<IEnumerable<EmployeeMilestoneResponseDto>> GetUpcomingAnniversaryAlertsAsync(int daysAhead)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QueryAsync<EmployeeMilestoneResponseDto>(
+                "sp_GetUpcomingAnniversaryAlerts",
+                new { p_DaysAhead = daysAhead },
+                commandType: CommandType.StoredProcedure);
+
+            foreach (var r in result) r.NotifType = "Anniversary";
+            return result;
+        }
+
+        public async Task<int> LogNotificationSentAsync(int empId, string notifType, DateTime notifDate, string? message)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QuerySingleAsync<int>(
+                "sp_LogEmployeeNotificationSent",
+                new { p_EmpId = empId, p_NotifType = notifType, p_NotifDate = notifDate, p_Message = message },
+                commandType: CommandType.StoredProcedure);
+            return result;
+        }
+        public async Task<int> GetOrCreatePendingNotificationAsync(int empId, string notifType, DateTime notifDate, string? message)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_GetOrCreatePendingNotification",
+                new { p_EmpId = empId, p_NotifType = notifType, p_NotifDate = notifDate, p_Message = message },
+                commandType: CommandType.StoredProcedure);
+        }
+        public async Task<int> LogNotificationAsync(int empId, string notifType, DateTime notifDate, string? message)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QuerySingleAsync<int>(
+                "sp_LogEmployeeNotification",
+                new { p_EmpId = empId, p_NotifType = notifType, p_NotifDate = notifDate, p_Message = message },
+                commandType: CommandType.StoredProcedure);
+            return result;
+        }
+        public async Task<bool> MarkSentAsync(int notifId)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_MarkNotificationSent",
+                new { p_NotifId = notifId },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<IEnumerable<EmployeeNotificationLogResponseDto>> GetHistoryAsync(string? notifType, bool? isSent)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<EmployeeNotificationLogResponseDto>(
+                "sp_GetNotificationHistory",
+                new { p_NotifType = notifType, p_IsSent = isSent },
+                commandType: CommandType.StoredProcedure);
+        }
+        // Repository class mein implement karo
+        public async Task MarkNotificationSentAsync(int empId, string notifType, DateTime notifDate, string message)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                @"INSERT INTO employee_notifications (emp_id, notif_type, notif_date, message, is_sent, sent_at)
+          VALUES (@EmpId, @NotifType, @NotifDate, @Message, 1, NOW())",
+                new { EmpId = empId, NotifType = notifType, NotifDate = notifDate, Message = message });
+        }
+        #endregion
+
+        #region EmployeePromotion
+        public async Task<int> PromoteAsync(PromoteEmployeeRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_PromoteEmployee",
+                new
+                {
+                    p_EmpId = request.EmpId,
+                    p_NewDesigId = request.NewDesigId,
+                    p_NewDeptId = request.NewDeptId,
+                    p_NewCtc = request.NewCtc,
+                    p_PromotionDate = request.PromotionDate,
+                    p_Remarks = request.Remarks,
+                    p_ApprovedBy = request.ApprovedBy
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<EmployeePromotionResponseDto>> GetHistoryByEmpAsync(int empId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<EmployeePromotionResponseDto>(
+                "sp_GetPromotionHistoryByEmp",
+                new { p_EmpId = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<EmployeePromotionResponseDto>> GetAllAsync(DateTime? fromDate, DateTime? toDate)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<EmployeePromotionResponseDto>(
+                "sp_GetAllPromotions",
+                new { p_FromDate = fromDate, p_ToDate = toDate },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<int> SetHierarchyAsync(int empId, int? parentEmpId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_SetEmployeeHierarchy",
+                new { p_EmpId = empId, p_ParentEmpId = parentEmpId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<OrgChartNodeResponseDto>> GetDirectReportsAsync(int empId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<OrgChartNodeResponseDto>(
+                "sp_GetDirectReports",
+                new { p_EmpId = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<OrgChartNodeResponseDto>> GetOrgChartAsync(int? rootEmpId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<OrgChartNodeResponseDto>(
+                "sp_GetOrgChart",
+                new { p_RootEmpId = rootEmpId },
+                commandType: CommandType.StoredProcedure);
+        }
+        #endregion
+
+        #region SalaryIncrement
+        public async Task<int> AddIncrementAsync(AddSalaryIncrementRequestDto r)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_AddSalaryIncrement",
+                new
+                {
+                    p_EmpId = r.EmpId,
+                    p_StructureId = r.StructureId,
+                    p_Basic = r.Basic,
+                    p_Hra = r.Hra,
+                    p_Ta = r.Ta,
+                    p_Da = r.Da,
+                    p_SpecialAllow = r.SpecialAllow,
+                    p_PfEmployee = r.PfEmployee,
+                    p_PfEmployer = r.PfEmployer,
+                    p_EsicEmployee = r.EsicEmployee,
+                    p_EsicEmployer = r.EsicEmployer,
+                    p_Tds = r.Tds,
+                    p_ProfessionalTax = r.ProfessionalTax,
+                    p_EffectiveFrom = r.EffectiveFrom,
+                    p_CreatedBy = r.CreatedBy
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<EmployeeSalaryVersionResponseDto?> GetCurrentAsync(int empId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<EmployeeSalaryVersionResponseDto>(
+                "sp_GetCurrentSalary",
+                new { p_EmpId = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalaryHistoryResponseDto>> GetHistoryAsync(int empId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<SalaryHistoryResponseDto>(
+                "sp_GetSalaryHistory",
+                new { p_EmpId = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<EmployeeSalaryVersionResponseDto?> GetAsOfDateAsync(int empId, DateTime asOfDate)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<EmployeeSalaryVersionResponseDto>(
+                "sp_GetSalaryAsOfDate",
+                new { p_EmpId = empId, p_AsOfDate = asOfDate },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SalaryHistoryResponseDto>> GetAllIncrementsAsync(DateTime? fromDate, DateTime? toDate)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<SalaryHistoryResponseDto>(
+                "sp_GetAllIncrements",
+                new { p_FromDate = fromDate, p_ToDate = toDate },
+                commandType: CommandType.StoredProcedure);
+        }
+        #endregion
+    }
+}
