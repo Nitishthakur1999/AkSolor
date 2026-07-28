@@ -1,18 +1,34 @@
 import Reveal from './Reveal'
+import SolarScene from './three/SolarScene'
 
 export default function PageHeader({ eyebrow, title, highlight, desc }) {
     return (
         <section
-            className="relative overflow-hidden border-b border-line bg-mist pb-6 pt-12 text-charcoal sm:pb-10 sm:pt-20"
-            style={{ backgroundImage: 'radial-gradient(circle, var(--color-line) 1.2px, transparent 1.2px)', backgroundSize: '24px 24px' }}
+            className="relative min-h-[280px] overflow-hidden border-b border-line pb-6 pt-12 sm:min-h-[340px] sm:pb-10 sm:pt-20"
+            style={{ background: 'var(--color-chalk)' }}
         >
+            {/* compact 3D scene: same solar-panel field / sun / particles as the hero, theme-aware and low-key */}
+            <div className="absolute inset-0 z-0">
+                <SolarScene variant="banner" />
+            </div>
+
+            {/* wash so copy stays readable over the 3D layer — built from the theme's own chalk token,
+                so it's a light professional wash in light mode and a dark one in dark mode, automatically. */}
+            <div
+                className="absolute inset-0 z-[1]"
+                style={{
+                    background:
+                        'linear-gradient(180deg, color-mix(in srgb, var(--color-chalk) 60%, transparent) 0%, color-mix(in srgb, var(--color-chalk) 80%, transparent) 60%, var(--color-chalk) 100%)',
+                }}
+            ></div>
+
             {/* top gold hairline, seam under the fixed navbar */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" aria-hidden="true"></div>
+            <div className="absolute inset-x-0 top-0 z-[2] h-px bg-gradient-to-r from-transparent via-gold to-transparent" aria-hidden="true"></div>
 
             {/* oversized watermark glyph, same motif as CTA / Footer */}
             <span
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-10 -top-16 select-none font-display text-[11rem] font-bold leading-none text-gold/[0.07] md:text-[15rem]"
+                className="pointer-events-none absolute -right-10 -top-16 z-[2] select-none font-display text-[11rem] font-bold leading-none text-gold/[0.07] md:text-[15rem]"
             >
                 ☀
             </span>
@@ -20,11 +36,11 @@ export default function PageHeader({ eyebrow, title, highlight, desc }) {
             {/* corner brackets, viewfinder-style frame */}
             <span
                 aria-hidden="true"
-                className="pointer-events-none absolute left-6 top-8 hidden h-9 w-9 border-l-[1.5px] border-t-[1.5px] border-gold/40 sm:block md:left-8"
+                className="pointer-events-none absolute left-6 top-8 z-[2] hidden h-9 w-9 border-l-[1.5px] border-t-[1.5px] border-gold/40 sm:block md:left-8"
             ></span>
             <span
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-8 right-6 hidden h-9 w-9 border-b-[1.5px] border-r-[1.5px] border-gold/40 sm:block md:right-8"
+                className="pointer-events-none absolute bottom-8 right-6 z-[2] hidden h-9 w-9 border-b-[1.5px] border-r-[1.5px] border-gold/40 sm:block md:right-8"
             ></span>
 
             <div className="container relative z-[2] mx-auto max-w-[1240px] px-6 sm:px-7">

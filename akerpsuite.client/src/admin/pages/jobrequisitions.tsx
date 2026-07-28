@@ -6,7 +6,7 @@ function Badge({ status }) {
     const map = {
         Pending: "bg-amber-50 text-amber-700 border-amber-200",
         ApprovedByManager: "bg-blue-50 text-blue-700 border-blue-200",
-        ApprovedByHR: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        ApprovedByHR: "bg-amber-50 text-amber-700 border-amber-200",
         ApprovedByMgmt: "bg-green-50 text-green-700 border-green-200",
         Open: "bg-green-50 text-green-700 border-green-200",
         Closed: "bg-slate-100 text-slate-600 border-slate-200",
@@ -33,7 +33,7 @@ function Input({ ...props }) {
     return (
         <input
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
         />
     );
 }
@@ -211,7 +211,7 @@ export default function JobRequisitions() {
                     <select
                         value={statusFilter}
                         onChange={e => setStatusFilter(e.target.value)}
-                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                     >
                         <option value="">All Statuses</option>
                         <option value="Pending">Pending</option>
@@ -223,7 +223,7 @@ export default function JobRequisitions() {
                 </div>
                 <button
                     onClick={() => setShowForm(v => !v)}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm"
+                    className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all shadow-sm"
                 >
                     {showForm ? "Cancel Request" : "+ Raise Requisition"}
                 </button>
@@ -249,7 +249,7 @@ export default function JobRequisitions() {
                                 value={form.departmentId}
                                 onChange={set("departmentId")}
                                 required
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                             >
                                 <option value="">Select Department</option>
                                 {departments.length > 0 ? (
@@ -269,7 +269,7 @@ export default function JobRequisitions() {
                                 value={form.designationId}
                                 onChange={set("designationId")}
                                 required
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                             >
                                 <option value="">Select Designation</option>
                                 {designations.length > 0 ? (
@@ -318,7 +318,7 @@ export default function JobRequisitions() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all shadow-sm"
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all shadow-sm"
                         >
                             {saving ? "Submitting..." : "Submit Requisition"}
                         </button>
@@ -345,7 +345,7 @@ export default function JobRequisitions() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={8} className="px-6 py-12 text-center text-indigo-500 animate-pulse font-medium">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-amber-500 animate-pulse font-medium">
                                         Loading requisitions pipeline...
                                     </td>
                                 </tr>

@@ -142,7 +142,7 @@ export default function EmployeeDashboard() {
                         <select
                             value={selectedEmpId}
                             onChange={(e) => setSelectedEmpId(e.target.value)}
-                            className="border border-indigo-300 bg-indigo-50 rounded-lg px-3 py-2 text-sm text-indigo-800 font-medium"
+                            className="border border-amber-300 bg-amber-50 rounded-lg px-3 py-2 text-sm text-amber-800 font-medium"
                         >
                             <option value="">My Own Data (Self)</option>
                             {employeeList.map(emp => (
@@ -183,7 +183,7 @@ export default function EmployeeDashboard() {
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`px-5 py-2 text-sm font-semibold rounded-t-lg transition-colors capitalize ${activeTab === tab
-                            ? "bg-indigo-600 text-white"
+                            ? "bg-amber-600 text-white"
                             : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                             }`}
                     >
@@ -211,7 +211,7 @@ export default function EmployeeDashboard() {
                     <div className="flex justify-end mb-4 print:hidden">
                         <button
                             onClick={handlePrint}
-                            className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all"
+                            className="px-5 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
                         >
                             🖨️ Print Payslip
                         </button>
@@ -224,7 +224,7 @@ export default function EmployeeDashboard() {
                                 <p className="text-sm text-slate-500">{data.fullName} ({data.empCode})</p>
                                 <p className="text-sm text-slate-500">{data.deptName} - {data.desigName}</p>
                             </div>
-                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
                                 {data.payrollStatus || "-"}
                             </span>
                         </div>
@@ -266,7 +266,7 @@ export default function EmployeeDashboard() {
                             <div className="text-sm text-slate-500">
                                 Working days: {data.workingDays} • Present: {data.presentDays} • Absent: {data.absentDays}
                             </div>
-                            <p className="text-lg font-bold text-indigo-700">Net Pay: {fmtINR(netPay)}</p>
+                            <p className="text-lg font-bold text-amber-700">Net Pay: {fmtINR(netPay)}</p>
                         </div>
 
                         {(data.bankName || data.accountNo) && (
@@ -302,7 +302,7 @@ export default function EmployeeDashboard() {
                                                 <p className="text-xs text-slate-400 mt-1">{loan.remarks}</p>
                                             )}
                                         </div>
-                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                                             {loan.status}
                                         </span>
                                     </div>
@@ -332,7 +332,7 @@ export default function EmployeeDashboard() {
                                        <a href = { getDocumentUrl(doc.filePath)}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-indigo-600 text-sm font-bold">
+                                    className="text-amber-600 text-sm font-bold">
                                     View
                                 </a>
                             )}

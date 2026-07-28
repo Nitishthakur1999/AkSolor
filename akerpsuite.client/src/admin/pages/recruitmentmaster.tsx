@@ -158,7 +158,7 @@ function RecruitmentReportTab() {
                         type="date"
                         value={filters.fromDate}
                         onChange={(e) => setFilters((f) => ({ ...f, fromDate: e.target.value }))}
-                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     />
                 </div>
                 <div>
@@ -167,12 +167,12 @@ function RecruitmentReportTab() {
                         type="date"
                         value={filters.toDate}
                         onChange={(e) => setFilters((f) => ({ ...f, toDate: e.target.value }))}
-                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     />
                 </div>
                 <button
                     type="submit"
-                    className="bg-indigo-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors"
                 >
                     Apply Filter
                 </button>
@@ -259,7 +259,7 @@ function RecruitmentReportTab() {
                                                 href={r[FIELD.shareableLink]}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-indigo-600 hover:underline text-xs font-medium"
+                                                className="text-amber-600 hover:underline text-xs font-medium"
                                             >
                                                 View link
                                             </a>
@@ -307,7 +307,7 @@ function RecruitmentReportTab() {
                                     onClick={() => goToPage(item.value)}
                                     className={
                                         item.value === currentPage
-                                            ? "w-8 h-8 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition-colors"
+                                            ? "w-8 h-8 text-xs font-semibold rounded-lg bg-amber-600 text-white transition-colors"
                                             : "w-8 h-8 text-xs font-semibold rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
                                     }
                                 >
@@ -349,7 +349,7 @@ export default function RecruitmentMaster() {
                             key={t.id}
                             onClick={() => setActiveTab(t.id)}
                             className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === t.id
-                                    ? "border-indigo-600 text-indigo-600"
+                                    ? "border-amber-600 text-amber-600"
                                     : "border-transparent hover:text-slate-600"
                                 }`}
                         >

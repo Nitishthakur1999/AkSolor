@@ -2,6 +2,8 @@ const BASE = import.meta.env.VITE_API_BASE_URL || "";
 const API_BASE = `${BASE}/api/admin`;
 const ATTENDANCE_API_BASE = `${BASE}/api/admin`;
 const SALES_API_BASE = `${BASE}/api/hr`;
+const SITE_API_BASE = `${BASE}/api/admin/site`;
+ 
 
 const getHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json",
@@ -320,5 +322,52 @@ export const adminService = {
     revealEmployeeCredentials: (empId?: any, secretKey?: any) =>
         apiCall(`/api/admin/employees/${empId}/reveal-credentials`, "POST", { secretKey }),
     
+
+   // ── 28. Public Site (Banners / Gallery / Team / Projects / Highlights / Career / Contact Queries) ──
+
+    // Banners 
+    getBanners: () => apiCall(`${SITE_API_BASE}/banner`),
+    createBanner: (data?: any) => apiCall(`${SITE_API_BASE}/banner`, "POST", data),
+    updateBanner: (data?: any) => apiCall(`${SITE_API_BASE}/banner`, "PUT", data),
+    deleteBanner: (id?: any) => apiCall(`${SITE_API_BASE}/banner/${id}`, "DELETE"),
+
+    // Gallery
+    getGallery: () => apiCall(`${SITE_API_BASE}/gallery`),
+    createGallery: (data?: any) => apiCall(`${SITE_API_BASE}/gallery`, "POST", data),
+    updateGallery: (data?: any) => apiCall(`${SITE_API_BASE}/gallery`, "PUT", data),
+    deleteGallery: (id?: any) => apiCall(`${SITE_API_BASE}/gallery/${id}`, "DELETE"),
+
+    // Team
+    getTeam: () => apiCall(`${SITE_API_BASE}/team`),
+    createTeam: (data?: any) => apiCall(`${SITE_API_BASE}/team`, "POST", data),
+    updateTeam: (data?: any) => apiCall(`${SITE_API_BASE}/team`, "PUT", data),
+    deleteTeam: (id?: any) => apiCall(`${SITE_API_BASE}/team/${id}`, "DELETE"),
+
+    // Projects (multi-image)
+    getProjects: () => apiCall(`${SITE_API_BASE}/projects`),
+    createProject: (data?: any) => apiCall(`${SITE_API_BASE}/projects`, "POST", data),
+    updateProject: (data?: any) => apiCall(`${SITE_API_BASE}/projects`, "PUT", data),
+    deleteProject: (id?: any) => apiCall(`${SITE_API_BASE}/projects/${id}`, "DELETE"),
+
+    // Highlights
+    getHighlights: () => apiCall(`${SITE_API_BASE}/highlights`),
+    createHighlight: (data?: any) => apiCall(`${SITE_API_BASE}/highlights`, "POST", data),
+    updateHighlight: (data?: any) => apiCall(`${SITE_API_BASE}/highlights`, "PUT", data),
+    deleteHighlight: (id?: any) => apiCall(`${SITE_API_BASE}/highlights/${id}`, "DELETE"),
+
+    // Career
+    getCareers: () => apiCall(`${SITE_API_BASE}/career`),
+    createCareer: (data?: any) => apiCall(`${SITE_API_BASE}/career`, "POST", data),
+    updateCareer: (data?: any) => apiCall(`${SITE_API_BASE}/career`, "PUT", data),
+    deleteCareer: (id?: any) => apiCall(`${SITE_API_BASE}/career/${id}`, "DELETE"),
+
+    // Contact Queries (read / mark-read / delete only — no create)
+    getContactQueries: (isRead?: any) =>
+      apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
+    markQueryRead: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}/mark-read`, "PATCH"),
+    deleteContactQuery: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}`, "DELETE"),
+ 
 };
+
+
 

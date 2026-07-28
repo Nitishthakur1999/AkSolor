@@ -572,7 +572,7 @@ namespace AkerpSuite.Server.Repositories
             using var conn = _context.CreateConnection();
             var p = new DynamicParameters();
             p.Add("p_LeadId", request.LeadId);
-           // p.Add("p_FollowupDate", request.FollowupDate);
+            // p.Add("p_FollowupDate", request.FollowupDate);
             p.Add("p_FollowupDate", DateTime.UtcNow);
             p.Add("p_Remarks", request.Remarks);
             p.Add("p_Label", request.Label);
@@ -1214,6 +1214,505 @@ namespace AkerpSuite.Server.Repositories
                 new { p_FromDate = fromDate, p_ToDate = toDate },
                 commandType: CommandType.StoredProcedure);
         }
+        #endregion
+
+        #region Public Site – Banner
+
+        public async Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Banner_Create",
+                new
+                {
+                    p_Title = request.Title,
+                    p_SubTitle = request.SubTitle,
+                    p_ImagePath = imagePath,
+                    p_DisplayOrder = request.DisplayOrder,
+                    p_IsActive = request.IsActive
+                },
+                commandType: CommandType.StoredProcedure);
+
+            return await GetBannerByIdAsync(newId) ?? throw new InvalidOperationException("Banner creation failed.");
+        }
+
+        public async Task<BannerResponseDto?> GetBannerByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<BannerResponseDto>(
+                "sp_Banner_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<BannerResponseDto>(
+                "sp_Banner_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<BannerResponseDto>> GetActiveBannersAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<BannerResponseDto>(
+                "sp_Banner_GetActive", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateBannerAsync(BannerUpdateRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Banner_Update",
+                new
+                {
+                    p_Id = request.Id,
+                    p_Title = request.Title,
+                    p_SubTitle = request.SubTitle,
+                    p_ImagePath = imagePath,
+                    p_DisplayOrder = request.DisplayOrder,
+                    p_IsActive = request.IsActive
+                },
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteBannerAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Banner_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Public Site – Gallery
+
+        public async Task<GalleryResponseDto> CreateGalleryAsync(GalleryRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Gallery_Create",
+                new { p_Title = request.Title, p_Category = request.Category, p_ImagePath = imagePath, p_IsActive = request.IsActive },
+                commandType: CommandType.StoredProcedure);
+
+            return await conn.QueryFirstAsync<GalleryResponseDto>(
+                "sp_Gallery_GetById", new { p_Id = newId }, commandType: CommandType.StoredProcedure);
+        }
+        public async Task<GalleryResponseDto?> GetGalleryByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<GalleryResponseDto>(
+                "sp_Gallery_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+        }
+        public async Task<IEnumerable<GalleryResponseDto>> GetAllGalleryAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<GalleryResponseDto>(
+                "sp_Gallery_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<GalleryResponseDto>> GetActiveGalleryAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<GalleryResponseDto>(
+                "sp_Gallery_GetActive", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateGalleryAsync(GalleryUpdateRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Gallery_Update",
+                new { p_Id = request.Id, p_Title = request.Title, p_Category = request.Category, p_ImagePath = imagePath, p_IsActive = request.IsActive },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteGalleryAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Gallery_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Public Site – Team
+
+        public async Task<TeamResponseDto> CreateTeamAsync(TeamRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Team_Create",
+                new
+                {
+                    p_Name = request.Name,
+                    p_Designation = request.Designation,
+                    p_Bio = request.Bio,
+                    p_LinkedInUrl = request.LinkedInUrl,
+                    p_ImagePath = imagePath,
+                    p_DisplayOrder = request.DisplayOrder,
+                    p_IsActive = request.IsActive
+                },
+                commandType: CommandType.StoredProcedure);
+
+            return await conn.QueryFirstAsync<TeamResponseDto>(
+                "sp_Team_GetById", new { p_Id = newId }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<TeamResponseDto>> GetAllTeamAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<TeamResponseDto>(
+                "sp_Team_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<TeamResponseDto>> GetActiveTeamAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<TeamResponseDto>(
+                "sp_Team_GetActive", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<TeamResponseDto?> GetTeamByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<TeamResponseDto>(
+                "sp_Team_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<HighlightResponseDto?> GetHighlightByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<HighlightResponseDto>(
+                "sp_Highlight_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateTeamAsync(TeamUpdateRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Team_Update",
+                new
+                {
+                    p_Id = request.Id,
+                    p_Name = request.Name,
+                    p_Designation = request.Designation,
+                    p_Bio = request.Bio,
+                    p_LinkedInUrl = request.LinkedInUrl,
+                    p_ImagePath = imagePath,
+                    p_DisplayOrder = request.DisplayOrder,
+                    p_IsActive = request.IsActive
+                },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteTeamAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Team_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Public Site – Projects (multi-image)
+
+        public async Task<ProjectResponseDto> CreateProjectAsync(ProjectRequestDto request, List<string> imagePaths)
+        {
+            using var conn = _context.CreateConnection();
+            conn.Open();
+            using var txn = conn.BeginTransaction();
+
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Project_Create",
+                new
+                {
+                    p_Title = request.Title,
+                    p_Location = request.Location,
+                    p_CapacityKw = request.CapacityKw,
+                    p_Description = request.Description,
+                    p_CompletedOn = request.CompletedOn,
+                    p_IsActive = request.IsActive
+                },
+                transaction: txn, commandType: CommandType.StoredProcedure);
+
+            foreach (var path in imagePaths)
+            {
+                await conn.ExecuteAsync(
+                    "sp_ProjectImage_Add",
+                    new { p_ProjectId = newId, p_ImagePath = path },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+            }
+
+            txn.Commit();
+
+            return await GetProjectByIdInternalAsync(conn, newId);
+        }
+
+        public async Task<ProjectResponseDto?> GetProjectByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var project = await conn.QueryFirstOrDefaultAsync<ProjectResponseDto>(
+                "sp_Project_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+
+            if (project == null) return null;
+
+            var images = await conn.QueryAsync<string>(
+                "sp_ProjectImage_GetByProject", new { p_ProjectId = id }, commandType: CommandType.StoredProcedure);
+            project.ImagePaths = images.ToList();
+
+            return project;
+        }
+
+        private async Task<ProjectResponseDto> GetProjectByIdInternalAsync(IDbConnection conn, int id)
+        {
+            var project = await conn.QueryFirstAsync<ProjectResponseDto>(
+                "sp_Project_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+
+            var images = await conn.QueryAsync<string>(
+                "sp_ProjectImage_GetByProject", new { p_ProjectId = id }, commandType: CommandType.StoredProcedure);
+
+            project.ImagePaths = images.ToList();
+            return project;
+        }
+
+        public async Task<IEnumerable<ProjectResponseDto>> GetAllProjectsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            var projects = (await conn.QueryAsync<ProjectResponseDto>(
+                "sp_Project_GetAll", commandType: CommandType.StoredProcedure)).ToList();
+
+            foreach (var p in projects)
+            {
+                var images = await conn.QueryAsync<string>(
+                    "sp_ProjectImage_GetByProject", new { p_ProjectId = p.Id }, commandType: CommandType.StoredProcedure);
+                p.ImagePaths = images.ToList();
+            }
+
+            return projects;
+        }
+
+        public async Task<IEnumerable<ProjectResponseDto>> GetActiveProjectsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            var projects = (await conn.QueryAsync<ProjectResponseDto>(
+                "sp_Project_GetActive", commandType: CommandType.StoredProcedure)).ToList();
+
+            foreach (var p in projects)
+            {
+                var images = await conn.QueryAsync<string>(
+                    "sp_ProjectImage_GetByProject", new { p_ProjectId = p.Id }, commandType: CommandType.StoredProcedure);
+                p.ImagePaths = images.ToList();
+            }
+
+            return projects;
+        }
+
+        // Returns old image paths that were removed, so the service layer can delete them from disk
+        public async Task<(bool Success, List<string> RemovedImagePaths)> UpdateProjectAsync(
+            ProjectUpdateRequestDto request, List<string> newImagePaths)
+        {
+            using var conn = _context.CreateConnection();
+            conn.Open();
+            using var txn = conn.BeginTransaction();
+
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Project_Update",
+                new
+                {
+                    p_Id = request.Id,
+                    p_Title = request.Title,
+                    p_Location = request.Location,
+                    p_CapacityKw = request.CapacityKw,
+                    p_Description = request.Description,
+                    p_CompletedOn = request.CompletedOn,
+                    p_IsActive = request.IsActive
+                },
+                transaction: txn, commandType: CommandType.StoredProcedure);
+
+            var removedPaths = new List<string>();
+
+            if (newImagePaths.Count > 0)
+            {
+                // remove old images not kept, add new ones
+                var oldPaths = (await conn.QueryAsync<string>(
+                    "sp_ProjectImage_DeleteByProject", new { p_ProjectId = request.Id },
+                    transaction: txn, commandType: CommandType.StoredProcedure)).ToList();
+
+                removedPaths = oldPaths.Except(request.ExistingImagePaths).ToList();
+
+                foreach (var path in request.ExistingImagePaths)
+                {
+                    await conn.ExecuteAsync("sp_ProjectImage_Add",
+                        new { p_ProjectId = request.Id, p_ImagePath = path },
+                        transaction: txn, commandType: CommandType.StoredProcedure);
+                }
+
+                foreach (var path in newImagePaths)
+                {
+                    await conn.ExecuteAsync("sp_ProjectImage_Add",
+                        new { p_ProjectId = request.Id, p_ImagePath = path },
+                        transaction: txn, commandType: CommandType.StoredProcedure);
+                }
+            }
+
+            txn.Commit();
+            return (rows > 0, removedPaths);
+        }
+
+        public async Task<(bool Success, List<string> DeletedImagePaths)> DeleteProjectAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var deletedPaths = (await conn.QueryAsync<string>(
+                "sp_Project_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure)).ToList();
+
+            return (deletedPaths.Count >= 0, deletedPaths); // rows check optional, SP already deletes
+        }
+
+        #endregion
+
+        #region Public Site – Highlights
+
+        public async Task<HighlightResponseDto> CreateHighlightAsync(HighlightRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Highlight_Create",
+                new { p_Title = request.Title, p_Description = request.Description, p_ImagePath = imagePath, p_DisplayOrder = request.DisplayOrder, p_IsActive = request.IsActive },
+                commandType: CommandType.StoredProcedure);
+
+            return await conn.QueryFirstAsync<HighlightResponseDto>(
+                "sp_Highlight_GetById", new { p_Id = newId }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<HighlightResponseDto>> GetAllHighlightsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<HighlightResponseDto>(
+                "sp_Highlight_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<HighlightResponseDto>> GetActiveHighlightsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<HighlightResponseDto>(
+                "sp_Highlight_GetActive", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateHighlightAsync(HighlightUpdateRequestDto request, string? imagePath)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Highlight_Update",
+                new { p_Id = request.Id, p_Title = request.Title, p_Description = request.Description, p_ImagePath = imagePath, p_DisplayOrder = request.DisplayOrder, p_IsActive = request.IsActive },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteHighlightAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Highlight_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Public Site – Career
+
+        public async Task<CareerResponseDto> CreateCareerAsync(CareerRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Career_Create",
+                new { p_JobTitle = request.JobTitle, p_Location = request.Location, p_ExperienceRequired = request.ExperienceRequired, p_Description = request.Description, p_IsOpen = request.IsOpen },
+                commandType: CommandType.StoredProcedure);
+
+            return await conn.QueryFirstAsync<CareerResponseDto>(
+                "sp_Career_GetById", new { p_Id = newId }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<CareerResponseDto?> GetCareerByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<CareerResponseDto>(
+                "sp_Career_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<CareerResponseDto>> GetAllCareersAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<CareerResponseDto>(
+                "sp_Career_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<CareerResponseDto>> GetOpenCareersAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<CareerResponseDto>(
+                "sp_Career_GetOpen", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateCareerAsync(CareerUpdateRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Career_Update",
+                new { p_Id = request.Id, p_JobTitle = request.JobTitle, p_Location = request.Location, p_ExperienceRequired = request.ExperienceRequired, p_Description = request.Description, p_IsOpen = request.IsOpen },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteCareerAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Career_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Public Site – Contact Query
+
+        public async Task<int> CreateContactQueryAsync(ContactQueryRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_ContactQuery_Create",
+                new { p_Name = request.Name, p_Phone = request.Phone, p_Email = request.Email, p_Subject = request.Subject, p_Message = request.Message },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<ContactQueryResponseDto>> GetAllContactQueriesAsync(bool? isRead)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<ContactQueryResponseDto>(
+                "sp_ContactQuery_GetAll", new { p_IsRead = isRead }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> MarkQueryReadAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_ContactQuery_MarkRead", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteContactQueryAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_ContactQuery_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
         #endregion
     }
 }

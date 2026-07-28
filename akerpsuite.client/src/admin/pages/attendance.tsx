@@ -470,7 +470,7 @@ export default function Attendance() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder={activeListMeta.placeholder}
-                    className="w-full max-w-sm px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    className="w-full max-w-sm px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
                 />
             </div>
         );
@@ -486,7 +486,7 @@ export default function Attendance() {
                 </div>
                 {!isCMD && (
                     <div className="flex flex-wrap gap-2">
-                        <button onClick={openMarkModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all">
+                        <button onClick={openMarkModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition-all">
                             Mark Attendance
                         </button>
                         {/* Request Regularization — sab roles ko dikhta hai (Employee apni date ke liye, admin kisi ke liye) */}
@@ -510,7 +510,7 @@ export default function Attendance() {
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`px-5 py-4 border-b-2 focus:outline-none ${activeTab === tab.key
-                            ? "border-indigo-600 text-indigo-600 font-extrabold"
+                            ? "border-amber-600 text-amber-600 font-extrabold"
                             : "border-transparent hover:text-slate-700"}`}
                     >
                         {tab.label}
@@ -523,7 +523,7 @@ export default function Attendance() {
                 {/* Search bar (hidden on dashboard tab, and while loading) */}
                 {!loading && <SearchBar />}
                 {loading ? (
-                    <div className="p-12 text-center text-sm font-semibold text-indigo-600 animate-pulse">
+                    <div className="p-12 text-center text-sm font-semibold text-amber-600 animate-pulse">
                         Loading...
                     </div>
                 ) : activeTab === "dashboard" && isCMD ? (
@@ -722,7 +722,7 @@ export default function Attendance() {
                                         <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{sum.presentDays}</td>
                                         <td className="px-6 py-4 font-mono text-rose-600 font-bold">{sum.absentDays}</td>
                                         <td className="px-6 py-4 font-mono text-amber-600 font-bold">{sum.lateMarks}</td>
-                                        <td className="px-6 py-4 font-mono text-indigo-600 font-bold">{sum.overtimeHours} hrs</td>
+                                        <td className="px-6 py-4 font-mono text-amber-600 font-bold">{sum.overtimeHours} hrs</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -830,7 +830,7 @@ export default function Attendance() {
                                         <span> Location will be captured automatically on submit</span>
                                     )}
                                     {locationStatus === "fetching" && (
-                                        <span className="text-indigo-500 animate-pulse"> Getting your location...</span>
+                                        <span className="text-amber-500 animate-pulse"> Getting your location...</span>
                                     )}
                                     {locationStatus === "captured" && (
                                         <span className="text-emerald-600 font-medium truncate">
@@ -846,7 +846,7 @@ export default function Attendance() {
                             </div>
 
                             <button type="submit" disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity">
+                                className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity">
                                 {actionLoading ? "Saving..." : "Mark Attendance"}
                             </button>
                         </form>
@@ -925,7 +925,7 @@ export default function Attendance() {
                                     className="w-full px-3 py-2 rounded-xl border text-sm" />
                             </div>
                             <button type="submit" disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity">
+                                className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity">
                                 {actionLoading ? "Submitting..." : "Submit Request"}
                             </button>
                         </form>
@@ -977,7 +977,7 @@ export default function Attendance() {
                                 </div>
                             </div>
                             <button type="submit" disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60">
+                                className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60">
                                 {actionLoading ? "Generating..." : "Generate Summary"}
                             </button>
                         </form>

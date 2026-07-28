@@ -1,309 +1,433 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { adminService } from "@/services/adminService";
+import logo from "@/assets/logo.png";
 
 // Report sub-pages to hide from the sidebar nav.
 // Match is case-insensitive and ignores extra spaces.
-const HIDDEN_PAGE_NAMES = ["attendance report", "leave report", "payroll report"];
+const HIDDEN_PAGE_NAMES = [
+  "attendance report",
+  "leave report",
+  "payroll report",
+  "add employee",
+];
 
-export default function Sidebar() {
-    const { pathname } = useLocation();
-    const navigate = useNavigate();
-    const allPages = JSON.parse(localStorage.getItem("pages") || "[]");
-    const pages = allPages.filter(
-        (page) => !HIDDEN_PAGE_NAMES.includes((page.pageName || "").trim().toLowerCase())
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const allPages = JSON.parse(localStorage.getItem("pages") || "[]");
+  const pages = allPages.filter(
+    (page) =>
+      !HIDDEN_PAGE_NAMES.includes((page.pageName || "").trim().toLowerCase()),
+  );
+  const username = localStorage.getItem("username") || "User";
+  const role = localStorage.getItem("role") || "";
+
+  const GROUP_ORDER = [
+    "General",
+    "Admin",
+    "HR",
+    "Payroll",
+    "Recruitment",
+    "Sales",
+    "Inventory",
+    "Reports",
+    "Public",
+    "Self",
+  ];
+
+  const groupedPages = pages.reduce((groups, page) => {
+    const type = page.pageType || "General";
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(page);
+    return groups;
+  }, {});
+
+  // ── Sidebar-only override: Sales module should show just "Leads" ──
+  // (Router/DB still has the other sales pages, we're only hiding the nav links here)
+  if (groupedPages["Sales"]) {
+    groupedPages["Sales"] = groupedPages["Sales"].filter(
+      (page) => page.pageLink === "/sales/leads",
     );
-    const username = localStorage.getItem("username") || "User";
-    const role = localStorage.getItem("role") || "";
+    if (groupedPages["Sales"].length === 0) delete groupedPages["Sales"];
+  }
 
-    const GROUP_ORDER = ["General", "Admin", "HR", "Payroll", "Recruitment", "Sales", "Inventory", "Reports", "Self"];
+  const activeGroups = GROUP_ORDER.filter((g) => groupedPages[g]);
 
-    const groupedPages = pages.reduce((groups, page) => {
-        const type = page.pageType || "General";
-        if (!groups[type]) groups[type] = [];
-        groups[type].push(page);
-        return groups;
-    }, {});
+  Object.keys(groupedPages).forEach((g) => {
+    if (!activeGroups.includes(g)) activeGroups.push(g);
+  });
 
-    // ── Sidebar-only override: Sales module should show just "Leads" ──
-    // (Router/DB still has the other sales pages, we're only hiding the nav links here)
-    if (groupedPages["Sales"]) {
-        groupedPages["Sales"] = groupedPages["Sales"].filter(
-            (page) => page.pageLink === "/sales/leads"
-        );
-        if (groupedPages["Sales"].length === 0) delete groupedPages["Sales"];
+  const [openGroups, setOpenGroups] = useState<Record<string, any>>(() => {
+    // Auto-open the group that contains the current route so users land oriented.
+    const initial: Record<string, any> = {};
+    for (const g of activeGroups) {
+      if (groupedPages[g]?.some((p) => p.pageLink === pathname))
+        initial[g] = true;
     }
+    return initial;
+  });
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    const activeGroups = GROUP_ORDER.filter(g => groupedPages[g]);
+  // ── Reminders (bell icon) state ──
+  const [reminders, setReminders] = useState([]);
+  const [showReminders, setShowReminders] = useState(false);
+  const [remindersLoading, setRemindersLoading] = useState(false);
+  const reminderRef = useRef(null);
 
-    Object.keys(groupedPages).forEach(g => {
-        if (!activeGroups.includes(g)) activeGroups.push(g);
-    });
+  // Fetch pending reminders on mount (badge count) — refetch every 60s
+  useEffect(() => {
+    const allowedRoles = ["Admin", "HR"];
+    if (!allowedRoles.includes(role)) return;
 
-    const [openGroups, setOpenGroups] = useState<Record<string, any>>({});
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    fetchReminders();
+    const interval = setInterval(fetchReminders, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-    // ── Reminders (bell icon) state ──
-    const [reminders, setReminders] = useState([]);
-    const [showReminders, setShowReminders] = useState(false);
-    const [remindersLoading, setRemindersLoading] = useState(false);
-    const reminderRef = useRef(null);
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (reminderRef.current && !reminderRef.current.contains(e.target)) {
+        setShowReminders(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    // Fetch pending reminders on mount (badge count) — refetch every 60s
-    useEffect(() => {
-        const allowedRoles = ["Admin", "HR"]; 
-        if (!allowedRoles.includes(role)) return;
+  const fetchReminders = async () => {
+    try {
+      setRemindersLoading(true);
+      const res = await adminService.getPendingReminders();
+      setReminders(res?.Data || res?.data || []);
+    } catch (err) {
+      if (err?.message?.includes("403")) {
+        setReminders([]);
+      } else {
+        console.error("Failed to fetch reminders:", err);
+      }
+    } finally {
+      setRemindersLoading(false);
+    }
+  };
 
-        fetchReminders();
-        const interval = setInterval(fetchReminders, 60000);
-        return () => clearInterval(interval);
-    }, []);
+  const handleMarkDone = async (reminderId) => {
+    try {
+      await adminService.markReminderDone(reminderId);
+      setReminders((prev) => prev.filter((r) => r.reminderId !== reminderId));
+    } catch (err) {
+      console.error("Failed to mark reminder done:", err);
+    }
+  };
 
-    // Close dropdown on outside click
-    useEffect(() => {
-        function handleClickOutside(e) {
-            if (reminderRef.current && !reminderRef.current.contains(e.target)) {
-                setShowReminders(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+  const toggleGroup = (groupName) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [groupName]: !prev[groupName],
+    }));
+  };
 
-    const fetchReminders = async () => {
-        try {
-            setRemindersLoading(true);
-            const res = await adminService.getPendingReminders();
-            setReminders(res?.Data || res?.data || []);
-        } catch (err) {
-            if (err?.message?.includes("403")) {
-                
-                setReminders([]);
-            } else {
-                console.error("Failed to fetch reminders:", err);
-            }
-        } finally {
-            setRemindersLoading(false);
-        }
-    };
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("username");
+    localStorage.removeItem("pages");
+    navigate("/");
+  };
 
-    const handleMarkDone = async (reminderId) => {
-        try {
-            await adminService.markReminderDone(reminderId);
-            setReminders((prev) => prev.filter((r) => r.reminderId !== reminderId));
-        } catch (err) {
-            console.error("Failed to mark reminder done:", err);
-        }
-    };
+  const initials = username
+    .split(".")
+    .map((w) => w[0]?.toUpperCase())
+    .join("")
+    .slice(0, 2);
 
-    const toggleGroup = (groupName) => {
-        setOpenGroups((prev) => ({
-            ...prev,
-            [groupName]: !prev[groupName],
-        }));
-    };
+  return (
+    <>
+      <aside className="h-full w-full flex flex-col bg-[#0b2836] text-white font-sans">
+        {/* ── Brand ── */}
+        <div className="relative px-4 sm:px-5 pt-4 sm:pt-5 pb-4 sm:pb-5 border-b border-white/10">
+          <div className="flex items-center gap-2.5 sm:gap-3 pr-16">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white/[0.07] flex items-center justify-center shrink-0 overflow-hidden p-1">
+              <img
+                src={logo}
+                alt="AkerpSuite logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-base sm:text-lg font-bold text-white leading-tight truncate">
+                AkerpSuite
+              </p>
+              <p className="text-[9px] sm:text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase mt-0.5">
+                Admin Panel
+              </p>
+            </div>
+          </div>
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        localStorage.removeItem("username");
-        localStorage.removeItem("pages");
-        navigate("/");
-    };
+          {/* ── Mobile close button ── */}
+          <button
+            onClick={onNavigate}
+            aria-label="Close menu"
+            className="lg:hidden absolute top-4 sm:top-5 right-14 sm:right-16 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <i className="fa-solid fa-xmark text-base" />
+          </button>
 
-    const initials = username
-        .split(".")
-        .map((w) => w[0]?.toUpperCase())
-        .join("")
-        .slice(0, 2);
+          {/* ── Bell icon ── */}
+          <div
+            className="absolute top-4 sm:top-5 right-4 sm:right-5"
+            ref={reminderRef}
+          >
+            <button
+              onClick={() => setShowReminders((prev) => !prev)}
+              aria-label="Reminders"
+              className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
+            >
+              <i className="fa-solid fa-bell text-base" />
+              {reminders.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 flex items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-[#0b2836]">
+                  {reminders.length > 9 ? "9+" : reminders.length}
+                </span>
+              )}
+            </button>
 
-    return (
-        <>
-            <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-[#0b1727] text-white z-20">
+            {/* ── Dropdown panel ── */}
+            {showReminders && (
+              <div className="fixed top-20 left-4 right-4 sm:left-auto sm:right-auto sm:w-80 max-h-96 overflow-y-auto rounded-2xl bg-[#0f3345] border border-white/10 shadow-2xl z-[9999]">
+                <div className="px-4 py-3.5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0f3345]/95 backdrop-blur rounded-t-2xl">
+                  <span className="text-sm font-semibold text-white flex items-center gap-1.5">
+                    <i className="fa-solid fa-bell text-amber-300 text-[13px]" />
+                    Reminders
+                  </span>
+                  {remindersLoading && (
+                    <span className="text-[11px] text-slate-400">Loading…</span>
+                  )}
+                </div>
 
-                {/* ── Top: User Info + Bell ── */}
-                <div className="p-5 border-b border-slate-700/50">
-                    <div className="flex justify-center items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 overflow-hidden">
-                            <img
-                                src="admin.png"
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{username}</p>
-                            <p className="text-xs text-indigo-400 font-medium truncate">{role}</p>
-                        </div>
+                {reminders.length === 0 && !remindersLoading && (
+                  <div className="px-4 py-8 text-center">
+                    <i className="fa-solid fa-circle-check text-3xl text-emerald-400 mb-2 block" />
+                    <p className="text-sm font-medium text-white">
+                      All caught up
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      No pending reminders right now
+                    </p>
+                  </div>
+                )}
 
-                        {/* ── Bell icon ── */}
-                        <div className="relative shrink-0" ref={reminderRef}>
-                            <button
-                                onClick={() => setShowReminders((prev) => !prev)}
-                                className="relative p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
-                            >
-                                <i className="ti ti-bell text-lg" />
-                                {reminders.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                                        {reminders.length > 9 ? "9+" : reminders.length}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* ── Dropdown panel — fixed so it never squeezes/overlaps the sidebar ── */}
-                            {showReminders && (
-                                <div className="fixed top-20 left-4 w-80 max-h-96 overflow-y-auto rounded-xl bg-white text-black shadow-2xl border border-slate-200 z-[9999]">
-                                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-black">Reminders</span>
-                                        {remindersLoading && (
-                                            <span className="text-xs text-black">Loading...</span>
-                                        )}
-                                    </div>
-
-                                    {reminders.length === 0 && !remindersLoading && (
-                                        <div className="px-4 py-6 text-center text-sm text-black">
-                                            No pending reminders
-                                        </div>
-                                    )}
-
-                                    {reminders.map((r) => (
-                                        <div
-                                            key={r.reminderId || r.ReminderId}
-                                            className="px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
-                                        >
-                                            <p className="text-sm text-black">
-                                                {r.message || r.Message || "(no message)"}
-                                            </p>
-                                            <div className="mt-1 flex items-center justify-between">
-                                                <span className="text-xs text-black">
-                                                    {(r.reminderDate || r.ReminderDate)
-                                                        ? new Date(r.reminderDate || r.ReminderDate).toLocaleString()
-                                                        : ""}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleMarkDone(r.reminderId || r.ReminderId)}
-                                                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
-                                                >
-                                                    Mark Done
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                {reminders.map((r) => (
+                  <div
+                    key={r.reminderId || r.ReminderId}
+                    className="px-4 py-3 border-b border-white/[0.06] last:border-b-0 hover:bg-white/[0.04] transition-colors flex gap-3"
+                  >
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-amber-300 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-100 leading-snug">
+                        {r.message || r.Message || "(no message)"}
+                      </p>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-slate-400">
+                          {r.reminderDate || r.ReminderDate
+                            ? new Date(
+                                r.reminderDate || r.ReminderDate,
+                              ).toLocaleString()
+                            : ""}
+                        </span>
+                        <button
+                          onClick={() =>
+                            handleMarkDone(r.reminderId || r.ReminderId)
+                          }
+                          className="text-[11px] font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1 shrink-0"
+                        >
+                          <i className="fa-solid fa-check text-[11px]" />
+                          Mark done
+                        </button>
+                      </div>
                     </div>
-                </div>
-
-                {/* ── Nav Pages ── */}
-                <nav className="flex-1 justify-center px-3 py-8 overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {activeGroups.map((groupName) => {
-                        const isOpen = !!openGroups[groupName];
-                        return (
-                            <div key={groupName} className="select-none">
-                                <button
-                                    onClick={() => toggleGroup(groupName)}
-                                    className="w-full flex items-center justify-between py-2 px-3 text-slate-300 hover:bg-slate-800 rounded-lg transition-all"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <i className={`ti ${getGroupIcon(groupName)} text-slate-400 text-sm`} />
-                                        <span className="text-[15px] font-medium">{groupName}</span>
-                                    </div>
-                                    <i className={`ti ti-chevron-down text-xs text-slate-500 transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`} />
-                                </button>
-
-                                <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                                    <div className="overflow-hidden">
-                                        <div className="pl-9 pt-1 pb-2 flex flex-col gap-0.5">
-                                            {groupedPages[groupName].map((page) => (
-                                                <Link
-                                                    key={page.pageId} to={page.pageLink}
-                                                    className={`py-1.5 px-2 rounded-md text-[14px] transition-all ${pathname === page.pageLink
-                                                        ? "text-white font-semibold bg-slate-700/50"
-                                                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                                                        }`}
-                                                >
-                                                    {page.pageName}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </nav>
-
-                {/* ── Bottom: Sign out ── */}
-                <div className="p-3 border-t border-slate-700/50">
-                    <button
-                        onClick={() => setShowLogoutModal(true)}
-                        className="w-full flex items-center gap-3 py-2.5 px-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all text-[13px]"
-                    >
-                        <i className="ti ti-logout" />
-                        <span className="font-bold">Sign out</span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* ── Logout Modal ── */}
-            {showLogoutModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="w-80 rounded-2xl border border-slate-700 bg-white p-6 shadow-2xl">
-
-                        {/* Header */}
-                        <div className="mb-4">
-                            <h2 className="text-lg font-semibold text-black">
-                                Sign out
-                            </h2>
-
-                            <p className="mt-1 text-sm text-slate-300">
-                                Are you sure?
-                            </p>
-                        </div>
-
-                        {/* Description */}
-                        <p className="mb-6 text-sm leading-6 text-slate-300">
-                            Your session will be cleared and you'll be redirected to the login page.
-                        </p>
-
-                        {/* Buttons */}
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setShowLogoutModal(false)}
-                                className="flex-1 rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleLogout}
-                                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-500"
-                            >
-                                Sign out
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                  </div>
+                ))}
+              </div>
             )}
-        </>
-    );
+          </div>
+        </div>
+
+        {/* ── Nav Pages ── */}
+        <nav className="flex-1 px-3 sm:px-4 py-3 sm:py-4 overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {activeGroups.map((groupName) => {
+            const items = groupedPages[groupName];
+            const icon = getGroupIcon(groupName);
+
+            // ── Single-page groups render as a flat, direct link (e.g. "Dashboard") ──
+            if (items.length === 1) {
+              const page = items[0];
+              const active = pathname === page.pageLink;
+              return (
+                <Link
+                  key={groupName}
+                  to={page.pageLink}
+                  onClick={onNavigate}
+                  className={`relative flex items-center gap-3 py-2.5 pl-4 pr-3 rounded-xl transition-all ${
+                    active
+                      ? "bg-white/[0.09] text-white"
+                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                  }`}
+                >
+                  {active && (
+                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-amber-300" />
+                  )}
+                  <i className={`fa-solid ${icon} text-sm w-4 text-center`} />
+                  <span className="text-[13px] font-bold">{page.pageName}</span>
+                </Link>
+              );
+            }
+
+            // ── Multi-page groups render as an accordion ──
+            const isOpen = !!openGroups[groupName];
+            const hasActiveChild = items.some((p) => p.pageLink === pathname);
+            return (
+              <div key={groupName} className="select-none">
+                <button
+                  onClick={() => toggleGroup(groupName)}
+                  className={`relative w-full flex items-center justify-between py-2.5 pl-4 pr-3 rounded-xl transition-all ${
+                    hasActiveChild && !isOpen
+                      ? "bg-white/[0.06] text-white"
+                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                  }`}
+                >
+                  {hasActiveChild && (
+                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-amber-300" />
+                  )}
+                  <div className="flex items-center gap-3">
+                    <i className={`fa-solid ${icon} text-sm w-4 text-center`} />
+                    <span className="text-[13px] font-bold">{groupName}</span>
+                  </div>
+                  <i
+                    className={`fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform duration-300 ${
+                      isOpen ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    isOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pl-[44px] pr-2 pt-1 pb-1.5 flex flex-col gap-0.5">
+                      {items.map((page) => {
+                        const active = pathname === page.pageLink;
+                        return (
+                          <Link
+                            key={page.pageId}
+                            to={page.pageLink}
+                            onClick={onNavigate}
+                            className={`relative py-1.5 pl-4 pr-2 rounded-lg text-[12.5px] transition-all ${
+                              active
+                                ? "text-white font-semibold bg-white/[0.06]"
+                                : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            {active && (
+                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-amber-300" />
+                            )}
+                            {page.pageName}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* ── Bottom: Profile + Sign out ── */}
+        <div className="px-4 pt-3 pb-4 border-t border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-[#cfcb9e] flex items-center justify-center shrink-0">
+              <span className="text-[12px] font-bold text-[#0b2836]">
+                {initials || "U"}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-white truncate leading-tight">
+                {username}
+              </p>
+              <p className="text-[11px] text-slate-400 truncate">
+                {role || "Member"}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="w-full flex items-center gap-3 mt-2 py-2 px-1 text-slate-400 hover:text-red-400 transition-all text-[13px] font-bold"
+          >
+            <i className="fa-solid fa-right-from-bracket text-sm w-4 text-center" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Logout Modal ── */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="w-full max-w-[340px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <i className="fa-solid fa-right-from-bracket text-xl text-red-500" />
+            </div>
+
+            <h2 className="text-lg font-semibold text-slate-900">Sign out</h2>
+            <p className="mt-1.5 text-sm leading-6 text-slate-500">
+              Your session will be cleared and you'll be redirected to the login
+              page.
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
-// ── Group Icons ──────────────────────────────────────────────────────────────
+// ── Group Icons (Font Awesome — matches the icon set actually loaded in index.html) ──
 function getGroupIcon(group) {
-    const icons = {
-        General: "ti-layout-dashboard",
-        Admin: "ti-shield-lock",
-        HR: "ti-users",
-        Payroll: "ti-cash",
-        Recruitment: "ti-briefcase",
-        Sales: "ti-chart-line",
-        Inventory: "ti-box",
-        Reports: "ti-chart-bar",
-        Self: "ti-user",
-    };
-    return icons[group] || "ti-folder";
+  const icons = {
+    General: "fa-table-cells-large",
+    Admin: "fa-user-shield",
+    HR: "fa-users",
+    Payroll: "fa-wallet",
+    Recruitment: "fa-briefcase",
+    Sales: "fa-chart-line",
+    Inventory: "fa-box",
+
+    Reports: "fa-chart-bar",
+    Public: "ti-world",
+
+    Self: "fa-user",
+  };
+  return icons[group] || "fa-folder";
 }

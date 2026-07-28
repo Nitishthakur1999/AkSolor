@@ -57,7 +57,7 @@ export default function Careers() {
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-20 text-indigo-500 animate-pulse font-medium text-lg">Loading open positions...</div>
+                    <div className="text-center py-20 text-amber-500 animate-pulse font-medium text-lg">Loading open positions...</div>
                 ) : jobs.length === 0 ? (
                     <div className="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center text-slate-500">
                         There are currently no open positions. Please check back later.
@@ -77,7 +77,7 @@ export default function Careers() {
                                     </div>
                                     <button
                                         onClick={() => setSelectedJob(job)}
-                                        className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm w-full sm:w-auto"
+                                        className="px-6 py-2.5 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all shadow-sm w-full sm:w-auto"
                                     >
                                         Apply Now
                                     </button>
@@ -89,45 +89,47 @@ export default function Careers() {
             </div>
 
             {selectedJob && (
-                <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg my-8 relative">
+                <div className="fixed inset-0 bg-slate-900/60 z-50 overflow-y-auto flex justify-center items-start p-4 pt-8 pb-24 sm:pt-16 sm:pb-24">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg relative">
                         <button onClick={() => setSelectedJob(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl">✕</button>
 
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Apply for {selectedJob.title}</h2>
-                        <p className="text-sm text-slate-500 mb-6">{selectedJob.location} • {selectedJob.employmentType}</p>
+                        <div className="px-8 pt-8 pb-2">
+                            <h2 className="text-2xl font-bold text-slate-900 mb-2">Apply for {selectedJob.title}</h2>
+                            <p className="text-sm text-slate-500 mb-2">{selectedJob.location} • {selectedJob.employmentType}</p>
+                        </div>
 
-                        <form onSubmit={handleApply} className="space-y-4">
+                        <form onSubmit={handleApply} className="space-y-2 px-4 pb-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Full Name *</label>
-                                <input type="text" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                <input type="text" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:bg-white outline-none" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Email *</label>
-                                <input type="email" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                                <input type="email" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:bg-white outline-none" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Phone *</label>
-                                <input type="text" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                                <input type="text" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:bg-white outline-none" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Experience (years)</label>
-                                <input type="text" placeholder="e.g. 3.5" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} />
+                                <input type="text" placeholder="e.g. 3.5" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:bg-white outline-none" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} />
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Key Skills</label>
-                                <textarea rows={2} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none" value={form.skills} onChange={e => setForm({ ...form, skills: e.target.value })}></textarea>
+                                <textarea rows={2} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:bg-white outline-none" value={form.skills} onChange={e => setForm({ ...form, skills: e.target.value })}></textarea>
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">Resume Link (Google Drive, LinkedIn, etc) *</label>
-                                <input type="url" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none" placeholder="https://" value={form.cvPath} onChange={e => setForm({ ...form, cvPath: e.target.value })} />
+                                <input type="url" required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-500 focus:bg-white outline-none" placeholder="https://" value={form.cvPath} onChange={e => setForm({ ...form, cvPath: e.target.value })} />
                             </div>
 
-                            <button type="submit" disabled={submitting} className="w-full py-3.5 mt-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all text-sm shadow-md">
+                            <button type="submit" disabled={submitting} className="w-full py-3.5 mt-2 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all text-sm shadow-md">
                                 {submitting ? "Submitting Application..." : "Submit Application"}
                             </button>
                         </form>

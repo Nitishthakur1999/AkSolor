@@ -445,4 +445,88 @@
     {
         public decimal? IncrementAmount { get; set; }
     }
+    // ── Banner ──
+    public class BannerResponseDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? SubTitle { get; set; }
+        public string? ImagePath { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    // ── Gallery ──
+    public class GalleryResponseDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Category { get; set; }
+        public string? ImagePath { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    // ── Our Team ──
+    public class TeamResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Designation { get; set; } = string.Empty;
+        public string? Bio { get; set; }
+        public string? LinkedInUrl { get; set; }
+        public string? ImagePath { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    // ── Completed Projects ──
+    public class ProjectResponseDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string? CapacityKw { get; set; }
+        public string? Description { get; set; }
+        public DateTime? CompletedOn { get; set; }
+        public List<string> ImagePaths { get; set; } = new();
+        public bool IsActive { get; set; }
+    }
+
+    // ── Highlights ──
+    public class HighlightResponseDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? ImagePath { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    // ── Career ──
+    public class CareerResponseDto
+    {
+        public int Id { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string? ExperienceRequired { get; set; }
+        public string? Description { get; set; }
+        public bool IsOpen { get; set; }
+        public DateTime PostedOn { get; set; }
+    }
+
+    // ── Contact Query ──
+    public class ContactQueryResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? Subject { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public bool IsRead { get; set; }
+        public DateTime SubmittedOn { get; set; }
+    }
 }

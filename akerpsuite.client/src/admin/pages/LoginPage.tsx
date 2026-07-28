@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import logo from "@/assets/logo.png";
 
 const API_BASE = "/api";
 
@@ -62,10 +63,17 @@ export default function LoginPage() {
                 setError(data?.message || "Login failed. Please check your credentials.");
                 return;
             }
-            localStorage.setItem("token", data?.data?.token);
-            localStorage.setItem("role", data?.data?.role);
-            localStorage.setItem("username", data?.data?.username);
-            localStorage.setItem("pages", JSON.stringify(data?.data?.pages));
+
+            const userData = data?.data;
+
+            localStorage.setItem("token", userData?.token);
+            localStorage.setItem("role", userData?.role);
+            localStorage.setItem("username", userData?.username);
+            localStorage.setItem("userId", userData?.userId);
+            localStorage.setItem("empId", userData?.employeeId ?? "");
+            localStorage.setItem("pages", JSON.stringify(userData?.pages));
+            localStorage.setItem("user", JSON.stringify(userData));
+
             window.location.href = "/dashboard";
         } catch {
             setError("Could not connect to server. Please check your network connection.");
@@ -339,11 +347,14 @@ export default function LoginPage() {
                 <div className="bp-glow two" />
 
                 <div className="relative flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center border border-white/40 bg-white/10">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#FFFFFF">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16v16H4z M4 12h16 M12 4v16" />
-                        </svg>
+                    <div className="w-12 h-12 flex items-center justify-center bg-white/20 rounded-full ">
+                        <img
+                            src={logo}
+                            alt="AkerpSuite logo"
+                            className="w-full h-full object-contain"
+                        />
                     </div>
+
                     <span className="bp-display text-lg font-semibold tracking-tight text-white">AkerpSuite</span>
                     <span className="bp-mono text-[0.6rem] text-white/50 ml-1">v4.2</span>
                 </div>

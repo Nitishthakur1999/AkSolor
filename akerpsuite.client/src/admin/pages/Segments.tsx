@@ -146,14 +146,14 @@ export default function Segments() {
                 {/* TABS */}
                 <div className="flex overflow-x-auto border-b border-slate-200 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <button onClick={() => { setActiveTab("table"); resetForm(); }} className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === "table" ? "border-slate-800 text-slate-800" : "border-transparent hover:text-slate-600"}`}>All Segments</button>
-                    <button onClick={() => setActiveTab("form")} className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === "form" ? "border-indigo-600 text-indigo-600" : "border-transparent hover:text-slate-600"}`}>
+                    <button onClick={() => setActiveTab("form")} className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === "form" ? "border-amber-600 text-amber-600" : "border-transparent hover:text-slate-600"}`}>
                         {editingId ? "✏️ Edit Segment" : "+ Add New Segment"}
                     </button>
                 </div>
 
                 <div className="p-6 min-h-[400px]">
                     {loading ? (
-                        <div className="text-center text-indigo-600 py-10 font-medium animate-pulse">Loading Data...</div>
+                        <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>
                     ) : (
                         <>
                             {activeTab === "table" && (
@@ -188,7 +188,7 @@ export default function Segments() {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-center space-x-2">
-                                                            <button onClick={() => handleEditClick(seg)} className="px-4 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-2xl text-xs transition-colors">Edit</button>
+                                                            <button onClick={() => handleEditClick(seg)} className="px-4 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold rounded-2xl text-xs transition-colors">Edit</button>
                                                             <button onClick={() => handleToggleStatus(seg)} disabled={actionLoading} className={`px-4 py-1.5 font-bold rounded-2xl text-xs transition-colors disabled:opacity-50 ${seg.isActive ? "bg-rose-50 hover:bg-rose-100 text-rose-600" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600"}`}>
                                                                 {seg.isActive ? "Deactivate" : "Activate"}
                                                             </button>
@@ -208,7 +208,7 @@ export default function Segments() {
                                             <div className="flex items-center gap-1.5">
                                                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-all">Previous</button>
                                                 {pageNumbers.map(number => (
-                                                    <button key={number} onClick={() => setCurrentPage(number)} className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${currentPage === number ? "bg-indigo-600 text-white shadow-md border-indigo-600" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                                                    <button key={number} onClick={() => setCurrentPage(number)} className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${currentPage === number ? "bg-amber-600 text-white shadow-md border-amber-600" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                                                         {number}
                                                     </button>
                                                 ))}
@@ -225,21 +225,21 @@ export default function Segments() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Segment Code</label>
-                                                <input type="text" placeholder="e.g. PMSGY01" value={segmentForm.segmentCode} onChange={e => setSegmentForm({ ...segmentForm, segmentCode: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                                <input type="text" placeholder="e.g. PMSGY01" value={segmentForm.segmentCode} onChange={e => setSegmentForm({ ...segmentForm, segmentCode: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                                 {/* TODO: confirm with backend DTO whether SegmentCode is required on Create */}
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Segment Name *</label>
-                                                <input type="text" required placeholder="e.g. PMSGY (Domestic, Subsidised)" value={segmentForm.segmentName} onChange={e => setSegmentForm({ ...segmentForm, segmentName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                                <input type="text" required placeholder="e.g. PMSGY (Domestic, Subsidised)" value={segmentForm.segmentName} onChange={e => setSegmentForm({ ...segmentForm, segmentName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
-                                            <textarea placeholder="Describe this segment..." value={segmentForm.description} onChange={e => setSegmentForm({ ...segmentForm, description: e.target.value })} rows={3} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                            <textarea placeholder="Describe this segment..." value={segmentForm.description} onChange={e => setSegmentForm({ ...segmentForm, description: e.target.value })} rows={3} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Status *</label>
-                                            <select value={segmentForm.isActive ? "Active" : "Inactive"} onChange={e => setSegmentForm({ ...segmentForm, isActive: e.target.value === "Active" })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all">
+                                            <select value={segmentForm.isActive ? "Active" : "Inactive"} onChange={e => setSegmentForm({ ...segmentForm, isActive: e.target.value === "Active" })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all">
                                                 <option value="Active">Active</option>
                                                 <option value="Inactive">Inactive</option>
                                             </select>
@@ -248,7 +248,7 @@ export default function Segments() {
                                             {editingId && (
                                                 <button type="button" onClick={() => { setActiveTab("table"); resetForm(); }} className="px-6 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-100 transition-all">Cancel</button>
                                             )}
-                                            <button type="submit" disabled={actionLoading} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                                            <button type="submit" disabled={actionLoading} className="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
                                                 {actionLoading ? "Saving..." : (editingId ? "Update Segment" : "Create Segment")}
                                             </button>
                                         </div>

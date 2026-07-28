@@ -1,119 +1,156 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { publicSiteService } from "../services/publicService"; 
 
-// Import your images here
-import img1 from "/carousel/Rooftop.webp";
-import img2 from "/carousel/offgridhome.webp";
-import img3 from "/carousel/street.jpg";
-import img4 from "/carousel/field.jpg";
-import img5 from "/carousel/Heater.jpg";
+const API_ORIGIN = "https://localhost:7272"; // same host as PUBLIC_API_BASE, no /api/public
 
-const PROJECTS = [
-    { title: "12kW Rooftop Solar Plant", location: "Sunder Nagar, Mandi", capacity: "12", unit: "kW", type: "Rooftop Grid-Tied", image: img1 },
-    { title: "Off-Grid Home System", location: "Kullu Valley", capacity: "5", unit: "kW", type: "Off-Grid + Battery", image: img2 },
-    { title: "Municipal Street Lighting", location: "Mandi", capacity: "80", unit: "units", type: "Solar Street Lights", image: img3 },
-    { title: "Ground-Mounted Solar Farm", location: "Hamirpur", capacity: "50", unit: "kW", type: "Ground-Mounted", image: img4 },
-    { title: "Solar Water Heating", location: "Bilaspur", capacity: "500", unit: "LPD", type: "Solar Geyser", image: img5 },
-];
+interface Banner {
+    image: string;
+}
 
 const AUTOPLAY_MS = 5500;
 const DRAG_THRESHOLD = 60;
 
-const CHAMFER = { clipPath: "polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%)" };
+const CHAMFER: React.CSSProperties = { clipPath: "polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%)" };
+const CHAMFER_SMALL = "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)";
 
-function ProjectSlide({ project, active, index, total }: { project: typeof PROJECTS[number]; active: boolean; index: number; total: number }) {
+function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function resolveImage(raw?: string) {
+    if (!raw) return "";
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+    const cleanPath = raw.replace(/^\/+/, "");
+    return `${API_ORIGIN}/${cleanPath}`;
+}
+
+interface BannerSlideProps {
+    banner: Banner;
+    active: boolean;
+}
+
+function BannerSlide({ banner, active }: BannerSlideProps) {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const [cardTilt, setCardTilt] = useState({ rx: 0, ry: 0 });
+
+    function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+        if (!active) return;
+        const el = cardRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const px = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+        const py = clamp((e.clientY - rect.top) / rect.height, 0, 1);
+        setCardTilt({
+            rx: clamp((0.5 - py) * 9, -6, 6),
+            ry: clamp((px - 0.5) * 9, -6, 6),
+        });
+    }
+    function handleMouseLeave() {
+        setCardTilt({ rx: 0, ry: 0 });
+    }
+
     return (
         <div
-            className="grid grid-cols-1 overflow-hidden border border-line-strong bg-paper shadow-card md:grid-cols-2"
-            style={CHAMFER}
+            ref={cardRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className="relative h-full w-full overflow-hidden"
+            style={{
+                ...CHAMFER,
+                transformStyle: "preserve-3d",
+                transform: `perspective(1400px) rotateX(${cardTilt.rx}deg) rotateY(${cardTilt.ry}deg)`,
+                transition: "transform 300ms ease-out",
+                border: "1px solid color-mix(in srgb, var(--color-gold-deep) 35%, transparent)",
+                boxShadow:
+                    "inset 0 1px 0 rgba(255,196,90,0.15), 0 40px 70px -25px color-mix(in srgb, var(--color-gold-deep) 45%, black)",
+            }}
         >
-            <div className="relative flex min-h-[250px] w-full items-center justify-center overflow-hidden bg-charcoal md:min-h-[400px]">
+            {banner.image ? (
                 <img
-                    src={project.image}
-                    alt={project.title}
+                    src={banner.image}
+                    alt="Banner"
                     loading="lazy"
                     decoding="async"
                     draggable="false"
                     className={`absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] ease-out will-change-transform ${active ? "scale-100" : "scale-110"
                         }`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/10 to-transparent" />
+            ) : (
+                <div className="absolute inset-0 bg-gold-deep/10" />
+            )}
 
-                {/* corner chamfer flag, echoes the panel-cell notch */}
-                <span
-                    className="absolute right-0 top-0 border-b-[26px] border-l-[26px] border-b-transparent border-l-gold"
-                    aria-hidden="true"
-                />
-
-                <span className="absolute left-5 top-5 z-10 flex items-center gap-1.5 rounded-full bg-chalk/90 px-3.5 py-1.5 font-mono text-[0.66rem] font-bold uppercase tracking-wider text-charcoal backdrop-blur-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-gold-deep" />
-                    {project.type}
-                </span>
-
-                <span className="absolute bottom-5 left-5 z-10 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-chalk/80">
-                    Install {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-                </span>
-            </div>
-
-            <div className="flex flex-col justify-center gap-5 p-8 md:p-12">
-                <div className="flex items-center gap-2 font-mono text-[0.75rem] uppercase tracking-[0.14em] text-gold-deep">
-                    <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
-                    {project.location}
-                </div>
-
-                <h3 className="font-display text-[1.9rem] font-bold leading-tight text-charcoal md:text-[2.3rem]">
-                    {project.title}
-                </h3>
-
-                <div className="flex items-end gap-4 border-t border-dashed border-line-strong pt-5">
-                    <span className="font-display text-[2.4rem] font-bold leading-none tracking-tight text-charcoal">
-                        {project.capacity}
-                        <span className="ml-1 font-mono text-[0.9rem] font-medium text-gold-deep">{project.unit}</span>
-                    </span>
-                    <span className="mb-1 font-mono text-[0.72rem] uppercase tracking-wide text-slate">
-                        Installed
-                        <br />
-                        capacity
-                    </span>
-                </div>
-            </div>
+            <span
+                className="absolute right-0 top-0 border-b-[26px] border-l-[26px] border-b-transparent border-l-gold"
+                aria-hidden="true"
+                style={{ transform: "translateZ(24px)" }}
+            />
         </div>
     );
 }
 
-export default function Carousel() {
+export default function BannerCarousel() {
+    const [banners, setBanners] = useState<Banner[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [index, setIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
-    const [autoplayKey, setAutoplayKey] = useState(0); // remounts progress bar to restart its animation
+    const [autoplayKey, setAutoplayKey] = useState(0);
     const [drag, setDrag] = useState({ active: false, startX: 0, deltaX: 0 });
-    const total = PROJECTS.length;
-    const trackRef = useRef<HTMLDivElement>(null);
+    const stageRef = useRef<HTMLDivElement>(null);
+    const total = banners.length;
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                setLoading(true);
+                const res = await publicSiteService.getBanners();
+                const raw = Array.isArray(res?.data) ? res.data : [];
+
+                console.log("Banners API raw response:", raw); // remove once field name confirmed
+
+                const list: Banner[] = raw.map((b: any) => ({
+                    image: resolveImage(b.imagePath ?? b.imageUrl ?? b.image ?? b.photoUrl ?? b.bannerUrl),
+                }));
+
+                if (!cancelled) {
+                    setBanners(list);
+                    setError(null);
+                }
+            } catch (err: any) {
+                if (!cancelled) setError(err?.message || "Failed to load banners");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const goTo = useCallback((next: number, { fromUser = false } = {}) => {
+        if (total === 0) return;
         setIndex(((next % total) + total) % total);
-        if (fromUser) setAutoplayKey((k) => k + 1); // give the user the full interval again
+        if (fromUser) setAutoplayKey((k) => k + 1);
     }, [total]);
 
     const goPrev = () => goTo(index - 1, { fromUser: true });
     const goNext = () => goTo(index + 1, { fromUser: true });
 
-    // Auto-scroll logic
     useEffect(() => {
-        if (isPaused || drag.active) return;
+        if (isPaused || drag.active || total === 0) return;
         const id = setTimeout(() => goTo(index + 1), AUTOPLAY_MS);
         return () => clearTimeout(id);
-    }, [index, isPaused, drag.active, goTo, autoplayKey]);
+    }, [index, isPaused, drag.active, goTo, autoplayKey, total]);
 
-    // Keyboard navigation
     function onKeyDown(e: React.KeyboardEvent) {
         if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
         if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
     }
 
-    // Drag / swipe (mouse + touch via Pointer Events)
     function onPointerDown(e: React.PointerEvent) {
         setDrag({ active: true, startX: e.clientX, deltaX: 0 });
-        trackRef.current?.setPointerCapture?.(e.pointerId);
+        stageRef.current?.setPointerCapture?.(e.pointerId);
     }
     function onPointerMove(e: React.PointerEvent) {
         if (!drag.active) return;
@@ -126,11 +163,31 @@ export default function Carousel() {
         setDrag({ active: false, startX: 0, deltaX: 0 });
     }
 
-    const dragPercent = drag.active ? (drag.deltaX / (trackRef.current?.offsetWidth || 1)) * 100 : 0;
+    const stageWidth = stageRef.current?.offsetWidth || 1;
+    const dragFraction = drag.active ? drag.deltaX / stageWidth : 0;
+
+    if (loading) {
+        return (
+            <section className="relative bg-chalk py-16 md:py-24">
+                <div className="container mx-auto px-7 text-center font-mono text-sm text-slate">
+                    Loading banners...
+                </div>
+            </section>
+        );
+    }
+
+    if (error || total === 0) {
+        return (
+            <section className="relative bg-chalk py-16 md:py-24">
+                <div className="container mx-auto px-7 text-center font-mono text-sm text-slate">
+                    {error || "No banners to show right now."}
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section
-            id="projects"
             className="relative overflow-hidden bg-chalk py-16 md:py-24"
             style={{
                 backgroundImage:
@@ -139,39 +196,50 @@ export default function Carousel() {
             }}
         >
             <div className="container relative z-[1] mx-auto px-7">
-                <div className="mb-10 flex flex-col gap-6 md:mb-16 md:flex-row md:items-end md:justify-between">
-                    <div>
-                        <div className="mb-4 flex items-center gap-2.5 font-mono text-[0.78rem] font-medium uppercase tracking-[0.16em] text-gold-deep">
-                            <span aria-hidden="true" className="h-0.5 w-[26px] bg-gold-deep" />
-                            Featured Work
-                        </div>
-                        <h2 className="max-w-6xl font-display text-[clamp(1.9rem,3.5vw,2.4rem)] font-bold leading-[1.1] tracking-[-0.01em] text-charcoal">
-                            Installations powering homes and towns.
-                        </h2>
-                    </div>
-
-                    <div className="flex items-center gap-5 self-start md:self-auto">
-                        <span className="font-mono text-[0.78rem] tabular-nums tracking-wide text-slate">
-                            {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-                        </span>
-                        <div className="flex items-center gap-2.5">
-                            <button
-                                onClick={goPrev}
-                                aria-label="Previous slide"
-                                className="flex h-12 w-12 items-center justify-center border-[1.5px] border-line-strong text-charcoal transition hover:border-gold hover:text-gold-deep active:scale-95"
-                                style={{ clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)" }}
+                <div className="mb-10 flex items-center justify-end gap-5">
+                    <span className="font-mono text-[0.78rem] tabular-nums tracking-wide text-slate">
+                        {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+                    </span>
+                    <div className="flex items-center gap-3">
+                        <button onClick={goPrev} aria-label="Previous slide" className="group relative h-12 w-12">
+                            <span
+                                aria-hidden="true"
+                                className="absolute inset-0 transition-transform duration-150 ease-out"
+                                style={{
+                                    clipPath: CHAMFER_SMALL,
+                                    transform: "translateY(4px)",
+                                    background: "color-mix(in srgb, var(--color-gold-deep) 55%, black)",
+                                }}
+                            />
+                            <span
+                                className="relative flex h-12 w-12 items-center justify-center transition-transform duration-150 ease-out will-change-transform group-hover:-translate-y-[3px] group-active:translate-y-[2px]"
+                                style={{
+                                    clipPath: CHAMFER_SMALL,
+                                    background: "color-mix(in srgb, var(--color-gold) 16%, white)",
+                                    border: "1.5px solid color-mix(in srgb, var(--color-gold-deep) 45%, transparent)",
+                                    color: "color-mix(in srgb, var(--color-gold-deep) 80%, black)",
+                                }}
                             >
                                 <ChevronLeft className="h-5 w-5" />
-                            </button>
-                            <button
-                                onClick={goNext}
-                                aria-label="Next slide"
-                                className="flex h-12 w-12 items-center justify-center bg-gold text-charcoal transition hover:bg-gold-deep active:scale-95"
-                                style={{ clipPath: "polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)" }}
+                            </span>
+                        </button>
+                        <button onClick={goNext} aria-label="Next slide" className="group relative h-12 w-12">
+                            <span
+                                aria-hidden="true"
+                                className="absolute inset-0"
+                                style={{
+                                    clipPath: CHAMFER_SMALL,
+                                    transform: "translateY(4px)",
+                                    background: "color-mix(in srgb, var(--color-gold-deep) 65%, black)",
+                                }}
+                            />
+                            <span
+                                className="relative flex h-12 w-12 items-center justify-center bg-gold-deep text-white transition-transform duration-150 ease-out will-change-transform group-hover:-translate-y-[3px] group-active:translate-y-[2px]"
+                                style={{ clipPath: CHAMFER_SMALL }}
                             >
                                 <ChevronRight className="h-5 w-5" />
-                            </button>
-                        </div>
+                            </span>
+                        </button>
                     </div>
                 </div>
 
@@ -183,45 +251,68 @@ export default function Carousel() {
                     tabIndex={0}
                     role="region"
                     aria-roledescription="carousel"
-                    aria-label="Featured solar installations"
+                    aria-label="Homepage banners"
                 >
-                    {/* Screen-reader announcement */}
                     <p className="sr-only" aria-live="polite">
-                        {`Slide ${index + 1} of ${total}: ${PROJECTS[index].title}, ${PROJECTS[index].location}`}
+                        {`Slide ${index + 1} of ${total}`}
                     </p>
 
                     <div
-                        ref={trackRef}
-                        className="overflow-hidden cursor-grab active:cursor-grabbing"
+                        ref={stageRef}
+                        className="relative mx-auto h-[560px] max-w-[860px] cursor-grab touch-pan-y select-none active:cursor-grabbing sm:h-[500px] md:h-[440px]"
+                        style={{ perspective: "1900px" }}
                         onPointerDown={onPointerDown}
                         onPointerMove={onPointerMove}
                         onPointerUp={onPointerUp}
                         onPointerLeave={onPointerUp}
                     >
-                        <div
-                            className={`flex ${drag.active ? "" : "transition-transform duration-700 ease-[cubic-bezier(0.65,0,0.35,1)]"}`}
-                            style={{ transform: `translateX(calc(-${index * 100}% + ${dragPercent}%))` }}
-                        >
-                            {PROJECTS.map((project, i) => (
-                                <div key={i} className="w-full flex-none px-1">
-                                    <ProjectSlide project={project} active={i === index} index={i} total={total} />
+                        {banners.map((banner, i) => {
+                            let diff = i - index;
+                            if (diff > total / 2) diff -= total;
+                            if (diff < -total / 2) diff += total;
+                            const diffDisplay = diff + dragFraction;
+                            const absDiff = Math.abs(diffDisplay);
+
+                            const translateX = diffDisplay * 58;
+                            const rotateY = clamp(-diffDisplay * 40, -70, 70);
+                            const translateZ = -absDiff * 210;
+                            const scale = clamp(1 - absDiff * 0.15, 0.5, 1);
+                            const opacity = clamp(1 - absDiff * 0.36, 0, 1);
+                            const zIndex = Math.round(100 - absDiff * 10);
+                            const isCentered = absDiff < 0.5;
+
+                            return (
+                                <div
+                                    key={i}
+                                    className="absolute inset-0"
+                                    style={{
+                                        transformStyle: "preserve-3d",
+                                        transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+                                        opacity,
+                                        zIndex,
+                                        pointerEvents: isCentered ? "auto" : "none",
+                                        transition: drag.active
+                                            ? "none"
+                                            : "transform 650ms cubic-bezier(0.22,1,0.36,1), opacity 500ms ease",
+                                    }}
+                                >
+                                    <BannerSlide banner={banner} active={isCentered} />
                                 </div>
-                            ))}
-                        </div>
+                            );
+                        })}
                     </div>
 
-                    {/* Bus-bar style progress: a wired string of nodes, echoing how PV cells connect in series */}
                     <div className="mt-10 flex items-center justify-center">
-                        {PROJECTS.map((_, i) => (
+                        {banners.map((_, i) => (
                             <div key={i} className="flex items-center last:flex-none">
                                 <button
                                     onClick={() => goTo(i, { fromUser: true })}
                                     aria-label={`Go to slide ${i + 1}`}
                                     aria-current={i === index}
-                                    className="group relative flex h-6 w-6 shrink-0 items-center justify-center"
+                                    className="group relative flex h-6 w-6 shrink-0 items-center justify-center [perspective:300px]"
                                 >
                                     <span
-                                        className={`h-2.5 w-2.5 rotate-45 border-[1.5px] transition-all duration-300 ${i === index ? "scale-125 border-gold-deep bg-gold" : "border-line-strong bg-chalk group-hover:border-gold-deep"
+                                        className={`h-2.5 w-2.5 rotate-45 border-[1.5px] shadow-[0_2px_4px_rgba(0,0,0,0.25)] transition-all duration-300 will-change-transform group-hover:[transform:rotate(45deg)_translateZ(6px)] ${i === index ? "scale-125 border-gold-deep bg-gold" : "border-gold-deep/30 bg-transparent group-hover:border-gold-deep"
                                             }`}
                                     />
                                     {i === index && (
@@ -237,7 +328,7 @@ export default function Carousel() {
                                     )}
                                 </button>
                                 {i < total - 1 && (
-                                    <span className="mx-1 h-px w-8 bg-gradient-to-r from-gold-deep/50 via-line-strong to-gold-deep/50 sm:w-14" />
+                                    <span className="mx-1 h-px w-8 bg-gradient-to-r from-gold-deep/50 via-gold-deep/15 to-gold-deep/50 sm:w-14" />
                                 )}
                             </div>
                         ))}

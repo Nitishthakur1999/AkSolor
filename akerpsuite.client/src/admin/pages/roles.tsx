@@ -101,7 +101,7 @@ export default function Roles() {
                     <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Role Management</h2>
                     <p className="text-sm text-slate-500 mt-1">Manage system roles and their access scope across the organization.</p>
                 </div>
-                <button onClick={() => setShowRoleModal(true)} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm ring-1 ring-inset ring-indigo-700">
+                <button onClick={() => setShowRoleModal(true)} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 transition-colors shadow-sm ring-1 ring-inset ring-amber-700">
                     Add Role
                 </button>
             </div>
@@ -118,7 +118,7 @@ export default function Roles() {
                         placeholder="Search by role name or description..."
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                        className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-all shadow-sm"
+                        className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white transition-all shadow-sm"
                     />
                 </div>
             </div>
@@ -128,7 +128,7 @@ export default function Roles() {
                 <div className="overflow-x-auto">
                     {loading ? (
                         <div className="py-20 flex flex-col items-center justify-center gap-3">
-                            <div className="h-6 w-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin"></div>
+                            <div className="h-6 w-6 rounded-full border-2 border-amber-600 border-t-transparent animate-spin"></div>
                             <div className="text-sm font-medium text-slate-500 animate-pulse">Fetching authorization schemas...</div>
                         </div>
                     ) : currentItems.length === 0 ? (
@@ -161,7 +161,7 @@ export default function Roles() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
-                                                <button onClick={() => { setEditRoleForm({ roleId: r.roleId, roleName: r.roleName, description: r.description || "" }); setShowEditRoleModal(true); }} className="px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors">Edit</button>
+                                                <button onClick={() => { setEditRoleForm({ roleId: r.roleId, roleName: r.roleName, description: r.description || "" }); setShowEditRoleModal(true); }} className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors">Edit</button>
                                                 <button onClick={() => handleDeleteRole(r.roleId)} className="px-3 py-1.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors">Delete</button>
                                             </div>
                                         </td>
@@ -193,7 +193,7 @@ export default function Roles() {
                                     <button
                                         key={index}
                                         onClick={() => setCurrentPage(index + 1)}
-                                        className={`px-3.5 py-1.5 rounded-lg border text-sm font-medium transition-all shadow-sm ${currentPage === index + 1 ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+                                        className={`px-3.5 py-1.5 rounded-lg border text-sm font-medium transition-all shadow-sm ${currentPage === index + 1 ? "bg-amber-600 border-amber-600 text-white" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"}`}
                                     >
                                         {index + 1}
                                     </button>
@@ -222,14 +222,14 @@ export default function Roles() {
                         <form onSubmit={handleCreateRole} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Role Name</label>
-                                <input type="text" required placeholder="e.g., Audit Team, HR Intern" value={roleForm.roleName} onChange={e => setRoleForm({ ...roleForm, roleName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm" />
+                                <input type="text" required placeholder="e.g., Audit Team, HR Intern" value={roleForm.roleName} onChange={e => setRoleForm({ ...roleForm, roleName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Description</label>
-                                <textarea rows={3} value={roleForm.description} onChange={e => setRoleForm({ ...roleForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm" />
+                                <textarea rows={3} value={roleForm.description} onChange={e => setRoleForm({ ...roleForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm" />
                             </div>
                             <div className="pt-2">
-                                <button type="submit" className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors">Save Role</button>
+                                <button type="submit" className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 shadow-sm transition-colors">Save Role</button>
                             </div>
                         </form>
                     </div>
@@ -247,14 +247,14 @@ export default function Roles() {
                         <form onSubmit={handleUpdateRole} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Role Name</label>
-                                <input type="text" required value={editRoleForm.roleName} onChange={e => setEditRoleForm({ ...editRoleForm, roleName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm" />
+                                <input type="text" required value={editRoleForm.roleName} onChange={e => setEditRoleForm({ ...editRoleForm, roleName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Description</label>
-                                <textarea rows={3} value={editRoleForm.description} onChange={e => setEditRoleForm({ ...editRoleForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm" />
+                                <textarea rows={3} value={editRoleForm.description} onChange={e => setEditRoleForm({ ...editRoleForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all shadow-sm" />
                             </div>
                             <div className="pt-2">
-                                <button type="submit" className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors">Update Role</button>
+                                <button type="submit" className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 shadow-sm transition-colors">Update Role</button>
                             </div>
                         </form>
                     </div>

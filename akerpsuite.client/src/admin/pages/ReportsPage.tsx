@@ -624,7 +624,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
             {/* Search Bar */}
             <div className="mb-4 print:hidden">
                 <div className="relative max-w-sm">
-                    <i className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                     <input
                         type="text"
                         value={searchQuery}
@@ -638,7 +638,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                             aria-label="Clear search"
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         >
-                            <i className="ti ti-x text-sm" />
+                            <i className="fa-solid fa-xmark text-sm" />
                         </button>
                     )}
                 </div>
@@ -650,7 +650,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
                 <button
                     onClick={fetchReport}
-                    className="bg-indigo-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="bg-amber-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                     Apply Filters
                 </button>
@@ -666,7 +666,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                     <button
                         onClick={handleExportPDF}
                         disabled={!hasData}
-                        className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        className="bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                     >
                         Export PDF
                     </button>

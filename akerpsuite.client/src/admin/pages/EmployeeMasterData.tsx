@@ -33,7 +33,7 @@ const fileToBase64 = (file: File): Promise<string> =>
     });
 
 const inputClass =
-    "border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm w-full bg-slate-50/50 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:bg-white";
+    "border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm w-full bg-slate-50/50 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400 focus:bg-white";
 
 export default function EmployeeMasterData() {
     const currentUserId = parseInt(localStorage.getItem("userId") || "0", 10);
@@ -264,7 +264,7 @@ export default function EmployeeMasterData() {
                             setDocForm(emptyDocForm);
                             setSelectedFile(null);
                         }}
-                        className="appearance-none w-full border border-indigo-200 bg-indigo-50 rounded-xl pl-4 pr-9 py-2.5 text-sm text-indigo-800 font-semibold cursor-pointer transition-colors hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                        className="appearance-none w-full border border-amber-200 bg-amber-50 rounded-xl pl-4 pr-9 py-2.5 text-sm text-amber-800 font-semibold cursor-pointer transition-colors hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
                     >
                         <option value="">-- Select Employee --</option>
                         {employeeList.map((emp) => (
@@ -274,7 +274,7 @@ export default function EmployeeMasterData() {
                         ))}
                     </select>
                     <svg
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500"
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
                     >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -297,7 +297,7 @@ export default function EmployeeMasterData() {
 
             {!selectedEmpId && (
                 <div className="bg-white border border-dashed border-slate-300 rounded-2xl shadow-sm py-20 flex flex-col items-center gap-2 text-center">
-                    <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-400 text-xl">
+                    <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-400 text-xl">
                         👤
                     </div>
                     <p className="text-slate-500 font-medium text-sm">Please select an employee to continue.</p>
@@ -308,7 +308,7 @@ export default function EmployeeMasterData() {
                 <>
                     {selectedEmployee && (
                         <div className="flex items-center gap-3 px-1">
-                            <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                                 {selectedEmployee.fullName
                                     ?.split(" ")
                                     .map((w) => w[0])
@@ -333,7 +333,7 @@ export default function EmployeeMasterData() {
                                 key={sec.key}
                                 onClick={() => setActiveSection(sec.key)}
                                 className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeSection === sec.key
-                                        ? "bg-white text-indigo-700 shadow-sm"
+                                        ? "bg-white text-amber-700 shadow-sm"
                                         : "text-slate-500 hover:text-slate-700"
                                     }`}
                             >
@@ -416,7 +416,7 @@ export default function EmployeeMasterData() {
                                             type="checkbox"
                                             checked={bankForm.isPrimary}
                                             onChange={(e) => setBankForm({ ...bankForm, isPrimary: e.target.checked })}
-                                            className="w-4 h-4 accent-indigo-600 rounded"
+                                            className="w-4 h-4 accent-amber-600 rounded"
                                         />
                                         <span className="text-sm text-slate-600 font-medium">Primary account</span>
                                     </label>
@@ -426,7 +426,7 @@ export default function EmployeeMasterData() {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-sm shadow-indigo-200"
+                                        className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-colors disabled:opacity-50 shadow-sm shadow-amber-200"
                                     >
                                         {saving ? "Saving..." : "Save"}
                                     </button>
@@ -447,17 +447,17 @@ export default function EmployeeMasterData() {
                                     bankList.map((bank) => (
                                         <div
                                             key={bank.bankId}
-                                            className="p-4 border border-slate-200 rounded-xl flex justify-between items-center hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+                                            className="p-4 border border-slate-200 rounded-xl flex justify-between items-center hover:border-amber-200 hover:bg-amber-50/30 transition-colors"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 text-sm font-bold shrink-0">
+                                                <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 text-sm font-bold shrink-0">
                                                     🏦
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-slate-800 text-sm flex items-center gap-2">
                                                         {bank.bankName}
                                                         {bank.isPrimary && (
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-bold">
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 font-bold">
                                                                 PRIMARY
                                                             </span>
                                                         )}
@@ -473,7 +473,7 @@ export default function EmployeeMasterData() {
                                             <div className="flex gap-3 shrink-0">
                                                 <button
                                                     onClick={() => handleBankEdit(bank)}
-                                                    className="text-indigo-600 text-xs font-bold hover:text-indigo-800"
+                                                    className="text-amber-600 text-xs font-bold hover:text-amber-800"
                                                 >
                                                     Edit
                                                 </button>
@@ -543,7 +543,7 @@ export default function EmployeeMasterData() {
                                             type="file"
                                             required={!docForm.docId}
                                             onChange={handleFileChange}
-                                            className={`${inputClass} file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-xs file:font-semibold hover:file:bg-indigo-100`}
+                                            className={`${inputClass} file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-700 file:text-xs file:font-semibold hover:file:bg-amber-100`}
                                         />
                                     </div>
                                 </div>
@@ -552,7 +552,7 @@ export default function EmployeeMasterData() {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-sm shadow-indigo-200"
+                                        className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-colors disabled:opacity-50 shadow-sm shadow-amber-200"
                                     >
                                         {saving ? "Saving..." : "Save"}
                                     </button>
@@ -576,10 +576,10 @@ export default function EmployeeMasterData() {
                                     docList.map((doc) => (
                                         <div
                                             key={doc.docId}
-                                            className="p-4 border border-slate-200 rounded-xl flex justify-between items-center hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+                                            className="p-4 border border-slate-200 rounded-xl flex justify-between items-center hover:border-amber-200 hover:bg-amber-50/30 transition-colors"
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 text-sm shrink-0">
+                                                <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500 text-sm shrink-0">
                                                     📄
                                                 </div>
                                                 <div className="min-w-0">
@@ -596,7 +596,7 @@ export default function EmployeeMasterData() {
                                                    <a href = { getDocumentUrl(doc.filePath)}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-indigo-600 text-xs font-bold hover:text-indigo-800"
+                                                className="text-amber-600 text-xs font-bold hover:text-amber-800"
                                                   >
                                                 View
                                             </a>

@@ -78,14 +78,14 @@ export default function LeaveRequests() {
                 </div>
                 <div className="w-full sm:w-64">
                     <input type="text" placeholder="Search by employee, type, or status..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                        className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:border-indigo-500" />
+                        className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:border-amber-500" />
                 </div>
             </div>
 
             {/* Table Area */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 {loading ? (
-                    <div className="p-12 text-center text-sm font-semibold text-indigo-600 animate-pulse">Loading requests...</div>
+                    <div className="p-12 text-center text-sm font-semibold text-amber-600 animate-pulse">Loading requests...</div>
                 ) : (
                     <div className="overflow-x-auto min-h-[300px]">
                         <table className="w-full text-left border-collapse min-w-[800px]">
@@ -108,7 +108,7 @@ export default function LeaveRequests() {
                                         <td className="px-6 py-4">{req.leaveName || `Type-${req.leaveTypeId}`}</td>
                                         <td className="px-6 py-4">
                                             <div className="text-xs text-slate-500">{new Date(req.fromDate).toLocaleDateString()} to</div>
-                                            <div className="font-medium">{new Date(req.toDate).toLocaleDateString()} <span className="text-indigo-600">({req.totalDays} Days)</span></div>
+                                            <div className="font-medium">{new Date(req.toDate).toLocaleDateString()} <span className="text-amber-600">({req.totalDays} Days)</span></div>
                                         </td>
                                         <td className="px-6 py-4 text-xs max-w-[200px] truncate">{req.reason}</td>
                                         <td className="px-6 py-4">

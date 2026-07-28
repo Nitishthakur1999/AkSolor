@@ -144,5 +144,66 @@ namespace AkerpSuite.Server.Repositories
         Task<IEnumerable<SalaryHistoryResponseDto>> GetAllIncrementsAsync(DateTime? fromDate, DateTime? toDate);
 
         #endregion
+
+        #region Public Site – Banner
+        Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath);
+        Task<BannerResponseDto?> GetBannerByIdAsync(int id);
+        Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync();
+        Task<IEnumerable<BannerResponseDto>> GetActiveBannersAsync();
+        Task<bool> UpdateBannerAsync(BannerUpdateRequestDto request, string? imagePath);
+        Task<bool> DeleteBannerAsync(int id);
+            #endregion
+
+        #region Public Site – Gallery
+        Task<GalleryResponseDto> CreateGalleryAsync(GalleryRequestDto request, string? imagePath);
+        Task<GalleryResponseDto?> GetGalleryByIdAsync(int id);
+        Task<IEnumerable<GalleryResponseDto>> GetAllGalleryAsync();
+        Task<IEnumerable<GalleryResponseDto>> GetActiveGalleryAsync();
+        Task<bool> UpdateGalleryAsync(GalleryUpdateRequestDto request, string? imagePath);
+        Task<bool> DeleteGalleryAsync(int id);
+        #endregion
+
+        #region Public Site – Team
+        Task<TeamResponseDto> CreateTeamAsync(TeamRequestDto request, string? imagePath);
+        Task<TeamResponseDto?> GetTeamByIdAsync(int id);
+        Task<IEnumerable<TeamResponseDto>> GetAllTeamAsync();
+        Task<IEnumerable<TeamResponseDto>> GetActiveTeamAsync();
+        Task<bool> UpdateTeamAsync(TeamUpdateRequestDto request, string? imagePath);
+        Task<bool> DeleteTeamAsync(int id);
+        #endregion
+
+        #region Public Site – Projects (multi-image)
+        Task<ProjectResponseDto> CreateProjectAsync(ProjectRequestDto request, List<string> imagePaths);
+        Task<ProjectResponseDto?> GetProjectByIdAsync(int id);
+        Task<IEnumerable<ProjectResponseDto>> GetAllProjectsAsync();
+        Task<IEnumerable<ProjectResponseDto>> GetActiveProjectsAsync();
+        Task<(bool Success, List<string> RemovedImagePaths)> UpdateProjectAsync(ProjectUpdateRequestDto request, List<string> newImagePaths);
+        Task<(bool Success, List<string> DeletedImagePaths)> DeleteProjectAsync(int id);
+        #endregion
+
+        #region Public Site – Highlights
+        Task<HighlightResponseDto> CreateHighlightAsync(HighlightRequestDto request, string? imagePath);
+        Task<HighlightResponseDto?> GetHighlightByIdAsync(int id);
+        Task<IEnumerable<HighlightResponseDto>> GetAllHighlightsAsync();
+        Task<IEnumerable<HighlightResponseDto>> GetActiveHighlightsAsync();
+        Task<bool> UpdateHighlightAsync(HighlightUpdateRequestDto request, string? imagePath);
+        Task<bool> DeleteHighlightAsync(int id);
+        #endregion
+
+        #region Public Site – Career
+        Task<CareerResponseDto> CreateCareerAsync(CareerRequestDto request);
+        Task<CareerResponseDto?> GetCareerByIdAsync(int id);
+        Task<IEnumerable<CareerResponseDto>> GetAllCareersAsync();
+        Task<IEnumerable<CareerResponseDto>> GetOpenCareersAsync();
+        Task<bool> UpdateCareerAsync(CareerUpdateRequestDto request);
+        Task<bool> DeleteCareerAsync(int id);
+        #endregion
+
+        #region Public Site – Contact Query
+        Task<int> CreateContactQueryAsync(ContactQueryRequestDto request);
+        Task<IEnumerable<ContactQueryResponseDto>> GetAllContactQueriesAsync(bool? isRead);
+        Task<bool> MarkQueryReadAsync(int id);
+        Task<bool> DeleteContactQueryAsync(int id);
+        #endregion
     }
 }

@@ -165,7 +165,7 @@ export default function Designations() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm"
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm"
                 >
                     Add Designation
                 </button>
@@ -179,7 +179,7 @@ export default function Designations() {
                     placeholder="Search by designation name, department, or tier level..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                 />
                 {searchQuery && (
                     <button
@@ -195,7 +195,7 @@ export default function Designations() {
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 {loading ? (
                     <div className="p-12 flex justify-center">
-                        <div className="text-sm font-semibold text-indigo-600 animate-pulse">Syncing matrix data...</div>
+                        <div className="text-sm font-semibold text-amber-600 animate-pulse">Syncing matrix data...</div>
                     </div>
                 ) : (
                     <div className="flex flex-col justify-between">
@@ -221,7 +221,7 @@ export default function Designations() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
+                                            <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-lg">
                                                 Tier Level {desig.designationLevel}
                                             </span>
                                         </td>
@@ -235,7 +235,7 @@ export default function Designations() {
                                             <button
                                                 type="button"
                                                 onClick={() => openEditModal(desig)}
-                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-100/50 focus:outline-none"
+                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-100/50 focus:outline-none"
                                                 title="Edit Designation"
                                             >
                                                 Edit
@@ -281,7 +281,7 @@ export default function Designations() {
                                         <button
                                             key={index}
                                             onClick={() => setCurrentPage(index + 1)}
-                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-amber-600 border-amber-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                         >
                                             {index + 1}
                                         </button>
@@ -326,7 +326,7 @@ export default function Designations() {
                                     placeholder="e.g., Senior Developer"
                                     value={createForm.designationName}
                                     onChange={e => setCreateForm({ ...createForm, designationName: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
                                 />
                             </div>
 
@@ -336,7 +336,7 @@ export default function Designations() {
                                     required
                                     value={createForm.deptId}
                                     onChange={e => setCreateForm({ ...createForm, deptId: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500 transition-colors"
                                 >
                                     <option value="">-- Choose department map segment --</option>
                                     {departments.map(dep => (
@@ -355,14 +355,14 @@ export default function Designations() {
                                     min="1"
                                     value={createForm.designationLevel}
                                     onChange={e => setCreateForm({ ...createForm, designationLevel: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-md shadow-indigo-600/10 flex items-center justify-center gap-2"
+                                className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-md shadow-amber-600/10 flex items-center justify-center gap-2"
                             >
                                 Save System Designation
                             </button>
@@ -395,7 +395,7 @@ export default function Designations() {
                                     required
                                     value={editForm.designationName}
                                     onChange={e => setEditForm({ ...editForm, designationName: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
                                 />
                             </div>
 
@@ -405,7 +405,7 @@ export default function Designations() {
                                     required
                                     value={editForm.deptId}
                                     onChange={e => setEditForm({ ...editForm, deptId: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500 transition-colors"
                                 >
                                     {departments.map(dep => (
                                         <option key={dep.deptId} value={dep.deptId}>
@@ -423,14 +423,14 @@ export default function Designations() {
                                     min="1"
                                     value={editForm.designationLevel}
                                     onChange={e => setEditForm({ ...editForm, designationLevel: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-md shadow-indigo-600/10 flex items-center justify-center gap-2"
+                                className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-md shadow-amber-600/10 flex items-center justify-center gap-2"
                             >
                                 Update Designation
                             </button>

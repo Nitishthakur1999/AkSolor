@@ -1,6 +1,19 @@
+import defaultColors from "tailwindcss/colors";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}"],
+  // The admin dashboard's card colors (bgColor / iconColor) come from the
+  // backend API at runtime — Tailwind's build-time content scan can never
+  // see those strings in source code, so without a safelist those classes
+  // get silently dropped from the compiled CSS (cards render with no
+  // accent color at all). This keeps every common bg/text/border shade
+  // available no matter what the API sends.
+  safelist: [
+    {
+      pattern: /^(bg|text|border)-(slate|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900)$/,
+    },
+  ],
   theme: {
     extend: {
       colors: {
@@ -10,8 +23,13 @@ export default {
         "charcoal-soft": "var(--color-charcoal-soft)",
         gold: "var(--color-gold)",
         "gold-deep": "var(--color-gold-deep)",
-        green: "var(--color-green)",
-        slate: "var(--color-slate)",
+        // NOTE: these used to be plain strings, which silently wiped out
+        // Tailwind's entire built-in slate-50..900 / green-50..900 scales
+        // (every bg-slate-200, text-slate-500, bg-green-50 etc. across the
+        // admin panel was compiling to NOTHING). Keeping DEFAULT for the
+        // brand tone while restoring the numeric scale underneath fixes it.
+        green: { ...defaultColors.green, DEFAULT: "var(--color-green)" },
+        slate: { ...defaultColors.slate, DEFAULT: "var(--color-slate)" },
         "slate-light": "var(--color-slate-light)",
         line: "var(--color-line)",
         "line-strong": "var(--color-line-strong)",

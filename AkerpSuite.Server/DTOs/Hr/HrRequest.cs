@@ -376,4 +376,113 @@ namespace AkerpSuite.Server.DTOs.Hr
         public DateTime EffectiveFrom { get; set; }
         public int CreatedBy { get; set; }
     }
+
+    // ── Banner ──
+    public class BannerRequestDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? SubTitle { get; set; }
+        public string? Base64Image { get; set; }
+        public string? Extension { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class BannerUpdateRequestDto : BannerRequestDto
+    {
+        public int Id { get; set; }
+    }
+
+    // ── Gallery ──
+    public class GalleryRequestDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Category { get; set; }
+        public string? Base64Image { get; set; }
+        public string? Extension { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class GalleryUpdateRequestDto : GalleryRequestDto
+    {
+        public int Id { get; set; }
+    }
+
+    // ── Our Team ──
+    public class TeamRequestDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Designation { get; set; } = string.Empty;
+        public string? Bio { get; set; }
+        public string? LinkedInUrl { get; set; }
+        public string? Base64Image { get; set; }
+        public string? Extension { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class TeamUpdateRequestDto : TeamRequestDto
+    {
+        public int Id { get; set; }
+    }
+
+    // ── Completed Projects ──
+    public class ProjectRequestDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string? CapacityKw { get; set; }
+        public string? Description { get; set; }
+        public DateTime? CompletedOn { get; set; }
+        public List<string> Base64Images { get; set; } = new();
+        public string? Extension { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class ProjectUpdateRequestDto : ProjectRequestDto
+    {
+        public int Id { get; set; }
+        public List<string> ExistingImagePaths { get; set; } = new();
+    }
+
+    // ── Highlights ──
+    public class HighlightRequestDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? Base64Image { get; set; }
+        public string? Extension { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class HighlightUpdateRequestDto : HighlightRequestDto
+    {
+        public int Id { get; set; }
+    }
+
+    // ── Career ──
+    public class CareerRequestDto
+    {
+        public string JobTitle { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public string? ExperienceRequired { get; set; }
+        public string? Description { get; set; }
+        public bool IsOpen { get; set; } = true;
+    }
+
+    public class CareerUpdateRequestDto : CareerRequestDto
+    {
+        public int Id { get; set; }
+    }
+
+    // ── Contact Query ──
+    public class ContactQueryRequestDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? Subject { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
 }

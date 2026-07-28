@@ -1,4 +1,7 @@
 ﻿using AkerpSuite.Server.DTOs.Hr;
+using AkerpSuite.Server.Helpers;
+using AkerpSuite.Server.Repositories;
+using System.Reflection;
 
 namespace AkerpSuite.Server.Services
 {
@@ -110,6 +113,7 @@ namespace AkerpSuite.Server.Services
         Task<IEnumerable<InventoryItemResponseDto>> GetLowStockItemsAsync();
 
         #endregion
+
         #region Employee Milestone Notifications (Probation / Anniversary)
         Task<IEnumerable<EmployeeMilestoneResponseDto>> GetProbationAlertsAsync(int daysAhead = 7);
         Task<IEnumerable<EmployeeMilestoneResponseDto>> GetAnniversaryAlertsAsync(int daysAhead = 7);
@@ -136,5 +140,65 @@ namespace AkerpSuite.Server.Services
         Task<IEnumerable<SalaryHistoryResponseDto>> GetAllIncrementsAsync(DateTime? fromDate, DateTime? toDate);
 
         #endregion
+
+
+
+        #region Public Site – Banner
+        Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath);
+        Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync();
+        Task<IEnumerable<BannerResponseDto>> GetActiveBannersAsync();
+        Task<bool> UpdateBannerAsync(BannerUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper);
+        Task<bool> DeleteBannerAsync(int id, FileUploadHelper fileHelper);
+    
+        #endregion
+
+        #region Public Site – Gallery
+        Task<GalleryResponseDto> CreateGalleryAsync(GalleryRequestDto request, string? imagePath);
+        Task<IEnumerable<GalleryResponseDto>> GetAllGalleryAsync();
+        Task<IEnumerable<GalleryResponseDto>> GetActiveGalleryAsync();
+        Task<bool> UpdateGalleryAsync(GalleryUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper);
+        Task<bool> DeleteGalleryAsync(int id, FileUploadHelper fileHelper);
+        #endregion
+
+        #region Public Site – Team
+        Task<TeamResponseDto> CreateTeamAsync(TeamRequestDto request, string? imagePath);
+        Task<IEnumerable<TeamResponseDto>> GetAllTeamAsync();
+        Task<IEnumerable<TeamResponseDto>> GetActiveTeamAsync();
+        Task<bool> UpdateTeamAsync(TeamUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper);
+        Task<bool> DeleteTeamAsync(int id, FileUploadHelper fileHelper);
+        #endregion
+
+        #region Public Site – Projects (multi-image)
+        Task<ProjectResponseDto> CreateProjectAsync(ProjectRequestDto request, List<string> imagePaths);
+        Task<IEnumerable<ProjectResponseDto>> GetAllProjectsAsync();
+        Task<IEnumerable<ProjectResponseDto>> GetActiveProjectsAsync();
+        Task<bool> UpdateProjectAsync(ProjectUpdateRequestDto request, List<string> newImagePaths, FileUploadHelper fileHelper);
+        Task<bool> DeleteProjectAsync(int id, FileUploadHelper fileHelper);
+        #endregion
+
+        #region Public Site – Highlights
+        Task<HighlightResponseDto> CreateHighlightAsync(HighlightRequestDto request, string? imagePath);
+        Task<IEnumerable<HighlightResponseDto>> GetAllHighlightsAsync();
+        Task<IEnumerable<HighlightResponseDto>> GetActiveHighlightsAsync();
+        Task<bool> UpdateHighlightAsync(HighlightUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper);
+        Task<bool> DeleteHighlightAsync(int id, FileUploadHelper fileHelper);
+        #endregion
+
+        #region Public Site – Career (no images)
+        Task<CareerResponseDto> CreateCareerAsync(CareerRequestDto request);
+        Task<IEnumerable<CareerResponseDto>> GetAllCareersAsync();
+        Task<IEnumerable<CareerResponseDto>> GetOpenCareersAsync();
+        Task<bool> UpdateCareerAsync(CareerUpdateRequestDto request);
+        Task<bool> DeleteCareerAsync(int id);
+        #endregion
+
+        #region Public Site – Contact Query (no images)
+        Task<int> CreateContactQueryAsync(ContactQueryRequestDto request);
+        Task<IEnumerable<ContactQueryResponseDto>> GetAllContactQueriesAsync(bool? isRead);
+        Task<bool> MarkQueryReadAsync(int id);
+        Task<bool> DeleteContactQueryAsync(int id);
+
+            #endregion
+
     }
 }

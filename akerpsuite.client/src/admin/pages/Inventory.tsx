@@ -164,7 +164,7 @@ export default function Inventory() {
                 <div className="flex items-center gap-1.5">
                     <button onClick={() => setPageFn(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-all">Previous</button>
                     {pageNumbers.map(number => (
-                        <button key={number} onClick={() => setPageFn(number)} className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${currentPage === number ? "bg-indigo-600 text-white shadow-md border-indigo-600" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                        <button key={number} onClick={() => setPageFn(number)} className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${currentPage === number ? "bg-amber-600 text-white shadow-md border-amber-600" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                             {number}
                         </button>
                     ))}
@@ -183,15 +183,15 @@ export default function Inventory() {
                     <p className="text-xs text-slate-500 mt-0.5">Manage items, stock operations, and track complete ledger.</p>
                 </div>
                 <div className="flex gap-4">
-                    <div className="bg-indigo-50 px-5 py-2.5 rounded-xl border border-indigo-100 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600"><i className="ti ti-box text-xl"></i></div>
+                    <div className="bg-amber-50 px-5 py-2.5 rounded-xl border border-amber-100 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600"><i className="fa-solid fa-box text-xl"></i></div>
                         <div>
-                            <span className="text-[10px] font-bold text-indigo-400 uppercase block tracking-wider">Total Items</span>
-                            <span className="text-lg font-black text-indigo-700 leading-none">{itemsList.length}</span>
+                            <span className="text-[10px] font-bold text-amber-400 uppercase block tracking-wider">Total Items</span>
+                            <span className="text-lg font-black text-amber-700 leading-none">{itemsList.length}</span>
                         </div>
                     </div>
                     <div className="bg-rose-50 px-5 py-2.5 rounded-xl border border-rose-100 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600"><i className="ti ti-alert-triangle text-xl"></i></div>
+                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600"><i className="fa-solid fa-triangle-exclamation text-xl"></i></div>
                         <div>
                             <span className="text-[10px] font-bold text-rose-400 uppercase block tracking-wider">Low Stock</span>
                             <span className="text-lg font-black text-rose-700 leading-none">{lowStockItems.length}</span>
@@ -203,17 +203,17 @@ export default function Inventory() {
             {/* ── MAIN TABS ── */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div className="flex overflow-x-auto bg-slate-50 border-b border-slate-200 [scrollbar-width:none]">
-                    <button onClick={() => setActiveMainTab("items")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "items" ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
-                        <i className="ti ti-boxes text-lg mb-1"></i> 1. Item Master
+                    <button onClick={() => setActiveMainTab("items")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "items" ? "border-amber-600 text-amber-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
+                        <i className="fa-solid fa-boxes-stacked text-lg mb-1"></i> 1. Item Master
                     </button>
-                    <button onClick={() => setActiveMainTab("operations")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "operations" ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
-                        <i className="ti ti-arrows-exchange-2 text-lg mb-1"></i> 2. Stock Operations
+                    <button onClick={() => setActiveMainTab("operations")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "operations" ? "border-amber-600 text-amber-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
+                        <i className="fa-solid fa-right-left text-lg mb-1"></i> 2. Stock Operations
                     </button>
-                    <button onClick={() => setActiveMainTab("ledger")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "ledger" ? "border-indigo-600 text-indigo-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
-                        <i className="ti ti-clipboard-list text-lg mb-1"></i> 3. Transaction Ledger
+                    <button onClick={() => setActiveMainTab("ledger")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "ledger" ? "border-amber-600 text-amber-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
+                        <i className="fa-solid fa-clipboard-list text-lg mb-1"></i> 3. Transaction Ledger
                     </button>
                     <button onClick={() => setActiveMainTab("alerts")} className={`flex-1 min-w-[160px] py-4 px-4 text-xs font-bold uppercase tracking-wide transition-all border-b-2 flex flex-col items-center gap-2 ${activeMainTab === "alerts" ? "border-rose-500 text-rose-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100"}`}>
-                        <i className="ti ti-alert-circle text-lg mb-1"></i> 4. Low Stock Alerts
+                        <i className="fa-solid fa-circle-exclamation text-lg mb-1"></i> 4. Low Stock Alerts
                     </button>
                 </div>
 
@@ -222,7 +222,7 @@ export default function Inventory() {
 
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20">
-                            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                            <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin"></div>
                             <p className="mt-4 text-sm font-medium text-slate-500">Loading live inventory data...</p>
                         </div>
                     ) : (
@@ -232,8 +232,8 @@ export default function Inventory() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-6">
                                         <div className="flex bg-slate-100 p-1 rounded-xl">
-                                            <button onClick={() => setItemSubTab("table")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${itemSubTab === "table" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}>All Items</button>
-                                            <button onClick={() => setItemSubTab("form")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${itemSubTab === "form" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}>+ Create Item</button>
+                                            <button onClick={() => setItemSubTab("table")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${itemSubTab === "table" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500"}`}>All Items</button>
+                                            <button onClick={() => setItemSubTab("form")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${itemSubTab === "form" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500"}`}>+ Create Item</button>
                                         </div>
                                         {itemSubTab === "table" && (
                                             <input
@@ -241,7 +241,7 @@ export default function Inventory() {
                                                 placeholder="Search item code, name..."
                                                 value={itemSearchTerm}
                                                 onChange={(e) => { setItemSearchTerm(e.target.value); setItemCurrentPage(1); }}
-                                                className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-400"
+                                                className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400"
                                             />
                                         )}
                                     </div>
@@ -263,7 +263,7 @@ export default function Inventory() {
                                                             <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">No items found matching your search.</td></tr>
                                                         ) : currentItems.map((item) => (
                                                             <tr key={item.id || item.itemId} className="hover:bg-slate-50/50">
-                                                                <td className="px-6 py-4 font-bold text-indigo-600">{item.itemCode}</td>
+                                                                <td className="px-6 py-4 font-bold text-amber-600">{item.itemCode}</td>
                                                                 <td className="px-6 py-4 font-semibold text-slate-800">{item.itemName}</td>
                                                                 <td className="px-6 py-4 text-xs font-bold uppercase">{item.category}</td>
                                                                 <td className="px-6 py-4 text-center font-bold">
@@ -286,15 +286,15 @@ export default function Inventory() {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Item Code *</label>
-                                                        <input type="text" required value={itemForm.itemCode} onChange={e => setItemForm({ ...itemForm, itemCode: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white" placeholder="e.g. ITM-001" />
+                                                        <input type="text" required value={itemForm.itemCode} onChange={e => setItemForm({ ...itemForm, itemCode: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white" placeholder="e.g. ITM-001" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Item Name *</label>
-                                                        <input type="text" required value={itemForm.itemName} onChange={e => setItemForm({ ...itemForm, itemName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white" placeholder="e.g. Solar Panel 400W" />
+                                                        <input type="text" required value={itemForm.itemName} onChange={e => setItemForm({ ...itemForm, itemName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white" placeholder="e.g. Solar Panel 400W" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Category *</label>
-                                                        <select value={itemForm.category} onChange={e => setItemForm({ ...itemForm, category: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white">
+                                                        <select value={itemForm.category} onChange={e => setItemForm({ ...itemForm, category: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white">
                                                             <option>Raw Material</option>
                                                             <option>Consumables</option>
                                                             <option>Hardware</option>
@@ -302,7 +302,7 @@ export default function Inventory() {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Unit of Measurement *</label>
-                                                        <select value={itemForm.unit} onChange={e => setItemForm({ ...itemForm, unit: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white">
+                                                        <select value={itemForm.unit} onChange={e => setItemForm({ ...itemForm, unit: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white">
                                                             <option>Nos</option>
                                                             <option>Meters</option>
                                                             <option>Kg</option>
@@ -310,15 +310,15 @@ export default function Inventory() {
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Opening Stock</label>
-                                                        <input type="number" value={itemForm.openingStock} onChange={e => setItemForm({ ...itemForm, openingStock: Number(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white" />
+                                                        <input type="number" value={itemForm.openingStock} onChange={e => setItemForm({ ...itemForm, openingStock: Number(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white" />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Reorder Level *</label>
-                                                        <input type="number" required value={itemForm.reorderLevel} onChange={e => setItemForm({ ...itemForm, reorderLevel: Number(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white" />
+                                                        <input type="number" required value={itemForm.reorderLevel} onChange={e => setItemForm({ ...itemForm, reorderLevel: Number(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white" />
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 flex justify-end border-t border-slate-200">
-                                                    <button type="submit" disabled={actionLoading} className="mt-4 px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                                                    <button type="submit" disabled={actionLoading} className="mt-4 px-8 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
                                                         {actionLoading ? "Saving..." : "Save Item"}
                                                     </button>
                                                 </div>
@@ -340,7 +340,7 @@ export default function Inventory() {
                                     <form onSubmit={handleStockOperation} className="space-y-6 bg-slate-50 p-8 rounded-[2rem] border border-slate-200 shadow-sm">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Select Item *</label>
-                                            <select required value={opsForm.itemId} onChange={e => setOpsForm({ ...opsForm, itemId: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white">
+                                            <select required value={opsForm.itemId} onChange={e => setOpsForm({ ...opsForm, itemId: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white">
                                                 <option value="">-- Choose Item --</option>
                                                 {itemsList.map(item => (
                                                     <option key={item.id || item.itemId} value={item.id || item.itemId}>{item.itemCode} - {item.itemName} (Stock: {item.currentStock})</option>
@@ -353,17 +353,17 @@ export default function Inventory() {
                                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
                                                     {opsSubTab === "adjust" ? "Delta Quantity (+/-) *" : "Quantity *"}
                                                 </label>
-                                                <input type="number" required value={opsForm.quantity} onChange={e => setOpsForm({ ...opsForm, quantity: Number(e.target.value) })} placeholder={opsSubTab === "adjust" ? "e.g. -2 or 5" : "Enter quantity"} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white" />
+                                                <input type="number" required value={opsForm.quantity} onChange={e => setOpsForm({ ...opsForm, quantity: Number(e.target.value) })} placeholder={opsSubTab === "adjust" ? "e.g. -2 or 5" : "Enter quantity"} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white" />
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Reference / Lead No.</label>
-                                                <input type="text" value={opsForm.reference} onChange={e => setOpsForm({ ...opsForm, reference: e.target.value })} placeholder="e.g. LD-1001" className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white" />
+                                                <input type="text" value={opsForm.reference} onChange={e => setOpsForm({ ...opsForm, reference: e.target.value })} placeholder="e.g. LD-1001" className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white" />
                                             </div>
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Remarks / Reason</label>
-                                            <textarea rows={3} value={opsForm.remarks} onChange={e => setOpsForm({ ...opsForm, remarks: e.target.value })} placeholder="Details for audit trail..." className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 bg-white"></textarea>
+                                            <textarea rows={3} value={opsForm.remarks} onChange={e => setOpsForm({ ...opsForm, remarks: e.target.value })} placeholder="Details for audit trail..." className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 bg-white"></textarea>
                                         </div>
 
                                         <div className="pt-2 border-t border-slate-200">
@@ -380,12 +380,12 @@ export default function Inventory() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-6">
                                         <div className="flex bg-slate-100 p-1 rounded-xl">
-                                            <button onClick={() => setLedgerSubTab("global")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${ledgerSubTab === "global" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}>Global History</button>
-                                            <button onClick={() => setLedgerSubTab("item")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${ledgerSubTab === "item" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}>Item-wise</button>
+                                            <button onClick={() => setLedgerSubTab("global")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${ledgerSubTab === "global" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500"}`}>Global History</button>
+                                            <button onClick={() => setLedgerSubTab("item")} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${ledgerSubTab === "item" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500"}`}>Item-wise</button>
                                         </div>
                                         <div className="flex gap-3">
                                             {ledgerSubTab === "item" && (
-                                                <select className="px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-400 bg-white">
+                                                <select className="px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400 bg-white">
                                                     <option>-- Select Item --</option>
                                                     {itemsList.map(item => <option key={item.id}>{item.itemCode} - {item.itemName}</option>)}
                                                 </select>
@@ -395,7 +395,7 @@ export default function Inventory() {
                                                 placeholder="Search ref, remarks, item..."
                                                 value={ledgerSearchTerm}
                                                 onChange={(e) => { setLedgerSearchTerm(e.target.value); setLedgerCurrentPage(1); }}
-                                                className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-400 bg-white"
+                                                className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-amber-400 bg-white"
                                             />
                                         </div>
                                     </div>
@@ -420,7 +420,7 @@ export default function Inventory() {
                                                         <td className="px-4 py-4 whitespace-nowrap">{new Date(txn.createdDate || txn.date).toLocaleDateString()}</td>
                                                         <td className="px-4 py-4">
                                                             <p className="font-bold text-slate-800">{txn.itemName}</p>
-                                                            <p className="text-xs text-indigo-500">{txn.itemCode}</p>
+                                                            <p className="text-xs text-amber-500">{txn.itemCode}</p>
                                                         </td>
                                                         <td className="px-4 py-4">
                                                             <span className={`px-2.5 py-1 border rounded-lg text-[10px] font-bold uppercase tracking-wider ${getLedgerBadgeStyle(txn.type || txn.transactionType)}`}>

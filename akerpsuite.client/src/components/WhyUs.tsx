@@ -1,4 +1,5 @@
 import Reveal from './Reveal'
+import TiltCard from './TiltCard'
 import { whyCards } from '../data/siteData'
 
 export default function WhyUs() {
@@ -79,32 +80,29 @@ export default function WhyUs() {
                 {/* ── Cards ── */}
                 <div className="grid grid-cols-1 gap-px overflow-hidden rounded-b-2xl bg-line-strong sm:grid-cols-2 sm:rounded-2xl lg:grid-cols-4">
                     {whyCards.map((card, i) => (
-                        <Reveal
-                            key={card.title}
-                            className="group relative bg-paper p-[38px_28px] transition-colors duration-300 hover:bg-charcoal"
-                            delay={(i % 4) + 1}
-                            style={{
-                                clipPath: 'polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%)',
-                            }}
-                        >
-                            <span
-                                className="absolute right-0 top-0 border-b-[22px] border-l-[22px] border-b-transparent border-l-gold/25 transition-colors duration-300 group-hover:border-l-gold"
-                                aria-hidden="true"
-                            ></span>
-
-                            <div
-                                className="mb-6 flex h-[50px] w-[50px] items-center justify-center bg-gold/10 text-[1.2rem] text-gold-deep transition-colors duration-300 group-hover:bg-gold/15 group-hover:text-gold"
-                                style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        <Reveal key={card.title} delay={(i % 4) + 1}>
+                            <TiltCard maxTilt={8} className="group relative h-full bg-paper p-[38px_28px] transition-colors duration-300 hover:bg-charcoal"
+                                style={{ clipPath: 'polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%)' }}
                             >
-                                <i className={`fas ${card.icon}`}></i>
-                            </div>
+                                <span
+                                    className="absolute right-0 top-0 border-b-[22px] border-l-[22px] border-b-transparent border-l-gold/25 transition-colors duration-300 group-hover:border-l-gold"
+                                    aria-hidden="true"
+                                ></span>
 
-                            <div className="mb-3 font-display text-[1.1rem] font-bold text-charcoal transition-colors duration-300 group-hover:text-chalk">
-                                {card.title}
-                            </div>
-                            <p className="text-[0.92rem] leading-[1.7] text-slate transition-colors duration-300 group-hover:text-chalk/70">
-                                {card.text}
-                            </p>
+                                <div
+                                    className="mb-6 flex h-[50px] w-[50px] items-center justify-center bg-gold/10 text-[1.2rem] text-gold-deep transition-colors duration-300 group-hover:bg-gold/15 group-hover:text-gold"
+                                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                                >
+                                    <i className={`fas ${card.icon}`}></i>
+                                </div>
+
+                                <div className="mb-3 font-display text-[1.1rem] font-bold text-charcoal transition-colors duration-300 group-hover:text-chalk">
+                                    {card.title}
+                                </div>
+                                <p className="text-[0.92rem] leading-[1.7] text-slate transition-colors duration-300 group-hover:text-chalk/70">
+                                    {card.text}
+                                </p>
+                            </TiltCard>
                         </Reveal>
                     ))}
                 </div>

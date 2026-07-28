@@ -50,7 +50,7 @@ export default function MyProfile() {
 
             {/* ── Header Card ── */}
             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-6">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-indigo-100 border-4 border-white shadow-lg flex items-center justify-center text-indigo-600 text-3xl font-bold shrink-0">
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-amber-100 border-4 border-white shadow-lg flex items-center justify-center text-amber-600 text-3xl font-bold shrink-0">
                     {profile.photoPath ? (
                         <img src={profile.photoPath} alt="Profile" className="w-full h-full rounded-full object-cover" />
                     ) : (
@@ -60,9 +60,9 @@ export default function MyProfile() {
                 <div className="flex-1 text-center md:text-left space-y-2">
                     <h1 className="text-3xl font-extrabold text-slate-800">{profile.fullName}</h1>
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-slate-600 font-medium">
-                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full"><i className="ti ti-briefcase text-indigo-500"></i> {profile.desigName}</span>
-                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full"><i className="ti ti-building text-indigo-500"></i> {profile.deptName}</span>
-                        <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200"><i className="ti ti-circle-check-filled"></i> {profile.employmentStatus}</span>
+                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full"><i className="fa-solid fa-briefcase text-amber-500"></i> {profile.desigName}</span>
+                        <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full"><i className="fa-solid fa-building text-amber-500"></i> {profile.deptName}</span>
+                        <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200"><i className="fa-solid fa-circle-check"></i> {profile.employmentStatus}</span>
                     </div>
                 </div>
             </div>

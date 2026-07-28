@@ -1,4 +1,5 @@
 import Reveal from './Reveal'
+import TiltCard from './TiltCard'
 import { services } from '../data/siteData'
 
 export default function Services() {
@@ -50,38 +51,39 @@ export default function Services() {
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {services.map((s, i) => (
-                        <Reveal
-                            key={s.title}
-                            className="group relative overflow-hidden border border-line bg-chalk transition-all duration-300 hover:-translate-y-1.5 hover:border-line-strong hover:shadow-card"
-                            delay={(i % 3) + 1}
-                            style={{ clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%)' }}
-                        >
-                            <span
-                                className="absolute right-0 top-0 z-10 border-b-[24px] border-l-[24px] border-b-transparent border-l-gold/30 transition-colors duration-300 group-hover:border-l-gold"
-                                aria-hidden="true"
-                            ></span>
+                        <Reveal key={s.title} delay={(i % 3) + 1}>
+                            <TiltCard
+                                maxTilt={7}
+                                className="group relative h-full overflow-hidden border border-line bg-chalk transition-all duration-300 hover:-translate-y-1.5 hover:border-line-strong hover:shadow-card"
+                                style={{ clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%)' }}
+                            >
+                                <span
+                                    className="absolute right-0 top-0 z-10 border-b-[24px] border-l-[24px] border-b-transparent border-l-gold/30 transition-colors duration-300 group-hover:border-l-gold"
+                                    aria-hidden="true"
+                                ></span>
 
-                            <div className="relative h-[168px] overflow-hidden bg-charcoal">
-                                <img
-                                    src={s.img}
-                                    alt={s.title}
-                                    loading="lazy"
-                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-                                    onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.background = s.fallback; e.currentTarget.remove() }}
-                                />
-                                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%)' }}></div>
-                                <div
-                                    className="absolute -bottom-[23px] left-6 flex h-[52px] w-[52px] items-center justify-center border-[3px] border-chalk text-[1.2rem] text-paper shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
-                                    style={{ background: s.iconBg, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
-                                >
-                                    <i className={`fas ${s.icon}`}></i>
+                                <div className="relative h-[168px] overflow-hidden bg-charcoal">
+                                    <img
+                                        src={s.img}
+                                        alt={s.title}
+                                        loading="lazy"
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                                        onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.background = s.fallback; e.currentTarget.remove() }}
+                                    />
+                                    <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%)' }}></div>
+                                    <div
+                                        className="absolute -bottom-[23px] left-6 flex h-[52px] w-[52px] items-center justify-center border-[3px] border-chalk text-[1.2rem] text-paper shadow-[0_8px_20px_rgba(0,0,0,0.45)]"
+                                        style={{ background: s.iconBg, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                                    >
+                                        <i className={`fas ${s.icon}`}></i>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="border-t border-dashed border-line p-9 pt-9 pb-8">
-                                <span className="mb-3.5 block font-mono text-[0.68rem] uppercase tracking-[0.08em] text-slate">{s.tag}</span>
-                                <div className="mb-3 font-display text-[1.12rem] font-bold text-charcoal">{s.title}</div>
-                                <p className="text-[0.9rem] leading-[1.7] text-slate">{s.desc}</p>
-                            </div>
+                                <div className="border-t border-dashed border-line p-9 pt-9 pb-8">
+                                    <span className="mb-3.5 block font-mono text-[0.68rem] uppercase tracking-[0.08em] text-slate">{s.tag}</span>
+                                    <div className="mb-3 font-display text-[1.12rem] font-bold text-charcoal">{s.title}</div>
+                                    <p className="text-[0.9rem] leading-[1.7] text-slate">{s.desc}</p>
+                                </div>
+                            </TiltCard>
                         </Reveal>
                     ))}
                 </div>

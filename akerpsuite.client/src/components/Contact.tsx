@@ -1,37 +1,68 @@
 import { useRef, useState } from 'react'
 import Reveal from './Reveal'
 import { CONTACT } from '../data/siteData'
+import { publicSiteService } from '../services/publicService'
 
 const inputCls = 'w-full border border-line-strong bg-mist px-4 py-[13px] font-sans text-[0.9rem] text-charcoal transition-colors duration-200 placeholder:text-slate-light focus:border-gold-deep focus:bg-paper focus:outline-none'
 const labelCls = 'mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-slate'
 
-const infoItems = [
-    { icon: 'fa-map-marker-alt', label: 'Address', value: null, key: 'address' },
-    { icon: 'fa-phone-alt', label: 'Phone', value: null, key: 'phone' },
-    { icon: 'fa-envelope', label: 'Email', value: null, key: 'email' },
-    { icon: 'fa-clock', label: 'Working Hours', value: null, key: 'hours' },
-    { icon: 'fa-building', label: 'Sister Concern', value: null, key: 'sister' },
-]
-
 export default function Contact() {
-    const formRef = useRef(null)
+    const formRef = useRef<HTMLFormElement | null>(null)
     const [submitLabel, setSubmitLabel] = useState("Send Enquiry — It's Free")
     const [sent, setSent] = useState(false)
+    const [submitting, setSubmitting] = useState(false)
+    const [error, setError] = useState('')
 
-    function handleSubmit() {
+    async function handleSubmit() {
         const form = formRef.current
         if (!form) return
         if (!form.checkValidity()) {
             form.reportValidity()
             return
         }
-        setSubmitLabel("Enquiry sent — we'll call you soon")
-        setSent(true)
-        setTimeout(() => {
-            setSubmitLabel("Send Enquiry — It's Free")
-            setSent(false)
-            form.reset()
-        }, 4000)
+
+        setError('')
+        setSubmitting(true)
+
+        const fd = new FormData(form)
+        const name = fd.get('name')?.toString().trim() || ''
+        const phone = fd.get('phone')?.toString().trim() || ''
+        const email = fd.get('email')?.toString().trim() || ''
+        const location = fd.get('location')?.toString().trim() || ''
+        const service = fd.get('service')?.toString().trim() || ''
+        const budget = fd.get('budget')?.toString().trim() || ''
+        const message = fd.get('message')?.toString().trim() || ''
+
+        // Backend ContactQuery only has Name / Phone / Email / Subject / Message,
+        // so fold the extra form fields (location, service, budget) into Subject/Message.
+        const subject = service || 'General Enquiry'
+        const fullMessage = [
+            location && `Location: ${location}`,
+            budget && `Monthly Bill: ${budget}`,
+            message && `Message: ${message}`,
+        ].filter(Boolean).join('\n')
+
+        try {
+            await publicSiteService.submitContactQuery({
+                name,
+                phone,
+                email,
+                subject,
+                message: fullMessage || 'No additional message provided.',
+            })
+
+            setSubmitLabel("Enquiry sent — we'll call you soon")
+            setSent(true)
+            setTimeout(() => {
+                setSubmitLabel("Send Enquiry — It's Free")
+                setSent(false)
+                form.reset()
+            }, 4000)
+        } catch (err: any) {
+            setError(err?.message || 'Something went wrong. Please try again.')
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     return (
@@ -121,19 +152,19 @@ export default function Contact() {
                             <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2">
                                 <div>
                                     <label className={labelCls}>Your Name</label>
-                                    <input type="text" className={inputCls} placeholder="Rajesh Thakur" required />
+                                    <input name="name" type="text" className={inputCls} placeholder="Rajesh Thakur" required />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Phone Number</label>
-                                    <input type="tel" className={inputCls} placeholder="+91-9805763000" required pattern="[0-9+\s-]{8,15}" />
+                                    <input name="phone" type="tel" className={inputCls} placeholder="+91-9805763000" required pattern="[0-9+\s-]{8,15}" />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Email Address</label>
-                                    <input type="email" className={inputCls} placeholder="you@example.com" />
+                                    <input name="email" type="email" className={inputCls} placeholder="you@example.com" />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Location / State</label>
-                                    <select className={inputCls} defaultValue="">
+                                    <select name="location" className={inputCls} defaultValue="">
                                         <option value="">Select State</option>
                                         <option>Himachal Pradesh</option>
                                         <option>Uttar Pradesh</option>
@@ -146,7 +177,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <label className={labelCls}>Service Required</label>
-                                    <select className={inputCls} defaultValue="">
+                                    <select name="service" className={inputCls} defaultValue="">
                                         <option value="">Select Service</option>
                                         <option>Solar Power Plant (On-Grid)</option>
                                         <option>Solar Power Plant (Off-Grid)</option>
@@ -160,7 +191,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <label className={labelCls}>Monthly Bill (₹)</label>
-                                    <select className={inputCls} defaultValue="Under ₹1,000">
+                                    <select name="budget" className={inputCls} defaultValue="Under ₹1,000">
                                         <option>Under ₹1,000</option>
                                         <option>₹1,000 – ₹3,000</option>
                                         <option>₹3,000 – ₹7,000</option>
@@ -170,24 +201,31 @@ export default function Contact() {
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className={labelCls}>Message</label>
-                                    <textarea rows={4} className={inputCls} placeholder="Tell us about your property, current setup, or any questions…"></textarea>
+                                    <textarea name="message" rows={4} className={inputCls} placeholder="Tell us about your property, current setup, or any questions…"></textarea>
                                 </div>
+
+                                {error && (
+                                    <div className="sm:col-span-2 border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-600">
+                                        {error}
+                                    </div>
+                                )}
+
                                 <div className="sm:col-span-2">
                                     <button
                                         type="button"
                                         onClick={handleSubmit}
-                                        className={`group flex w-full items-center justify-center gap-2.5 border py-[17px] font-sans text-[0.95rem] font-bold transition-all duration-300 ${
-                                            sent
+                                        disabled={submitting}
+                                        className={`group flex w-full items-center justify-center gap-2.5 border py-[17px] font-sans text-[0.95rem] font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-70 ${sent
                                                 ? 'border-green bg-green text-chalk'
                                                 : 'border-charcoal bg-charcoal text-chalk hover:-translate-y-0.5 hover:border-gold-deep hover:bg-gold-deep'
-                                        }`}
+                                            }`}
                                     >
                                         {sent && (
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                 <path d="M20 6L9 17l-5-5" />
                                             </svg>
                                         )}
-                                        {submitLabel}
+                                        {submitting ? 'Sending…' : submitLabel}
                                     </button>
                                 </div>
                             </div>
@@ -199,7 +237,17 @@ export default function Contact() {
     )
 }
 
-function InfoRow({ icon, label, children, last = false }) {
+function InfoRow({
+    icon,
+    label,
+    children,
+    last = false,
+}: {
+    icon: string
+    label: string
+    children: React.ReactNode
+    last?: boolean
+}) {
     return (
         <div className={`flex items-start gap-4 ${last ? '' : 'mb-6 border-b border-dashed border-line pb-6'}`}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center border border-gold/25 bg-gold/10 text-base text-gold-deep">
@@ -213,8 +261,8 @@ function InfoRow({ icon, label, children, last = false }) {
     )
 }
 
-function Badge({ tone, children }) {
-    const tones = {
+function Badge({ tone, children }: { tone: 'gold' | 'green' | 'slate'; children: React.ReactNode }) {
+    const tones: Record<'gold' | 'green' | 'slate', string> = {
         gold: 'border-gold/35 bg-gold/10 text-gold-deep',
         green: 'border-green/35 bg-green/10 text-green',
         slate: 'border-slate/35 bg-slate/10 text-slate',

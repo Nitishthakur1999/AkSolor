@@ -591,7 +591,7 @@ export default function LeadDetail() {
     };
 
     if (headerLoading) {
-        return <div className="text-center text-indigo-600 py-10 font-medium animate-pulse">Loading Data...</div>;
+        return <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>;
     }
 
     if (!lead) {
@@ -609,13 +609,13 @@ export default function LeadDetail() {
                 <div>
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         {lead.name}
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold">#{lead.leadId}</span>
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-bold">#{lead.leadId}</span>
                     </h2>
                     <p className="text-sm text-slate-500 mt-1">
                         Phone: {lead.contactNo} | Current Stage: <span className="font-bold text-slate-700">{lead.status}</span>
                     </p>
                 </div>
-                <button onClick={() => setShowReminderModal(true)} className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 transition-all">
+                <button onClick={() => setShowReminderModal(true)} className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 transition-all">
                     Create Reminder
                 </button>
             </div>
@@ -641,7 +641,7 @@ export default function LeadDetail() {
                                 <select
                                     value={reminderForm.reminderType || "Follow-up"}
                                     onChange={e => setReminderForm({ ...reminderForm, reminderType: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
                                 >
                                     <option value="Follow-up">Follow-up</option>
                                     <option value="Call">Call</option>
@@ -656,7 +656,7 @@ export default function LeadDetail() {
                                     onChange={e => setReminderForm({ ...reminderForm, note: e.target.value })}
                                     rows={3}
                                     placeholder="What should be remembered?"
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                 />
                             </div>
                             <div>
@@ -665,7 +665,7 @@ export default function LeadDetail() {
                                     type="datetime-local"
                                     value={reminderForm.reminderDate}
                                     onChange={e => setReminderForm({ ...reminderForm, reminderDate: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                 />
                             </div>
                         </div>
@@ -673,7 +673,7 @@ export default function LeadDetail() {
                             <button onClick={() => setShowReminderModal(false)} className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all">
                                 Cancel
                             </button>
-                            <button onClick={handleCreateReminder} disabled={actionLoading} className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                            <button onClick={handleCreateReminder} disabled={actionLoading} className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
                                 {actionLoading ? "Saving..." : "Save Reminder"}
                             </button>
                         </div>
@@ -693,7 +693,7 @@ export default function LeadDetail() {
                                     placeholder="e.g. ITM-001"
                                     value={itemForm.itemCode}
                                     onChange={e => setItemForm({ ...itemForm, itemCode: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                 />
                             </div>
                             <div>
@@ -705,7 +705,7 @@ export default function LeadDetail() {
                                     placeholder="e.g. Solar Panel 550W"
                                     value={itemForm.itemName}
                                     onChange={e => setItemForm({ ...itemForm, itemName: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -716,7 +716,7 @@ export default function LeadDetail() {
                                         placeholder="e.g. Panels, Cables"
                                         value={itemForm.category}
                                         onChange={e => setItemForm({ ...itemForm, category: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                     />
                                 </div>
                                 <div>
@@ -727,7 +727,7 @@ export default function LeadDetail() {
                                         placeholder="e.g. Nos, Mtr, Kg"
                                         value={itemForm.unit}
                                         onChange={e => setItemForm({ ...itemForm, unit: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                     />
                                 </div>
                             </div>
@@ -739,7 +739,7 @@ export default function LeadDetail() {
                                         placeholder="0"
                                         value={itemForm.currentStock}
                                         onChange={e => setItemForm({ ...itemForm, currentStock: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                     />
                                 </div>
                                 <div>
@@ -749,7 +749,7 @@ export default function LeadDetail() {
                                         placeholder="0"
                                         value={itemForm.reorderLevel}
                                         onChange={e => setItemForm({ ...itemForm, reorderLevel: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                     />
                                 </div>
                             </div>
@@ -764,7 +764,7 @@ export default function LeadDetail() {
                             <button
                                 onClick={handleAddItem}
                                 disabled={itemLoading}
-                                className="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all"
+                                className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all"
                             >
                                 {itemLoading ? "Saving..." : "Save Item"}
                             </button>
@@ -781,7 +781,7 @@ export default function LeadDetail() {
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
-                            className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? "border-indigo-600 text-indigo-600" : "border-transparent hover:text-slate-600"}`}
+                            className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? "border-amber-600 text-amber-600" : "border-transparent hover:text-slate-600"}`}
                         >
                             {tab.label}
                         </button>
@@ -790,7 +790,7 @@ export default function LeadDetail() {
 
                 <div className="p-6 min-h-[400px]">
                     {tabLoading ? (
-                        <div className="text-center text-indigo-600 py-10 font-medium animate-pulse">Loading Data...</div>
+                        <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>
                     ) : (
                         <>
                             {/* TAB 1: OVERVIEW */}
@@ -834,7 +834,7 @@ export default function LeadDetail() {
                                                         required
                                                         value={followupDate}
                                                         onChange={e => setFollowupDate(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                                     />
                                                 </div>
                                                 <div>
@@ -846,7 +846,7 @@ export default function LeadDetail() {
                                                         value={nextFollowupDate}
                                                         min={todayISO()}
                                                         onChange={e => setNextFollowupDate(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                                     />
                                                     <p className="text-[11px] text-slate-400 mt-1">Set this to auto-create the next reminder.</p>
                                                 </div>
@@ -857,9 +857,9 @@ export default function LeadDetail() {
                                                 value={followupNote}
                                                 onChange={e => setFollowupNote(e.target.value)}
                                                 rows={4}
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                             />
-                                            <button onClick={handleAddFollowup} disabled={actionLoading} className="mt-4 w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                                            <button onClick={handleAddFollowup} disabled={actionLoading} className="mt-4 w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
                                                 {actionLoading ? "Submitting..." : "Submit Follow-up"}
                                             </button>
                                         </div>
@@ -871,7 +871,7 @@ export default function LeadDetail() {
                                                 ) : followups.map((f, idx) => (
                                                     <div key={f.followupId || idx} className="border border-slate-100 rounded-xl p-4 flex justify-between items-start">
                                                         <div>
-                                                            <p className="text-xs font-bold text-indigo-600">{f.followupDate?.split("T")[0]}</p>
+                                                            <p className="text-xs font-bold text-amber-600">{f.followupDate?.split("T")[0]}</p>
                                                             <p className="text-sm text-slate-700 mt-1">{f.notes}</p>
                                                             {f.nextFollowupDate && (
                                                                 <p className="text-[11px] text-amber-600 font-semibold mt-1">
@@ -899,9 +899,9 @@ export default function LeadDetail() {
                                                 value={surveyDateTime}
                                                 min={minDateTime}
                                                 onChange={e => setSurveyDateTime(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                             />
-                                        <button onClick={handleScheduleSurvey} disabled={actionLoading} className="mt-4 w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                                        <button onClick={handleScheduleSurvey} disabled={actionLoading} className="mt-4 w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
                                             {actionLoading ? "Scheduling..." : "Schedule Survey"}
                                         </button>
 
@@ -913,7 +913,7 @@ export default function LeadDetail() {
                                             ) : surveys.map((s, idx) => (
                                                 <div key={s.surveyId || idx} className="border border-slate-100 rounded-xl p-4 flex justify-between items-start">
                                                     <div>
-                                                        <p className="text-xs font-bold text-indigo-600">
+                                                        <p className="text-xs font-bold text-amber-600">
                                                             {s.surveyDate ? new Date(s.surveyDate).toLocaleString() : "Not scheduled"}
                                                         </p>
                                                         <p className="text-sm text-slate-700 mt-1">
@@ -961,7 +961,7 @@ export default function LeadDetail() {
                                                 type="number"
                                                 value={systemSizeKw}
                                                 onChange={e => setSystemSizeKw(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400"
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
                                             />
                                         </div>
                                         <div>
@@ -970,7 +970,7 @@ export default function LeadDetail() {
                                                 type="number"
                                                 value={totalAmount}
                                                 onChange={e => setTotalAmount(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400"
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
                                             />
                                         </div>
                                         <div>
@@ -979,11 +979,11 @@ export default function LeadDetail() {
                                                 type="number"
                                                 value={subsidyAmount}
                                                 onChange={e => setSubsidyAmount(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400"
+                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
                                             />
                                         </div>
                                         <div className="flex items-end">
-                                            <button onClick={handleGenerateProposal} disabled={actionLoading} className="w-full px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                                            <button onClick={handleGenerateProposal} disabled={actionLoading} className="w-full px-4 py-2 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 disabled:opacity-60 transition-all">
                                                 {actionLoading ? "Generating..." : "Generate New Proposal"}
                                             </button>
                                         </div>
@@ -1026,7 +1026,7 @@ export default function LeadDetail() {
                                             <button
                                                 type="button"
                                                 onClick={() => setShowItemModal(true)}
-                                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                                                className="text-xs font-bold text-amber-600 hover:text-amber-800"
                                             >
                                                 + Add Item
                                             </button>
@@ -1037,7 +1037,7 @@ export default function LeadDetail() {
                                                 <select
                                                     value={newMaterial.itemId}
                                                     onChange={e => setNewMaterial({ ...newMaterial, itemId: e.target.value })}
-                                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:border-indigo-400 ${materialError.itemId ? "border-red-400" : "border-slate-200"
+                                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:border-amber-400 ${materialError.itemId ? "border-red-400" : "border-slate-200"
                                                         }`}
                                                 >
                                                     <option value="">-- Select Item --</option>
@@ -1058,7 +1058,7 @@ export default function LeadDetail() {
                                                     placeholder="Quantity"
                                                     value={newMaterial.quantity}
                                                     onChange={e => setNewMaterial({ ...newMaterial, quantity: e.target.value })}
-                                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:border-indigo-400 ${materialError.quantity ? "border-red-400" : "border-slate-200"
+                                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:border-amber-400 ${materialError.quantity ? "border-red-400" : "border-slate-200"
                                                         }`}
                                                 />
                                                 {materialError.quantity && (
@@ -1069,7 +1069,7 @@ export default function LeadDetail() {
                                             <button
                                                 onClick={handleAddMaterialValidated}
                                                 disabled={actionLoading}
-                                                className="px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs hover:bg-indigo-700 disabled:opacity-60 transition-all h-[42px]"
+                                                className="px-4 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 disabled:opacity-60 transition-all h-[42px]"
                                             >
                                                 {actionLoading ? "Adding..." : "+ Add Material"}
                                             </button>
@@ -1126,7 +1126,7 @@ export default function LeadDetail() {
                                                             type="date"
                                                             value={dispatchForm.dispatchDate}
                                                             onChange={e => setDispatchForm({ ...dispatchForm, dispatchDate: e.target.value })}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                                         />
                                                     </div>
                                                     <div>
@@ -1138,7 +1138,7 @@ export default function LeadDetail() {
                                                             placeholder="e.g. Blue Dart"
                                                             value={dispatchForm.transporter}
                                                             onChange={e => setDispatchForm({ ...dispatchForm, transporter: e.target.value })}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                                         />
                                                     </div>
                                                     <div>
@@ -1150,14 +1150,14 @@ export default function LeadDetail() {
                                                             placeholder="e.g. TRK123456"
                                                             value={dispatchForm.trackingNo}
                                                             onChange={e => setDispatchForm({ ...dispatchForm, trackingNo: e.target.value })}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                                         />
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={handleCreateDispatch}
                                                     disabled={actionLoading}
-                                                    className="w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm hover:bg-indigo-700 disabled:opacity-60 transition-all"
+                                                    className="w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm hover:bg-amber-700 disabled:opacity-60 transition-all"
                                                 >
                                                     {actionLoading ? "Creating..." : "Create Dispatch Entry"}
                                                 </button>
@@ -1175,7 +1175,7 @@ export default function LeadDetail() {
                                                     <select
                                                         value={dispatchStatus}
                                                         onChange={e => setDispatchStatus(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                                                     >
                                                         <option value="Dispatched">Dispatched</option>
                                                         <option value="Delivered">Delivered</option>
@@ -1184,7 +1184,7 @@ export default function LeadDetail() {
                                                 <button
                                                     onClick={handleUpdateDispatchStatus}
                                                     disabled={actionLoading}
-                                                    className="w-full px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all"
+                                                    className="w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all"
                                                 >
                                                     {actionLoading ? "Updating..." : "Update Status"}
                                                 </button>
@@ -1204,7 +1204,7 @@ export default function LeadDetail() {
                                                             className="border border-slate-100 rounded-xl p-4 flex justify-between items-start gap-3"
                                                         >
                                                             <div className="min-w-0">
-                                                                <p className="text-xs font-bold text-indigo-600">
+                                                                <p className="text-xs font-bold text-amber-600">
                                                                     {d.dispatchDate ? new Date(d.dispatchDate).toLocaleDateString() : "Not set"}
                                                                 </p>
                                                                 <p className="text-sm text-slate-700 mt-1 truncate">{d.transporter || "-"}</p>
@@ -1212,7 +1212,7 @@ export default function LeadDetail() {
                                                                     <p className="text-xs text-slate-400 mt-1 truncate">Tracking: {d.trackingNo}</p>
                                                                 )}
                                                             </div>
-                                                            <span className="shrink-0 px-3 py-1 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-bold">
+                                                            <span className="shrink-0 px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-xs font-bold">
                                                                 {d.status}
                                                             </span>
                                                         </div>
@@ -1230,7 +1230,7 @@ export default function LeadDetail() {
                                                 <button
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={actionLoading}
-                                                    className="text-xs font-bold text-indigo-600 hover:underline disabled:opacity-60"
+                                                    className="text-xs font-bold text-amber-600 hover:underline disabled:opacity-60"
                                                 >
                                                     {actionLoading ? "Uploading..." : "+ Upload"}
                                                 </button>
@@ -1244,10 +1244,10 @@ export default function LeadDetail() {
                                                     <div
                                                         key={doc.docId ?? idx}
                                                         onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
-                                                        className="px-4 py-3 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-indigo-200 transition-all flex items-center justify-between gap-3"
+                                                        className="px-4 py-3 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-amber-200 transition-all flex items-center justify-between gap-3"
                                                     >
                                                         <span className="truncate">{doc.docName || "Untitled Document"}</span>
-                                                        <span className="shrink-0 text-xs text-indigo-500 font-bold">View →</span>
+                                                        <span className="shrink-0 text-xs text-amber-500 font-bold">View →</span>
                                                     </div>
                                                 ))}
                                             </div>

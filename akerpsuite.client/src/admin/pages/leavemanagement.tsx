@@ -256,12 +256,12 @@ export default function LeaveManagement() {
                 </div>
                 <div className="flex gap-2">
                     {activeTab === "types" && (
-                        <button onClick={() => setShowTypeModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition">
+                        <button onClick={() => setShowTypeModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 transition">
                             + Add Leave Type
                         </button>
                     )}
                     {activeTab === "balances" && (
-                        <button onClick={() => setShowInitModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition">
+                        <button onClick={() => setShowInitModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 transition">
                             Initialize Balance
                         </button>
                     )}
@@ -334,7 +334,7 @@ export default function LeaveManagement() {
                                         </td>
                                         <td className="px-6 py-3.5 text-center">
                                             <div className="flex justify-center gap-3">
-                                                <button onClick={() => handleEditClick(item)} className="px-4 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-2xl text-sm transition-colors">Edit</button>
+                                                <button onClick={() => handleEditClick(item)} className="px-4 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold rounded-2xl text-sm transition-colors">Edit</button>
                                                 <button onClick={() => handleDeleteType(item.leaveTypeId)} className="px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-2xl text-sm transition-colors">Delete</button>
                                             </div>
                                         </td>
@@ -371,8 +371,8 @@ export default function LeaveManagement() {
                                 <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Max Per Year *</label><input type="number" required min="0" value={typeForm.maxPerYear} onChange={e => setTypeForm({ ...typeForm, maxPerYear: parseInt(e.target.value) })} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-slate-400 transition-all" /></div>
                             </div>
                             <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Leave Name *</label><input type="text" required value={typeForm.leaveName} onChange={e => setTypeForm({ ...typeForm, leaveName: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-slate-400 transition-all" /></div>
-                            <div className="flex items-center gap-2 pt-2"><input type="checkbox" id="carry" checked={typeForm.carryForward} onChange={e => setTypeForm({ ...typeForm, carryForward: e.target.checked })} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" /><label htmlFor="carry" className="text-sm font-medium text-slate-700 select-none">Allow Carry Forward</label></div>
-                            <div className="pt-2"><button type="submit" disabled={actionLoading} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition disabled:opacity-60">{actionLoading ? "Saving..." : "Create Leave Type"}</button></div>
+                            <div className="flex items-center gap-2 pt-2"><input type="checkbox" id="carry" checked={typeForm.carryForward} onChange={e => setTypeForm({ ...typeForm, carryForward: e.target.checked })} className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" /><label htmlFor="carry" className="text-sm font-medium text-slate-700 select-none">Allow Carry Forward</label></div>
+                            <div className="pt-2"><button type="submit" disabled={actionLoading} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm transition disabled:opacity-60">{actionLoading ? "Saving..." : "Create Leave Type"}</button></div>
                         </form>
                     </div>
                 </div>
@@ -393,10 +393,10 @@ export default function LeaveManagement() {
                             </div>
                             <div><label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Leave Name *</label><input type="text" required value={typeForm.leaveName} onChange={e => setTypeForm({ ...typeForm, leaveName: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-slate-400 transition-all" /></div>
                             <div className="flex justify-between items-center pt-2">
-                                <div className="flex items-center gap-2"><input type="checkbox" id="edit-carry" checked={typeForm.carryForward} onChange={e => setTypeForm({ ...typeForm, carryForward: e.target.checked })} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" /><label htmlFor="edit-carry" className="text-sm font-medium text-slate-700 select-none">Carry Forward</label></div>
+                                <div className="flex items-center gap-2"><input type="checkbox" id="edit-carry" checked={typeForm.carryForward} onChange={e => setTypeForm({ ...typeForm, carryForward: e.target.checked })} className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500" /><label htmlFor="edit-carry" className="text-sm font-medium text-slate-700 select-none">Carry Forward</label></div>
                                 <div className="flex items-center gap-2"><input type="checkbox" id="edit-active" checked={typeForm.isActive} onChange={e => setTypeForm({ ...typeForm, isActive: e.target.checked })} className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" /><label htmlFor="edit-active" className="text-sm font-medium text-slate-700 select-none">Active</label></div>
                             </div>
-                            <div className="pt-2"><button type="submit" disabled={actionLoading} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition disabled:opacity-60">{actionLoading ? "Updating..." : "Update Type"}</button></div>
+                            <div className="pt-2"><button type="submit" disabled={actionLoading} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm transition disabled:opacity-60">{actionLoading ? "Updating..." : "Update Type"}</button></div>
                         </form>
                     </div>
                 </div>
@@ -423,7 +423,7 @@ export default function LeaveManagement() {
 
                                 <input type="number" required min="2020" max={new Date().getFullYear() + 1} value={initForm.year} onChange={e => setInitForm({ ...initForm, year: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-slate-400 transition-all" />
                             </div>
-                            <div className="pt-2"><button type="submit" disabled={actionLoading} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition disabled:opacity-60">{actionLoading ? "Processing..." : "Initialize Balance"}</button></div>
+                            <div className="pt-2"><button type="submit" disabled={actionLoading} className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm transition disabled:opacity-60">{actionLoading ? "Processing..." : "Initialize Balance"}</button></div>
                         </form>
                     </div>
                 </div>

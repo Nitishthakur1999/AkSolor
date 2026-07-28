@@ -46,7 +46,7 @@ function PayslipCard({ data, month, year }) {
             <div className="flex justify-end mb-4 print:hidden">
                 <button
                     onClick={handlePrint}
-                    className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all"
+                    className="px-5 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
                 >
                     🖨️ Print payslip
                 </button>
@@ -55,16 +55,16 @@ function PayslipCard({ data, month, year }) {
             {/* Payslip document */}
             <div className="border border-slate-200 rounded-2xl overflow-hidden print:border-none print:rounded-none">
                 {/* Header */}
-                <div className="bg-indigo-600 text-white px-8 py-6 print:bg-indigo-600">
+                <div className="bg-amber-600 text-white px-8 py-6 print:bg-amber-600">
                     <div className="flex justify-between items-start flex-wrap gap-4">
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight">Akerp Suite</h1>
-                            <p className="text-indigo-200 text-xs mt-0.5">Payslip for {MONTHS[month - 1]} {year}</p>
+                            <p className="text-amber-200 text-xs mt-0.5">Payslip for {MONTHS[month - 1]} {year}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-indigo-200">Payslip ID</p>
+                            <p className="text-xs text-amber-200">Payslip ID</p>
                             <p className="font-bold text-lg">#{data.detailId ?? data.payrollId ?? "—"}</p>
-                            <p className="text-xs text-indigo-200 mt-1">Generated on {new Date().toLocaleDateString("en-IN")}</p>
+                            <p className="text-xs text-amber-200 mt-1">Generated on {new Date().toLocaleDateString("en-IN")}</p>
                         </div>
                     </div>
                 </div>
@@ -131,10 +131,10 @@ function PayslipCard({ data, month, year }) {
                     </div>
 
                     {/* Net Pay */}
-                    <div className="mt-6 bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-4 flex flex-wrap justify-between items-center gap-3">
+                    <div className="mt-6 bg-amber-50 border border-amber-100 rounded-2xl px-6 py-4 flex flex-wrap justify-between items-center gap-3">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">Net salary payable</p>
-                            <p className="text-3xl font-bold text-indigo-700 mt-0.5">{fmtINR(netPay)}</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Net salary payable</p>
+                            <p className="text-3xl font-bold text-amber-700 mt-0.5">{fmtINR(netPay)}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-slate-500">Payment status</p>
@@ -374,7 +374,7 @@ export default function PayslipViewer() {
                             placeholder="Search by name or ID..."
                             value={empSearch}
                             onChange={e => setEmpSearch(e.target.value)}
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 w-full"
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 w-full"
                         />
                     </div>
 
@@ -384,7 +384,7 @@ export default function PayslipViewer() {
                         <select
                             value={month}
                             onChange={e => setMonth(parseInt(e.target.value))}
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400"
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400"
                         >
                             {MONTHS.map((m, i) => (
                                 <option key={m} value={i + 1}>{m}</option>
@@ -399,12 +399,12 @@ export default function PayslipViewer() {
                             type="number"
                             value={year}
                             onChange={e => setYear(parseInt(e.target.value))}
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 w-28"
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 w-28"
                         />
                     </div>
 
                     {loadingPayslips && (
-                        <span className="text-xs font-medium text-indigo-500 animate-pulse self-end pb-2.5">
+                        <span className="text-xs font-medium text-amber-500 animate-pulse self-end pb-2.5">
                             Loading statuses...
                         </span>
                     )}
@@ -470,7 +470,7 @@ export default function PayslipViewer() {
                                                 <button
                                                     onClick={() => handleViewPayslip(emp)}
                                                     disabled={viewLoadingEmpId === emp.empId}
-                                                    className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-60 transition-all"
+                                                    className="px-4 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 disabled:opacity-60 transition-all"
                                                 >
                                                     {viewLoadingEmpId === emp.empId ? "Loading..." : "View payslip"}
                                                 </button>
@@ -492,7 +492,7 @@ export default function PayslipViewer() {
                             <select
                                 value={pageSize}
                                 onChange={e => setPageSize(parseInt(e.target.value))}
-                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-indigo-400"
+                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-amber-400"
                             >
                                 {[10, 25, 50, 100].map(n => (
                                     <option key={n} value={n}>{n}</option>
@@ -521,7 +521,7 @@ export default function PayslipViewer() {
                                         key={p}
                                         onClick={() => goToPage(p)}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${p === safePage
-                                            ? "bg-indigo-600 text-white"
+                                            ? "bg-amber-600 text-white"
                                             : "border border-slate-200 text-slate-600 hover:bg-slate-50"
                                             }`}
                                     >{p}</button>
@@ -569,7 +569,7 @@ export default function PayslipViewer() {
             width: 100%;
         }
 
-        .bg-indigo-600 { background-color: #4f46e5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .bg-amber-600 { background-color: #4f46e5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .text-white { color: #ffffff !important; }
         .print\\:hidden { display: none !important; }
     }

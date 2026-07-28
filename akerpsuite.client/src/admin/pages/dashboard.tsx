@@ -10,6 +10,13 @@ export default function Dashboard() {
     const role = localStorage.getItem("role") ?? "User";
     const username = localStorage.getItem("username") ?? "";
 
+    const greeting = (() => {
+        const h = new Date().getHours();
+        if (h < 12) return "Good morning";
+        if (h < 17) return "Good afternoon";
+        return "Good evening";
+    })();
+
     useEffect(() => {
         adminService
             .getDashboard()
@@ -28,8 +35,8 @@ export default function Dashboard() {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                <i className="ti ti-loader-2 text-4xl text-indigo-500 animate-spin" />
-                <p className="text-slate-400 text-sm font-medium">Loading dashboard...</p>
+                <i className="fa-solid fa-spinner text-4xl text-amber-500 animate-spin" />
+                <p className="text-slate-400 text-sm font-medium font-sans">Loading dashboard...</p>
             </div>
         );
     }
@@ -38,11 +45,11 @@ export default function Dashboard() {
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                <i className="ti ti-alert-circle text-4xl text-rose-500" />
-                <p className="text-slate-600 text-sm font-medium">{error}</p>
+                <i className="fa-solid fa-circle-exclamation text-4xl text-rose-500" />
+                <p className="text-slate-600 text-sm font-medium font-sans">{error}</p>
                 <button
                     onClick={() => window.location.reload()}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition"
+                    className="px-4 py-2 bg-[#0b2836] text-white text-sm font-semibold rounded-lg hover:bg-[#0f3345] transition"
                 >
                     Retry
                 </button>
@@ -52,32 +59,38 @@ export default function Dashboard() {
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto p-2 sm:p-4">
+        <div className="space-y-5 sm:space-y-6">
 
             {/* ── Header ── */}
-            <div className="relative p-6 sm:p-8 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/60 via-transparent to-transparent pointer-events-none" />
-                <div className="relative space-y-1">
-                    <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest">
-                        {role} Dashboard
-                    </p>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-                        Welcome back, <span className="text-blue-500">{username}</span>
-                    </h1>
-                    <p className="text-slate-400 text-sm font-medium">
-                        Real-time organization overview — AkerpSuite ERP
-                    </p>
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[#0b2836] shadow-sm">
+                <div className="pointer-events-none absolute -right-10 -top-16 w-56 h-56 rounded-full bg-amber-300/10 blur-2xl" />
+                <div className="pointer-events-none absolute right-16 bottom-0 w-24 h-24 rounded-full bg-amber-300/10 blur-xl" />
+                <div className="relative flex items-center gap-3 p-5 sm:p-6">
+                    <div className="hidden sm:flex shrink-0 w-11 h-11 rounded-xl bg-white/[0.08] items-center justify-center">
+                        <i className="fa-solid fa-sun text-amber-300 text-lg" />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[10px] sm:text-xs font-mono font-semibold text-amber-300/80 uppercase tracking-[0.2em]">
+                            {greeting} · {role}
+                        </p>
+                        <h1 className="font-display text-xl sm:text-2xl md:text-[26px] font-bold tracking-tight text-white leading-tight">
+                            {username || "there"}
+                        </h1>
+                        <p className="text-slate-400 text-[11px] sm:text-xs font-medium mt-0.5">
+                            Real-time organization overview — AkerpSuite ERP
+                        </p>
+                    </div>
                 </div>
             </div>
 
             {/* ── Cards Grid ── */}
             {cards.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[200px] gap-2 bg-white border border-slate-200 rounded-2xl">
-                    <i className="ti ti-layout-dashboard text-3xl text-slate-300" />
-                    <p className="text-slate-400 text-sm">No dashboard cards configured for your role.</p>
+                <div className="flex flex-col items-center justify-center min-h-[160px] gap-2 bg-white border border-slate-200 rounded-2xl">
+                    <i className="fa-solid fa-table-columns text-3xl text-slate-300" />
+                    <p className="text-slate-400 text-sm font-sans">No dashboard cards configured for your role.</p>
                 </div>
             ) : (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                     {cards.map((card) => (
                         <DashboardCard key={card.cardKey} card={card} />
                     ))}
@@ -93,31 +106,31 @@ function DashboardCard({ card }) {
     const formattedValue = formatValue(card.cardValue, card.prefix);
 
     return (
-        <div className="group relative bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300 hover:-translate-y-0.5">
+        <div className="group relative bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md hover:border-amber-300/60 hover:-translate-y-0.5 transition-all duration-300">
+
+            {/* Top accent bar */}
+            <div
+                className={`absolute top-0 left-3 right-3 h-0.5 rounded-full ${card.bgColor} opacity-70`}
+            />
 
             {/* Top row: label + icon */}
             <div className="flex items-start justify-between gap-2">
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider leading-snug">
+                <p className="text-slate-500 text-[10px] sm:text-[11px] font-sans font-bold uppercase tracking-wider leading-snug">
                     {card.cardTitle}
                 </p>
                 <div
-                    className={`shrink-0 w-10 h-10 rounded-xl ${card.bgColor} flex items-center justify-center border border-white shadow-sm`}
+                    className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${card.bgColor} flex items-center justify-center border border-white shadow-sm`}
                 >
-                    <i className={`ti ${card.cardIcon} ${card.iconColor} text-xl`} />
+                    <i className={`ti ${card.cardIcon} ${card.iconColor} text-sm sm:text-base`} />
                 </div>
             </div>
 
             {/* Value */}
-            <div className="mt-5 flex items-baseline gap-1">
-                <h2 className="text-4xl font-black text-slate-900 tracking-tight tabular-nums">
+            <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
+                <h2 className="font-display text-xl sm:text-[26px] font-bold text-slate-900 tracking-tight tabular-nums">
                     {formattedValue}
                 </h2>
             </div>
-
-            {/* Subtle bottom accent line on hover */}
-            <div
-                className={`absolute bottom-0 left-6 right-6 h-0.5 rounded-full ${card.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-            />
         </div>
     );
 }

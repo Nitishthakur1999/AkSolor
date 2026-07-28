@@ -61,7 +61,7 @@ function Input({ ...props }) {
     return (
         <input
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
         />
     );
 }
@@ -73,7 +73,7 @@ function MonthYearPicker({ month, year, onChange }) {
                 <select
                     value={month}
                     onChange={e => onChange(parseInt(e.target.value), year)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                 >
                     {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
                 </select>
@@ -147,7 +147,7 @@ function EmployeePicker({ label = "Employee *", value, onChange, required = true
                     if (!e.target.value) { onChange(""); setSelectedName(""); }
                 }}
                 onFocus={() => { if (!disabled) { setShowDropdown(true); setSearch(""); } }}
-                className={`px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white w-full ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : ""}`}
+                className={`px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white w-full ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : ""}`}
             />
             {showDropdown && !disabled && (
                 <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-64 overflow-y-auto z-50">
@@ -159,7 +159,7 @@ function EmployeePicker({ label = "Employee *", value, onChange, required = true
                                 type="button"
                                 key={emp.empId}
                                 onClick={() => handleSelect(emp)}
-                                className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 transition-colors border-b border-slate-50 last:border-0"
+                                className="w-full text-left px-4 py-2.5 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
                             >
                                 <div className="text-sm font-semibold text-slate-800">{emp.firstName} {emp.lastName}</div>
                                 <div className="text-[11px] text-slate-400">{emp.empCode || `#${emp.empId}`} · {emp.officialEmail}</div>
@@ -259,11 +259,11 @@ function SalaryTab({ structures }) {
                 <input
                     type="text" placeholder="Search by name or ID…"
                     value={search} onChange={e => setSearch(e.target.value)}
-                    className="flex-1 min-w-[200px] max-w-xs px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400"
+                    className="flex-1 min-w-[200px] max-w-xs px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400"
                 />
                 <button
                     onClick={() => setShowForm(v => !v)}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all"
+                    className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
                 >{showForm ? "Cancel" : "+ Set salary"}</button>
             </div>
 
@@ -287,7 +287,7 @@ function SalaryTab({ structures }) {
                     <div className="flex justify-end">
                         <button
                             type="submit" disabled={saving}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all"
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all"
                         >{saving ? "Saving…" : "Save structure"}</button>
                     </div>
                 </form>
@@ -316,7 +316,7 @@ function SalaryTab({ structures }) {
                                         <div className="text-[11px] text-slate-400">{s.empCode || `#${s.empId}`}</div>
                                     </td>
                                     <td className="px-5 py-3">
-                                        <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-[10px] font-bold">
+                                        <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full text-[10px] font-bold">
                                             {s.structureName ?? (s.structureId ? `#${s.structureId}` : "—")}
                                         </span>
                                     </td>
@@ -356,7 +356,7 @@ function PayrollResultTable({ title, period, list, loading }) {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={11} className="px-5 py-10 text-center text-indigo-500 animate-pulse">Loading…</td></tr>
+                            <tr><td colSpan={11} className="px-5 py-10 text-center text-amber-500 animate-pulse">Loading…</td></tr>
                         ) : !list || list.length === 0 ? (
                             <tr><td colSpan={11} className="px-5 py-10 text-center text-slate-400">No records found for this period.</td></tr>
                         ) : list.map((d, i) => (
@@ -514,7 +514,7 @@ function PayrollTab({ months, onRefresh }) {
                     </div>
                     <p className="text-[11px] text-slate-400">Create payroll for a month/year for all or a specific employee.</p>
                     <button onClick={() => { hide(); setShowGen(v => !v); }}
-                        className="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all">
+                        className="w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-amber-700 transition-all">
                         Generate
                     </button>
                 </div>
@@ -524,7 +524,7 @@ function PayrollTab({ months, onRefresh }) {
                     </div>
                     <p className="text-[11px] text-slate-400">Lock payroll before disbursement. Requires approver ID.</p>
                     <button onClick={() => { hide(); setShowFin(v => !v); }}
-                        className="w-full py-2 border bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-slate-50 transition-all">
+                        className="w-full py-2 border bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-slate-50 transition-all">
                         Finalize
                     </button>
                 </div>
@@ -534,7 +534,7 @@ function PayrollTab({ months, onRefresh }) {
                     </div>
                     <p className="text-[11px] text-slate-400">Confirm salary disbursed by Accounts team.</p>
                     <button onClick={() => { hide(); setShowPaid(v => !v); }}
-                        className="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all">
+                        className="w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-amber-700 transition-all">
                         Mark paid
                     </button>
                 </div>
@@ -543,7 +543,7 @@ function PayrollTab({ months, onRefresh }) {
             {showGen && (
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
                     <p className="text-sm font-semibold text-slate-700">Generate payroll</p>
-                    <label className="flex items-center gap-2.5 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 cursor-pointer w-fit">
+                    <label className="flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 cursor-pointer w-fit">
                         <input
                             type="checkbox"
                             checked={genForAll}
@@ -551,10 +551,10 @@ function PayrollTab({ months, onRefresh }) {
                                 setGenForAll(e.target.checked);
                                 if (e.target.checked) setGenForm(f => ({ ...f, empId: "" }));
                             }}
-                            className="w-4 h-4 accent-indigo-600"
+                            className="w-4 h-4 accent-amber-600"
                         />
-                        <span className="text-sm font-semibold text-indigo-700">Generate for all employees</span>
-                        <span className="text-[11px] text-indigo-400">(default)</span>
+                        <span className="text-sm font-semibold text-amber-700">Generate for all employees</span>
+                        <span className="text-[11px] text-amber-400">(default)</span>
                     </label>
 
                     <div className="flex flex-wrap gap-3 items-end">
@@ -575,7 +575,7 @@ function PayrollTab({ months, onRefresh }) {
                                 style={{ width: 130 }} />
                         </Field>
                         <button disabled={loading === "Generate"} onClick={doGenerate}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all self-end">
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all self-end">
                             {loading === "Generate" ? "Generating…" : genForAll ? "Generate for all" : "Generate"}
                         </button>
                         <button onClick={() => setShowGen(false)}
@@ -603,7 +603,7 @@ function PayrollTab({ months, onRefresh }) {
                                 style={{ width: 150 }} />
                         </Field>
                         <button disabled={loading === "Finalize"} onClick={doFinalize}
-                            className="px-6 py-2.5  bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-900 disabled:opacity-60 transition-all self-end">
+                            className="px-6 py-2.5  bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-900 disabled:opacity-60 transition-all self-end">
                             {loading === "Finalize" ? "Finalizing…" : "Finalize"}
                         </button>
                         <button onClick={() => setShowFin(false)}
@@ -619,11 +619,11 @@ function PayrollTab({ months, onRefresh }) {
                         <MonthYearPicker month={paidForm.month} year={paidForm.year}
                             onChange={(m, y) => setPaidForm(f => ({ ...f, month: m, year: y }))} />
                         <button disabled={loading === "MarkPaid"} onClick={doMarkPaid}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-60 transition-all self-end">
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-60 transition-all self-end">
                             {loading === "MarkPaid" ? "Saving…" : "Mark as paid"}
                         </button>
                         <button onClick={() => setShowPaid(false)}
-                            className="px-4 py-2.5 border border-indigo-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-indigo-100 self-end">Cancel</button>
+                            className="px-4 py-2.5 border border-amber-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-amber-100 self-end">Cancel</button>
                     </div>
                 </div>
             )}
@@ -662,7 +662,7 @@ function PayrollTab({ months, onRefresh }) {
                                         <button
                                             onClick={() => viewHistoryDetails(m)}
                                             disabled={loadingHistoryList}
-                                            className="px-3 py-1 text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-slate-600 rounded-xl transition-all disabled:opacity-60">
+                                            className="px-3 py-1 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-slate-600 rounded-xl transition-all disabled:opacity-60">
                                             View details
                                         </button>
                                     </td>
@@ -759,7 +759,7 @@ function DeductionsTab({ deductions, onRefresh }) {
                     />
                     <Field label="Deduction Type *">
                         <select value={form.deductionType} onChange={set("deductionType")} required
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
                             <option value="">Select type…</option>
                             {DEDUCTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
@@ -778,7 +778,7 @@ function DeductionsTab({ deductions, onRefresh }) {
                 </div>
                 <div className="flex justify-end">
                     <button type="submit" disabled={saving}
-                        className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                        className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
                         {saving ? "Adding…" : "Add deduction"}
                     </button>
                 </div>
@@ -786,7 +786,7 @@ function DeductionsTab({ deductions, onRefresh }) {
 
             <div className="flex gap-3 flex-wrap items-center">
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400">
                     <option value="">All statuses</option>
                     <option>Pending</option>
                     <option>Approved</option>
@@ -894,7 +894,7 @@ function DetailsTab() {
                     width={220}
                 />
                 <button onClick={loadDetails} disabled={loading}
-                    className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all self-end">
+                    className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all self-end">
                     {loading ? "Loading…" : "Load details"}
                 </button>
             </div>
@@ -1060,7 +1060,7 @@ function LoansTab() {
         <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-3">
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
                     <option value="">All statuses</option>
                     <option>Pending</option>
                     <option>Active</option>
@@ -1069,7 +1069,7 @@ function LoansTab() {
                 </select>
                 <button
                     onClick={() => setShowForm(v => !v)}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all"
+                    className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
                 >{showForm ? "Cancel" : "+ New loan / advance"}</button>
             </div>
 
@@ -1083,7 +1083,7 @@ function LoansTab() {
                         />
                         <Field label="Type *">
                             <select value={form.loanType} onChange={set("loanType")}
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
                                 <option value="Loan">Loan</option>
                                 <option value="Advance">Advance</option>
                             </select>
@@ -1103,7 +1103,7 @@ function LoansTab() {
                     </div>
                     <div className="flex justify-end">
                         <button type="submit" disabled={saving}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
                             {saving ? "Saving…" : "Submit request"}
                         </button>
                     </div>
@@ -1121,7 +1121,7 @@ function LoansTab() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={8} className="px-5 py-10 text-center text-indigo-500 animate-pulse">Loading…</td></tr>
+                            <tr><td colSpan={8} className="px-5 py-10 text-center text-amber-500 animate-pulse">Loading…</td></tr>
                         ) : loans.length === 0 ? (
                             <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-400">No loans/advances found.</td></tr>
                         ) : loans.map((l, i) => (
@@ -1221,16 +1221,16 @@ function LateMarkRuleTab() {
 
     return (
         <div className="space-y-5">
-            <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-indigo-500 mb-1">Currently active rule</p>
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-1">Currently active rule</p>
                 {loading ? (
-                    <p className="text-sm text-indigo-600 animate-pulse">Loading…</p>
+                    <p className="text-sm text-amber-600 animate-pulse">Loading…</p>
                 ) : activeRule ? (
-                    <p className="text-lg font-bold text-indigo-800">
+                    <p className="text-lg font-bold text-amber-800">
                         {activeRule.latesCount} late marks → {activeRule.penaltyType === "FullDay" ? "1 full day" : "half day"} deduction
                     </p>
                 ) : (
-                    <p className="text-sm text-indigo-400">No active rule configured. Payroll will default to 3 lates = half day.</p>
+                    <p className="text-sm text-amber-400">No active rule configured. Payroll will default to 3 lates = half day.</p>
                 )}
             </div>
 
@@ -1245,14 +1245,14 @@ function LateMarkRuleTab() {
                     <Field label="Penalty *">
                         <select value={form.penaltyType}
                             onChange={e => setForm(f => ({ ...f, penaltyType: e.target.value }))}
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
                             <option value="HalfDay">Half day</option>
                             <option value="FullDay">Full day</option>
                         </select>
                     </Field>
                 </div>
                 <button type="submit" disabled={saving}
-                    className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                    className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
                     {saving ? "Saving…" : "Save rule"}
                 </button>
             </form>
@@ -1340,7 +1340,7 @@ export default function PayrollManagement() {
                     {TABS.map(t => (
                         <button key={t.id} onClick={() => setActiveTab(t.id)}
                             className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === t.id
-                                ? "border-indigo-600 text-indigo-600"
+                                ? "border-amber-600 text-amber-600"
                                 : "border-transparent hover:text-slate-600"
                                 }`}>{t.label}</button>
                     ))}
@@ -1348,7 +1348,7 @@ export default function PayrollManagement() {
 
                 <div className="p-6 min-h-[400px]">
                     {loading ? (
-                        <div className="text-center text-indigo-600 py-16 font-medium animate-pulse">Loading payroll data…</div>
+                        <div className="text-center text-amber-600 py-16 font-medium animate-pulse">Loading payroll data…</div>
                     ) : (
                         <>
                             {activeTab === "salary" && <SalaryTab structures={structures} />}

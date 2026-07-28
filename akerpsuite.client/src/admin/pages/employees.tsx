@@ -684,9 +684,9 @@ export default function Employees() {
     return (
         <div className="space-y-6 text-slate-800">
             {/* Header Module Section */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">Employees Registry</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employees Registry</h2>
                     <p className="text-xs text-slate-500 mt-0.5">Manage complete workforce parameters, system accounts, and job identities.</p>
                 </div>
                 <button
@@ -696,7 +696,7 @@ export default function Employees() {
                         setActiveTab("personal");
                         setFieldCheckMessages(emptyFieldCheckMessages);
                     }}
-                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm"
+                    className="w-full sm:w-auto shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm"
                 >
                     Add Employee
                 </button>
@@ -727,7 +727,7 @@ export default function Employees() {
                                 </div>
                                 <button
                                     onClick={() => handleMarkMilestoneSent(m.notifId)}
-                                    className="text-xs font-bold text-indigo-600 hover:underline"
+                                    className="text-xs font-bold text-amber-600 hover:underline"
                                 >
                                     Mark as sent
                                 </button>
@@ -738,14 +738,14 @@ export default function Employees() {
             )}
 
             {/* 🔍 Search Utilities Control Bar */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider pl-1">Search Profile:</span>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3">
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider sm:pl-1 shrink-0">Search Profile:</span>
                 <input
                     type="text"
                     placeholder="Search by name, email, or employee code..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                 />
             </div>
 
@@ -753,8 +753,8 @@ export default function Employees() {
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 {loading ? (
                     <div className="p-16 flex flex-col justify-center items-center gap-3">
-                        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                        <div className="text-sm font-semibold text-indigo-600 animate-pulse tracking-wide">
+                        <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="text-sm font-semibold text-amber-600 animate-pulse tracking-wide">
                             Synchronizing employee nodes...
                         </div>
                     </div>
@@ -781,7 +781,7 @@ export default function Employees() {
                                             className="hover:bg-slate-50/40 transition-colors duration-150 group"
                                         >
                                             <td className="px-6 py-4 font-mono text-xs font-bold text-slate-600">
-                                                <div className="text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                                                <div className="text-amber-600 group-hover:text-amber-700 transition-colors">
                                                     {emp.empCode || "PENDING"}
                                                 </div>
                                                 <div className="text-[10px] text-slate-400 font-normal mt-0.5">
@@ -830,7 +830,7 @@ export default function Employees() {
                                                     <button
                                                         type="button"
                                                         onClick={() => openEditModal(emp)}
-                                                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100/40 active:scale-95 transition-all"
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100/40 active:scale-95 transition-all"
                                                     >
                                                         Edit
                                                     </button>
@@ -872,10 +872,6 @@ export default function Employees() {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDelete(emp.empId)}
-                                                        ></button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDelete(emp.empId)}
                                                         className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100/40 active:scale-95 transition-all"
                                                     >
                                                         Delete
@@ -897,13 +893,13 @@ export default function Employees() {
 
                         {/* 🔢 PAGINATION BAR LOGIC CONTROLS */}
                         {totalItems > 0 && (
-                            <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-4 sm:px-6 py-4 bg-slate-50 border-t border-slate-100 text-xs font-semibold text-slate-500">
                                 <div>
                                     Showing <span className="text-slate-800">{indexOfFirstItem + 1}</span> to{" "}
                                     <span className="text-slate-800">{Math.min(indexOfLastItem, totalItems)}</span> of{" "}
                                     <span className="text-slate-800">{totalItems}</span> entries
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex flex-wrap gap-1">
                                     <button
                                         disabled={currentPage === 1}
                                         onClick={() => setCurrentPage(prev => prev - 1)}
@@ -915,7 +911,7 @@ export default function Employees() {
                                         <button
                                             key={index}
                                             onClick={() => setCurrentPage(index + 1)}
-                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-amber-600 border-amber-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                         >
                                             {index + 1}
                                         </button>
@@ -937,16 +933,16 @@ export default function Employees() {
             {/* ➕ Modal popup: CREATE EMPLOYEE */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <h3 className="text-lg font-bold text-slate-900">Register New Staff Profile</h3>
                             <button type="button" onClick={() => setShowCreateModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 text-xl font-bold">×</button>
                         </div>
 
                         <div className="flex gap-2 border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-wider">
-                            <button type="button" onClick={() => setActiveTab("personal")} className={`pb-2 px-1 border-b-2 ${activeTab === "personal" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Personal</button>
-                            <button type="button" onClick={() => setActiveTab("contact")} className={`pb-2 px-1 border-b-2 ${activeTab === "contact" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Contact/Docs</button>
-                            <button type="button" onClick={() => setActiveTab("corporate")} className={`pb-2 px-1 border-b-2 ${activeTab === "corporate" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Corporate/HR</button>
+                            <button type="button" onClick={() => setActiveTab("personal")} className={`pb-2 px-1 border-b-2 ${activeTab === "personal" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Personal</button>
+                            <button type="button" onClick={() => setActiveTab("contact")} className={`pb-2 px-1 border-b-2 ${activeTab === "contact" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Contact/Docs</button>
+                            <button type="button" onClick={() => setActiveTab("corporate")} className={`pb-2 px-1 border-b-2 ${activeTab === "corporate" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Corporate/HR</button>
                         </div>
 
                         <form onSubmit={handleCreate} className="space-y-4 pt-2">
@@ -1011,7 +1007,7 @@ export default function Employees() {
                                     </div>
 
                                     <div className="border-t border-slate-100 pt-4">
-                                        <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">Government Verification IDs</h4>
+                                        <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3">Government Verification IDs</h4>
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aadhar Number</label>
@@ -1182,7 +1178,7 @@ export default function Employees() {
                                         <button
                                             type="button"
                                             onClick={() => setActiveTab(activeTab === "personal" ? "contact" : "corporate")}
-                                            className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-xl whitespace-nowrap"
+                                            className="px-4 py-2 text-xs font-bold text-white bg-amber-600 rounded-xl whitespace-nowrap"
                                         >
                                             Next Segment
                                         </button>
@@ -1190,7 +1186,7 @@ export default function Employees() {
                                         <button
                                             type="submit"
                                             disabled={actionLoading}
-                                            className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md whitespace-nowrap"
+                                            className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md whitespace-nowrap"
                                         >
                                             {actionLoading ? "Saving Profile..." : "Register Employee Profile"}
                                         </button>
@@ -1205,16 +1201,16 @@ export default function Employees() {
             {/* ✏️ Modal popup: EDIT EMPLOYEE */}
             {showEditModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <h3 className="text-lg font-bold text-slate-900">Modify Employee Parameters</h3>
                             <button type="button" onClick={() => setShowEditModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 text-xl font-bold">×</button>
                         </div>
 
                         <div className="flex gap-2 border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-wider">
-                            <button type="button" onClick={() => setActiveTab("personal")} className={`pb-2 px-1 border-b-2 ${activeTab === "personal" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Personal</button>
-                            <button type="button" onClick={() => setActiveTab("contact")} className={`pb-2 px-1 border-b-2 ${activeTab === "contact" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Contact/Docs</button>
-                            <button type="button" onClick={() => setActiveTab("corporate")} className={`pb-2 px-1 border-b-2 ${activeTab === "corporate" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Corporate/HR</button>
+                            <button type="button" onClick={() => setActiveTab("personal")} className={`pb-2 px-1 border-b-2 ${activeTab === "personal" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Personal</button>
+                            <button type="button" onClick={() => setActiveTab("contact")} className={`pb-2 px-1 border-b-2 ${activeTab === "contact" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Contact/Docs</button>
+                            <button type="button" onClick={() => setActiveTab("corporate")} className={`pb-2 px-1 border-b-2 ${activeTab === "corporate" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Corporate/HR</button>
                         </div>
 
                         <form onSubmit={handleUpdate} className="space-y-4 pt-2">
@@ -1275,7 +1271,7 @@ export default function Employees() {
                                     </div>
 
                                     <div className="border-t border-slate-100 pt-4">
-                                        <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">Government Verification IDs</h4>
+                                        <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3">Government Verification IDs</h4>
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Aadhar Number</label>
@@ -1410,7 +1406,7 @@ export default function Employees() {
 
                             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                                 <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl">Cancel</button>
-                                <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md">{actionLoading ? "Updating..." : "Save Changes"}</button>
+                                <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md">{actionLoading ? "Updating..." : "Save Changes"}</button>
                             </div>
                         </form>
                     </div>
@@ -1420,7 +1416,7 @@ export default function Employees() {
             {/* 🆕 Modal popup: PROMOTE EMPLOYEE */}
             {showPromoteModal && promoteTarget && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <h3 className="text-lg font-bold text-slate-900">Promote Employee</h3>
                             <button type="button" onClick={() => setShowPromoteModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 text-xl font-bold">×</button>
@@ -1483,7 +1479,7 @@ export default function Employees() {
                             </div>
                             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                                 <button type="button" onClick={() => setShowPromoteModal(false)} className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl">Cancel</button>
-                                <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md">
+                                <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md">
                                     {actionLoading ? "Saving..." : "Confirm Promotion"}
                                 </button>
                             </div>
@@ -1495,7 +1491,7 @@ export default function Employees() {
             {/* 🆕 Modal popup: SALARY INCREMENT */}
             {showIncrementModal && incrementTarget && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <h3 className="text-lg font-bold text-slate-900">Add Salary Increment</h3>
                             <button type="button" onClick={() => setShowIncrementModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 text-xl font-bold">×</button>
@@ -1574,7 +1570,7 @@ export default function Employees() {
                             </div>
 
                             <div className="border-t border-slate-100 pt-4">
-                                <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">Deductions & Contributions</h4>
+                                <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3">Deductions & Contributions</h4>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">PF (Employee)</label>
@@ -1635,7 +1631,7 @@ export default function Employees() {
 
                             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                                 <button type="button" onClick={() => setShowIncrementModal(false)} className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl">Cancel</button>
-                                <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md">
+                                <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md">
                                     {actionLoading ? "Saving..." : "Add Increment"}
                                 </button>
                             </div>
@@ -1647,7 +1643,7 @@ export default function Employees() {
             {/* 🆕 Modal popup: HISTORY (Promotions + Salary Increments, tabbed) */}
             {showHistoryModal && historyTarget && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-6 shadow-xl space-y-4 max-h-[85vh] overflow-y-auto">
+                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 max-h-[85vh] overflow-y-auto">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">Employee History</h3>
@@ -1657,12 +1653,12 @@ export default function Employees() {
                         </div>
 
                         <div className="flex gap-2 border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-wider">
-                            <button type="button" onClick={() => setHistoryTab("promotions")} className={`pb-2 px-1 border-b-2 ${historyTab === "promotions" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Promotions</button>
-                            <button type="button" onClick={() => setHistoryTab("salary")} className={`pb-2 px-1 border-b-2 ${historyTab === "salary" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>Salary Increments</button>
+                            <button type="button" onClick={() => setHistoryTab("promotions")} className={`pb-2 px-1 border-b-2 ${historyTab === "promotions" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Promotions</button>
+                            <button type="button" onClick={() => setHistoryTab("salary")} className={`pb-2 px-1 border-b-2 ${historyTab === "salary" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400"}`}>Salary Increments</button>
                         </div>
 
                         {historyLoading ? (
-                            <div className="py-10 text-center text-indigo-500 text-sm font-semibold animate-pulse">Loading history...</div>
+                            <div className="py-10 text-center text-amber-500 text-sm font-semibold animate-pulse">Loading history...</div>
                         ) : (
                             <>
                                 {historyTab === "promotions" && (
@@ -1736,7 +1732,7 @@ export default function Employees() {
             {/* 🆕 Modal popup: REVEAL EXISTING EMPLOYEE CREDENTIALS */}
             {showRevealModal && revealTarget && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <h3 className="text-lg font-bold text-slate-900">Employee Login Credentials</h3>
                             <button type="button" onClick={() => setShowRevealModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 text-xl font-bold">×</button>
@@ -1763,7 +1759,7 @@ export default function Employees() {
                                 </p>
                                 <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                                     <button type="button" onClick={() => setShowRevealModal(false)} className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl">Cancel</button>
-                                    <button type="submit" disabled={revealLoading} className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md">
+                                    <button type="submit" disabled={revealLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md">
                                         {revealLoading ? "Verifying..." : "Reveal Credentials"}
                                     </button>
                                 </div>
@@ -1803,7 +1799,7 @@ export default function Employees() {
             {/* 🔒 Success Credentials Reveal Modal Popup Window */}
             {createdCredentials && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4 text-center">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 text-center">
                         <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-xl font-bold">✓</div>
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">Profile Registered Successfully</h3>

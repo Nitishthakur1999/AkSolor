@@ -169,9 +169,9 @@ export default function Leads() {
     return (
         <div className="space-y-6 text-slate-800">
             {/* HEADER */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-center bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">Leads Pipeline</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">Leads Pipeline</h2>
                     <p className="text-xs text-slate-500 mt-0.5">Manage incoming leads, track statuses, and view pipeline details.</p>
                 </div>
             </div>
@@ -186,26 +186,26 @@ export default function Leads() {
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
 
                 {/* TABS */}
-                <div className="flex gap-2 overflow-x-auto border-b border-slate-100 px-6 pt-2 text-xs font-bold uppercase tracking-wider">
+                <div className="flex gap-2 overflow-x-auto border-b border-slate-100 px-4 sm:px-6 pt-2 text-xs font-bold uppercase tracking-wider">
                     <button
                         onClick={() => { setActiveTab("table"); resetForm(); }}
-                        className={`pb-3 pt-2 px-1 mr-6 border-b-2 whitespace-nowrap transition-colors ${activeTab === "table" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+                        className={`pb-3 pt-2 px-1 mr-6 border-b-2 whitespace-nowrap transition-colors ${activeTab === "table" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
                     >
                         All Leads
                     </button>
                     <button
                         onClick={() => setActiveTab("form")}
-                        className={`pb-3 pt-2 px-1 border-b-2 whitespace-nowrap transition-colors ${activeTab === "form" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+                        className={`pb-3 pt-2 px-1 border-b-2 whitespace-nowrap transition-colors ${activeTab === "form" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
                     >
                         + Create New Lead
                     </button>
                 </div>
 
-                <div className="p-6 min-h-[400px]">
+                <div className="p-3 sm:p-6 min-h-[400px]">
                     {loading ? (
                         <div className="flex flex-col justify-center items-center gap-3 py-16">
-                            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                            <div className="text-sm font-semibold text-indigo-600 animate-pulse tracking-wide">
+                            <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="text-sm font-semibold text-amber-600 animate-pulse tracking-wide">
                                 Loading leads...
                             </div>
                         </div>
@@ -214,19 +214,19 @@ export default function Leads() {
                             {/* TAB 1: TABLE VIEW */}
                             {activeTab === "table" && (
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-3 bg-slate-50/70 border border-slate-200 rounded-xl p-3">
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider pl-1">Search:</span>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-slate-50/70 border border-slate-200 rounded-xl p-3">
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider sm:pl-1 shrink-0">Search:</span>
                                         <input
                                             type="text"
                                             placeholder="Search by name, contact, status, or segment..."
                                             value={searchTerm}
                                             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                                            className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                            className="w-full flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-amber-500 transition-colors"
                                         />
                                     </div>
 
                                     <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                                        <table className="w-full text-left border-collapse">
+                                        <table className="w-full text-left border-collapse min-w-[760px]">
                                             <thead>
                                                 <tr className="bg-slate-50/70 text-[11px] font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
                                                     <th className="px-6 py-4">Lead ID</th>
@@ -261,12 +261,12 @@ export default function Leads() {
 
                                                     return (
                                                         <tr key={lead.leadId || idx} className="hover:bg-slate-50/40 transition-colors duration-150 group">
-                                                            <td className="px-6 py-4 font-mono text-xs font-bold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                                                            <td className="px-6 py-4 font-mono text-xs font-bold text-amber-600 group-hover:text-amber-700 transition-colors">
                                                                 #{lead.leadId}
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-indigo-100/50">
+                                                                    <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-amber-100/50">
                                                                         {initial}
                                                                     </div>
                                                                     <div className="flex items-center gap-2">
@@ -281,7 +281,7 @@ export default function Leads() {
                                                             </td>
                                                             <td className="px-6 py-4 font-mono text-xs text-slate-500">{lead.contactNo}</td>
                                                             <td className="px-6 py-4">
-                                                                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100/50">
+                                                                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100/50">
                                                                     {lead.segmentName || "-"}
                                                                 </span>
                                                             </td>
@@ -293,7 +293,7 @@ export default function Leads() {
                                                             <td className="px-6 py-4 text-center">
                                                                 <button
                                                                     onClick={() => navigate(`/sales/leads/${lead.leadId}`)}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100/40 active:scale-95 transition-all"
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100/40 active:scale-95 transition-all"
                                                                 >
                                                                     View Pipeline
                                                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -310,13 +310,13 @@ export default function Leads() {
 
                                     {/* PAGINATION UI */}
                                     {totalItems > 0 && (
-                                        <div className="flex justify-between items-center px-2 py-2 text-xs font-semibold text-slate-500">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-2 py-2 text-xs font-semibold text-slate-500">
                                             <div>
                                                 Showing <span className="text-slate-800">{startEntry}</span> to{" "}
                                                 <span className="text-slate-800">{endEntry}</span> of{" "}
                                                 <span className="text-slate-800">{totalItems}</span> entries
                                             </div>
-                                            <div className="flex gap-1">
+                                            <div className="flex flex-wrap gap-1">
                                                 <button
                                                     disabled={currentPage === 1}
                                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -328,7 +328,7 @@ export default function Leads() {
                                                     <button
                                                         key={number}
                                                         onClick={() => setCurrentPage(number)}
-                                                        className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === number ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                                        className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === number ? "bg-amber-600 border-amber-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                                     >
                                                         {number}
                                                     </button>
@@ -353,12 +353,12 @@ export default function Leads() {
                                         <button
                                             type="button"
                                             onClick={() => setShowSegmentModal(true)}
-                                            className="px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100/40 active:scale-95 transition-all"
+                                            className="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100/40 active:scale-95 transition-all"
                                         >
                                             + Add Segment
                                         </button>
                                     </div>
-                                    <form onSubmit={handleSaveLead} className="space-y-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                    <form onSubmit={handleSaveLead} className="space-y-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
 
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <div>
@@ -423,7 +423,7 @@ export default function Leads() {
                                         </div>
 
                                         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                                            <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md whitespace-nowrap">
+                                            <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md whitespace-nowrap">
                                                 {actionLoading ? "Saving..." : "Create Lead"}
                                             </button>
                                         </div>
@@ -438,7 +438,7 @@ export default function Leads() {
             {/* ── Add Segment Modal ── */}
             {showSegmentModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <h3 className="text-lg font-bold text-slate-900">Add New Segment</h3>
                             <button
@@ -480,7 +480,7 @@ export default function Leads() {
                                 <button
                                     type="submit"
                                     disabled={segmentLoading}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md"
+                                    className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md"
                                 >
                                     {segmentLoading ? "Saving..." : "Save Segment"}
                                 </button>

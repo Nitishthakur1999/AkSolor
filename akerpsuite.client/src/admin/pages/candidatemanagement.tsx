@@ -14,7 +14,7 @@ function Badge({ status }) {
         Shortlisted: "bg-blue-50 text-blue-700 border-blue-200",
         Interview: "bg-amber-50 text-amber-700 border-amber-200",
         Selected: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        Offer: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        Offer: "bg-amber-50 text-amber-700 border-amber-200",
         Joined: "bg-green-50 text-green-700 border-green-200",
         Rejected: "bg-red-50 text-red-700 border-red-200",
     };
@@ -39,7 +39,7 @@ function Input(props) {
     return (
         <input
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white disabled:bg-slate-50 disabled:text-slate-500"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white disabled:bg-slate-50 disabled:text-slate-500"
         />
     );
 }
@@ -48,7 +48,7 @@ function Select({ children, ...props }) {
     return (
         <select
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
         >
             {children}
         </select>
@@ -59,7 +59,7 @@ function TextArea(props) {
     return (
         <textarea
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white resize-none"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white resize-none"
         />
     );
 }
@@ -409,7 +409,7 @@ export default function CandidateManagement() {
                     <select
                         value={statusFilter}
                         onChange={e => setStatusFilter(e.target.value)}
-                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                     >
                         <option value="">All Statuses</option>
                         <option value="Applied">Applied</option>
@@ -426,7 +426,7 @@ export default function CandidateManagement() {
                         value={searchName}
                         onChange={e => setSearchName(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && loadCandidates()}
-                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                     />
                     <button onClick={loadCandidates}
                         className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold hover:bg-slate-200">
@@ -610,7 +610,7 @@ export default function CandidateManagement() {
                             )}
 
                             <button type="submit" disabled={actionLoading}
-                                className="w-full py-3 mt-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all text-sm shadow-md">
+                                className="w-full py-3 mt-2 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all text-sm shadow-md">
                                 {actionLoading ? "Processing..." : MODAL_CONFIG[activeModal].submitLabel}
                             </button>
                         </form>

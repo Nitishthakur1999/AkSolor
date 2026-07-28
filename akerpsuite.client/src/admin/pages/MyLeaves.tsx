@@ -45,7 +45,7 @@ const STATUS_BADGE = {
 };
 
 const LEAVE_ACCENTS = [
-    { ring: "#6366f1", wash: "bg-indigo-50", text: "text-indigo-600" },
+    { ring: "#6366f1", wash: "bg-amber-50", text: "text-amber-600" },
     { ring: "#0d9488", wash: "bg-teal-50", text: "text-teal-600" },
     { ring: "#d946ef", wash: "bg-fuchsia-50", text: "text-fuchsia-600" },
     { ring: "#f59e0b", wash: "bg-amber-50", text: "text-amber-600" },
@@ -247,7 +247,7 @@ export default function MyLeaves() {
                 </div>
                 <button
                     onClick={() => setShowApplyModal(true)}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-indigo-200 transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-amber-200 transition-all active:scale-[0.98]"
                 >
                     <Icon.Plus className="w-4 h-4" />
                     Apply Leave
@@ -329,14 +329,14 @@ export default function MyLeaves() {
                 <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center gap-3">
                     <select
                         value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}
-                        className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                        className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
                     >
                         <option value="2026">2026</option>
                         <option value="2025">2025</option>
                     </select>
                     <select
                         value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
-                        className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                        className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
                     >
                         <option value="">All Months</option>
                         <option value="1">January</option>
@@ -360,7 +360,7 @@ export default function MyLeaves() {
                                 key={s || "all"}
                                 onClick={() => setFilterStatus(s)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${filterStatus === s
-                                    ? "bg-indigo-600 text-white shadow-sm"
+                                    ? "bg-amber-600 text-white shadow-sm"
                                     : "text-slate-500 hover:bg-slate-50"
                                     }`}
                             >
@@ -430,7 +430,7 @@ export default function MyLeaves() {
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
                         <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                <span className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
                                     <Icon.Calendar className="w-5 h-5" />
                                 </span>
                                 <div>
@@ -454,7 +454,7 @@ export default function MyLeaves() {
                                 <select
                                     value={form.leaveTypeId}
                                     onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
-                                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
                                 >
                                     <option value="">Select leave type</option>
                                     {leaveTypes.map((t) => {
@@ -486,7 +486,7 @@ export default function MyLeaves() {
                                         type="date"
                                         value={form.fromDate}
                                         onChange={(e) => setForm({ ...form, fromDate: e.target.value })}
-                                        className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                                        className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
                                     />
                                 </div>
                                 <div>
@@ -497,13 +497,13 @@ export default function MyLeaves() {
                                         type="date"
                                         value={form.toDate}
                                         onChange={(e) => setForm({ ...form, toDate: e.target.value })}
-                                        className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                                        className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
                                     />
                                 </div>
                             </div>
 
                             {previewDays && (
-                                <p className="text-xs text-indigo-600 font-medium bg-indigo-50 rounded-lg px-3 py-2">
+                                <p className="text-xs text-amber-600 font-medium bg-amber-50 rounded-lg px-3 py-2">
                                     This request covers {previewDays} day{previewDays > 1 ? "s" : ""}.
                                 </p>
                             )}
@@ -516,7 +516,7 @@ export default function MyLeaves() {
                                     value={form.reason}
                                     onChange={(e) => setForm({ ...form, reason: e.target.value })}
                                     rows={3}
-                                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
                                     placeholder="Reason for leave"
                                 />
                             </div>
@@ -536,7 +536,7 @@ export default function MyLeaves() {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl shadow-sm transition-all active:scale-[0.98]"
+                                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl shadow-sm transition-all active:scale-[0.98]"
                                 >
                                     {submitting ? "Submitting..." : "Submit"}
                                 </button>

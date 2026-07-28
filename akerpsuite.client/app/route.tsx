@@ -27,7 +27,7 @@ import PayslipViewer from "@/admin/pages/payslipviewer";
 import JobRequisitions from "@/admin/pages/jobrequisitions";
 import JobPostings from "@/admin/pages/jobpostings";
 import CandidateManagement from "@/admin/pages/candidatemanagement";
-import Careers from "@/admin/pages/careers";
+import Careers from "@/components/careers";
 import RecruitmentMaster from "../src/admin/pages/recruitmentmaster";
 import MyLeaves from "@/admin/pages/MyLeaves";
 import MyProfile from "@/admin/pages/MyProfile";
@@ -44,6 +44,8 @@ import LeadDetail from "@/admin/pages/LeadDetail";
 
 // 🆕 Inventory Single Page
 import Inventory from "@/admin/pages/Inventory";
+import PublicSitePage from "@/admin/pages/Publicsitepage";
+ 
 
 function ComingSoon({ title = "Page", icon = "fa-solid fa-circle" }) {
     return (
@@ -111,6 +113,8 @@ const COMPONENT_MAP = {
     "/self/leave": <MyLeaves />,
     "/self/attendance": <MyAttendance />,
     "/self/payslip": <MyPayslip />,
+    "/public-site": <PublicSitePage />,
+ 
 };
 
 // ─────────────────────────────────────────────────────────────────────────

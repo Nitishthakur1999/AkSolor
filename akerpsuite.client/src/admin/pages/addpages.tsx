@@ -56,7 +56,7 @@ export default function PageManagement() {
     const [showPageModal, setShowPageModal] = useState(false);
     const [editingPageId, setEditingPageId] = useState(null);
     const [pageForm, setPageForm] = useState({
-        pageName: "", pageLink: "", pageIcon: "ti ti-circle", pageType: "General"
+        pageName: "", pageLink: "", pageIcon: "fa-solid fa-circle", pageType: "General"
     });
 
     // 🚀 INITIAL DATA LOAD
@@ -160,7 +160,7 @@ export default function PageManagement() {
         setPageForm({
             pageName: page.pageName || page.PageName || page.name || page.Name || page.title || "",
             pageLink: page.pageLink || page.PageLink || page.link || page.Link || page.url || "",
-            pageIcon: page.pageIcon || page.PageIcon || page.icon || page.Icon || "ti ti-circle",
+            pageIcon: page.pageIcon || page.PageIcon || page.icon || page.Icon || "fa-solid fa-circle",
             pageType: page.pageType || page.PageType || page.type || page.Type || page.module || "General"
         });
         setShowPageModal(true);
@@ -178,7 +178,7 @@ export default function PageManagement() {
 
     const resetForm = () => {
         setEditingPageId(null);
-        setPageForm({ pageName: "", pageLink: "", pageIcon: "ti ti-circle", pageType: "General" });
+        setPageForm({ pageName: "", pageLink: "", pageIcon: "fa-solid fa-circle", pageType: "General" });
     };
 
     // --- ASSIGN LOGIC ---
@@ -242,7 +242,7 @@ export default function PageManagement() {
 
                 <div className="p-6 min-h-[400px]">
                     {loading ? (
-                        <div className="text-center text-indigo-600 py-10 font-medium animate-pulse">Loading Data...</div>
+                        <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>
                     ) : (
                         <>
                             {/* TAB 1: TABLE VIEW */}
@@ -252,7 +252,7 @@ export default function PageManagement() {
                                         <input type="text" placeholder="Search pages..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-slate-400 transition-all" />
                                         <button
                                             onClick={handleAddClick}
-                                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm whitespace-nowrap"
+                                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm whitespace-nowrap"
                                         >
                                             + Add Page
                                         </button>
@@ -293,7 +293,7 @@ export default function PageManagement() {
                                                             </td>
                                                             <td className="px-6 py-4 text-center">
                                                                 <div className="flex justify-center gap-3">
-                                                                    <button onClick={() => handleEditClick(page)} className="px-4 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-2xl text-xs transition-colors">Edit</button>
+                                                                    <button onClick={() => handleEditClick(page)} className="px-4 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold rounded-2xl text-xs transition-colors">Edit</button>
                                                                     <button onClick={() => handleDeleteClick(pId)} className="px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-2xl text-xs transition-colors">Delete</button>
                                                                 </div>
                                                             </td>
@@ -324,7 +324,7 @@ export default function PageManagement() {
                                                         key={number}
                                                         onClick={() => setCurrentPage(number)}
                                                         className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${currentPage === number
-                                                            ? "bg-indigo-600 text-white shadow-md border-indigo-600"
+                                                            ? "bg-amber-600 text-white shadow-md border-amber-600"
                                                             : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                                                             }`}
                                                     >
@@ -350,7 +350,7 @@ export default function PageManagement() {
                                 <div className="space-y-6 max-w-5xl mx-auto">
                                     <div className="max-w-md">
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Select Role *</label>
-                                            <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white transition-all">
+                                            <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white transition-all">
                                                 <option value="" disabled>-- Choose Role --</option>
                                                 {roles
                                                     .filter(r => {
@@ -383,11 +383,11 @@ export default function PageManagement() {
                                                             {pages.map(page => {
                                                                 const pId = page.pageId || page.PageId || page.id || page.Id;
                                                                 const pName = page.pageName || page.PageName || page.name || page.Name || page.title || "Unnamed Page";
-                                                                const pIcon = page.pageIcon || page.PageIcon || page.icon || page.Icon || "ti ti-circle";
+                                                                const pIcon = page.pageIcon || page.PageIcon || page.icon || page.Icon || "fa-solid fa-circle";
 
                                                                 return (
-                                                                    <label key={pId} className="flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-sm cursor-pointer transition-all">
-                                                                        <input type="checkbox" className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer" checked={assignedPageIds.includes(Number(pId))} onChange={() => handleCheckboxChange(pId)} />
+                                                                    <label key={pId} className="flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-200 rounded-xl hover:border-amber-300 hover:shadow-sm cursor-pointer transition-all">
+                                                                        <input type="checkbox" className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer" checked={assignedPageIds.includes(Number(pId))} onChange={() => handleCheckboxChange(pId)} />
                                                                         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                                                                             <i className={`${pIcon} text-slate-400 text-sm`} />
                                                                             {pName}
@@ -400,7 +400,7 @@ export default function PageManagement() {
                                                 ))}
                                             </div>
                                             <div className="mt-8 flex justify-end">
-                                                <button onClick={handleSaveAssignment} disabled={actionLoading} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">{actionLoading ? "Saving..." : "Save Assignments"}</button>
+                                                <button onClick={handleSaveAssignment} disabled={actionLoading} className="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">{actionLoading ? "Saving..." : "Save Assignments"}</button>
                                             </div>
                                         </div>
                                     )}
@@ -431,27 +431,27 @@ export default function PageManagement() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Page Name *</label>
-                                    <input type="text" required placeholder="e.g. Leave Management" value={pageForm.pageName} onChange={e => setPageForm({ ...pageForm, pageName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                    <input type="text" required placeholder="e.g. Leave Management" value={pageForm.pageName} onChange={e => setPageForm({ ...pageForm, pageName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Page Link (URL) *</label>
-                                    <input type="text" required placeholder="e.g. /leave" value={pageForm.pageLink} onChange={e => setPageForm({ ...pageForm, pageLink: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                    <input type="text" required placeholder="e.g. /leave" value={pageForm.pageLink} onChange={e => setPageForm({ ...pageForm, pageLink: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Module Group (Type) *</label>
-                                    <input type="text" required placeholder="e.g. HR, Payroll" value={pageForm.pageType} onChange={e => setPageForm({ ...pageForm, pageType: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                    <input type="text" required placeholder="e.g. HR, Payroll" value={pageForm.pageType} onChange={e => setPageForm({ ...pageForm, pageType: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tabler/FontAwesome Icon *</label>
-                                    <input type="text" required placeholder="e.g. fa-solid fa-users" value={pageForm.pageIcon} onChange={e => setPageForm({ ...pageForm, pageIcon: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all" />
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Font Awesome Icon *</label>
+                                    <input type="text" required placeholder="e.g. fa-solid fa-users" value={pageForm.pageIcon} onChange={e => setPageForm({ ...pageForm, pageIcon: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
                                     <p className="text-[10px] text-slate-400 mt-1">Visit fontawesome.com for names</p>
                                 </div>
                             </div>
                             <div className="pt-4 flex justify-end gap-3 border-t border-slate-200/60 mt-4">
                                 <button type="button" onClick={() => { setShowPageModal(false); resetForm(); }} className="px-6 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-100 transition-all">Cancel</button>
-                                <button type="submit" disabled={actionLoading} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-indigo-700 disabled:opacity-60 transition-all">
+                                <button type="submit" disabled={actionLoading} className="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
                                     {actionLoading ? "Saving..." : (editingPageId ? "Update Page" : "Add New Page")}
                                 </button>
                             </div>

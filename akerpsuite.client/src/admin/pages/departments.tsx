@@ -161,7 +161,7 @@ export default function Departments() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm"
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm"
                 >
                     Add Department
                 </button>
@@ -175,7 +175,7 @@ export default function Departments() {
                     placeholder="Search by department name, short code, or parent division..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
                 />
                 {searchQuery && (
                     <button
@@ -191,7 +191,7 @@ export default function Departments() {
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 {loading ? (
                     <div className="p-12 flex justify-center">
-                        <div className="text-sm font-semibold text-indigo-600 animate-pulse">Syncing nodes...</div>
+                        <div className="text-sm font-semibold text-amber-600 animate-pulse">Syncing nodes...</div>
                     </div>
                 ) : (
                     <div className="flex flex-col justify-between">
@@ -218,7 +218,7 @@ export default function Departments() {
                                         </td>
                                         <td className="px-6 py-4 text-xs font-medium text-slate-500">
                                             {dep.parentDeptId ? (
-                                                <span className="px-2 py-1 rounded bg-indigo-50/60 border border-indigo-100/40 text-indigo-700 font-semibold">
+                                                <span className="px-2 py-1 rounded bg-amber-50/60 border border-amber-100/40 text-amber-700 font-semibold">
                                                     {getParentDeptName(dep.parentDeptId)}
                                                 </span>
                                             ) : (
@@ -235,7 +235,7 @@ export default function Departments() {
                                             <button
                                                 type="button"
                                                 onClick={() => openEditModal(dep)}
-                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-100/50 focus:outline-none"
+                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-100/50 focus:outline-none"
                                             >
                                                 Edit
                                             </button>
@@ -279,7 +279,7 @@ export default function Departments() {
                                         <button
                                             key={index}
                                             onClick={() => setCurrentPage(index + 1)}
-                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-amber-600 border-amber-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
                                         >
                                             {index + 1}
                                         </button>
@@ -322,7 +322,7 @@ export default function Departments() {
                                     placeholder="e.g., Human Resources"
                                     value={createForm.departmentName}
                                     onChange={e => setCreateForm({ ...createForm, departmentName: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500"
                                 />
                             </div>
                             <div>
@@ -333,13 +333,13 @@ export default function Departments() {
                                     placeholder="e.g., HR"
                                     value={createForm.departmentCode}
                                     onChange={e => setCreateForm({ ...createForm, departmentCode: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500"
                                 />
                             </div>
                             <button
                                 type="submit"
                                 disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md shadow-indigo-600/10"
+                                className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-all shadow-md shadow-amber-600/10"
                             >
                                 Save Department
                             </button>
@@ -370,7 +370,7 @@ export default function Departments() {
                                     required
                                     value={editForm.departmentName}
                                     onChange={e => setEditForm({ ...editForm, departmentName: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500"
                                 />
                             </div>
                             <div>
@@ -380,7 +380,7 @@ export default function Departments() {
                                     required
                                     value={editForm.departmentCode}
                                     onChange={e => setEditForm({ ...editForm, departmentCode: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500"
                                 />
                             </div>
                             <div>
@@ -388,7 +388,7 @@ export default function Departments() {
                                 <select
                                     value={editForm.parentDepartmentId || ""}
                                     onChange={e => setEditForm({ ...editForm, parentDepartmentId: e.target.value || null })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-500"
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500"
                                 >
                                     <option value="">-- No Parent (Root Division Layer) --</option>
                                     {departments.filter(d => d.deptId !== editForm.deptId).map(d => (
@@ -399,7 +399,7 @@ export default function Departments() {
                             <button
                                 type="submit"
                                 disabled={actionLoading}
-                                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md shadow-indigo-600/10"
+                                className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-all shadow-md shadow-amber-600/10"
                             >
                                 Update Department
                             </button>

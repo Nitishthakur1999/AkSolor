@@ -32,7 +32,7 @@ function Input({ ...props }) {
     return (
         <input
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white disabled:bg-slate-50 disabled:text-slate-500"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white disabled:bg-slate-50 disabled:text-slate-500"
         />
     );
 }
@@ -236,7 +236,7 @@ export default function JobPostings() {
                     <select
                         value={publishedFilter}
                         onChange={e => setPublishedFilter(e.target.value)}
-                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                        className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                     >
                         <option value="">All Postings</option>
                         <option value="true">Published Only</option>
@@ -248,7 +248,7 @@ export default function JobPostings() {
                         if (showForm && !editingId) handleCancel();
                         else { handleCancel(); setShowForm(true); }
                     }}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm"
+                    className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all shadow-sm"
                 >
                     {showForm && !editingId ? "Cancel Creation" : "+ Create Job Posting"}
                 </button>
@@ -281,7 +281,7 @@ export default function JobPostings() {
                                 onChange={handleRequisitionChange}
                                 disabled={!!editingId} // Usually shouldn't change requisition once posted
                                 required
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white disabled:bg-slate-100"
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white disabled:bg-slate-100"
                             >
                                 <option value="">Select Requisition...</option>
                                 {approvedReqs.map(r => (
@@ -317,7 +317,7 @@ export default function JobPostings() {
                                 value={form.employmentType}
                                 onChange={set("employmentType")}
                                 required
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white"
+                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                             >
                                 <option value="Full-Time">Full-Time</option>
                                 <option value="Part-Time">Part-Time</option>
@@ -350,7 +350,7 @@ export default function JobPostings() {
                                 type="checkbox"
                                 checked={form.isPublished}
                                 onChange={set("isPublished")}
-                                className="w-4 h-4 accent-indigo-600 rounded"
+                                className="w-4 h-4 accent-amber-600 rounded"
                             />
                             <span className="text-sm font-semibold text-slate-700">Publish immediately to Careers Page</span>
                         </label>
@@ -358,7 +358,7 @@ export default function JobPostings() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all shadow-sm"
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all shadow-sm"
                         >
                             {saving ? "Saving..." : editingId ? "Update Posting" : "Create Posting"}
                         </button>
@@ -383,7 +383,7 @@ export default function JobPostings() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-indigo-500 animate-pulse font-medium">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-amber-500 animate-pulse font-medium">
                                         Loading job postings...
                                     </td>
                                 </tr>
