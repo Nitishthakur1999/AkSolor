@@ -141,8 +141,6 @@ namespace AkerpSuite.Server.Services
 
         #endregion
 
-
-
         #region Public Site – Banner
         Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath);
         Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync();

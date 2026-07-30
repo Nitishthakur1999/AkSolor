@@ -492,6 +492,16 @@
         public int? ReportingManager { get; set; }
         public decimal? OfferedCtc { get; set; }
     }
+    //public class CandidateApplicationRequestDto
+    //{
+    //    public int JobPostingId { get; set; }
+    //    public string Name { get; set; } = string.Empty;
+    //    public string Email { get; set; } = string.Empty;
+    //    public string Phone { get; set; } = string.Empty;
+    //    public string? Experience { get; set; }
+    //    public string? Skills { get; set; }
+    //    public string? CvPath { get; set; }
+    //}
     public class CandidateApplicationRequestDto
     {
         public int JobPostingId { get; set; }
@@ -500,6 +510,8 @@
         public string Phone { get; set; } = string.Empty;
         public string? Experience { get; set; }
         public string? Skills { get; set; }
+        public string? CvBase64 { get; set; }
+        public string? CvExtension { get; set; }
         public string? CvPath { get; set; }
     }
 

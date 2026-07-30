@@ -37,6 +37,15 @@ function Input({ ...props }) {
     );
 }
 
+function Textarea({ ...props }) {
+    return (
+        <textarea
+            {...props}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white resize-y"
+        />
+    );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function JobPostings() {
     const [postings, setPostings] = useState([]);
@@ -50,6 +59,7 @@ export default function JobPostings() {
     const emptyForm = {
         requisitionId: "",
         title: "",
+        description: "",
         location: "",
         employmentType: "Full-Time",
         salaryRange: "",
@@ -114,6 +124,7 @@ export default function JobPostings() {
         setForm({
             requisitionId: posting.requisitionId || "",
             title: posting.title || "",
+            description: posting.description || "",
             location: posting.location || "",
             employmentType: posting.employmentType || "Full-Time",
             salaryRange: posting.salaryRange || "",
@@ -143,6 +154,7 @@ export default function JobPostings() {
             const payload: Record<string, any> = {
                 requisitionId: parseInt(form.requisitionId),
                 title: form.title,
+                description: form.description,
                 location: form.location,
                 employmentType: form.employmentType,
                 salaryRange: form.salaryRange,
@@ -181,6 +193,7 @@ export default function JobPostings() {
                 postingId: posting.postingId,
                 requisitionId: posting.requisitionId,
                 title: posting.title,
+                description: posting.description,
                 location: posting.location,
                 employmentType: posting.employmentType,
                 salaryRange: posting.salaryRange,
@@ -344,6 +357,16 @@ export default function JobPostings() {
                         </Field>
                     </div>
 
+                    {/* Description — full width, isliye grid ke bahar */}
+                    <Field label="Job Description">
+                        <Textarea
+                            rows={6}
+                            placeholder="Full job description, responsibilities, requirements..."
+                            value={form.description}
+                            onChange={set("description")}
+                        />
+                    </Field>
+
                     <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                         <label className="flex items-center gap-2.5 cursor-pointer">
                             <input
@@ -398,6 +421,11 @@ export default function JobPostings() {
                                     <tr key={post.postingId ?? i} className="hover:bg-slate-50/60 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-semibold text-slate-800">{post.title}</div>
+                                            {post.description && (
+                                                <div className="text-[11px] text-slate-500 mt-0.5 max-w-xs truncate" title={post.description}>
+                                                    {post.description}
+                                                </div>
+                                            )}
                                             <div className="text-[11px] text-slate-400 mt-0.5">
                                                 {post.salaryRange || "Salary not disclosed"}
                                             </div>

@@ -391,6 +391,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public int RequisitionId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+        public string? Description { get; set; }
         public string EmploymentType { get; set; } = string.Empty;
         public string? SalaryRange { get; set; }
         public DateTime? ClosingDate { get; set; }

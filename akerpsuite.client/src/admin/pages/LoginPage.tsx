@@ -355,8 +355,8 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <span className="bp-display text-lg font-semibold tracking-tight text-white">AkerpSuite</span>
-                    <span className="bp-mono text-[0.6rem] text-white/50 ml-1">v4.2</span>
+                    <span className="bp-display text-lg font-semibold tracking-tight text-white">AKS Solar</span>
+                   
                 </div>
 
                 <div className="relative flex-1 flex items-center justify-center py-8">

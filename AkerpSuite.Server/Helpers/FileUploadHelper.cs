@@ -15,7 +15,7 @@ namespace AkerpSuite.Server.Helpers
 
         // Max Size = 10 MB
         private const long MaxFileSize = 10 * 1024 * 1024;
-        // Allowed Extensions
+        // Default allowed extensions (used when no custom list is passed in)
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
 
         public FileUploadHelper(IWebHostEnvironment environment, ILogger<FileUploadHelper> logger)
@@ -25,7 +25,7 @@ namespace AkerpSuite.Server.Helpers
         }
 
         // 1. Existing Standard Method (For FormData/IFormFile if needed elsewhere)
-        public async Task<string?> SaveFileAsync(IFormFile file, string folderName)
+        public async Task<string?> SaveFileAsync(IFormFile file, string folderName, string[]? allowedExtensions = null)
         {
             if (file == null || file.Length == 0)
                 return null;
@@ -34,9 +34,10 @@ namespace AkerpSuite.Server.Helpers
                 throw new InvalidOperationException("File size cannot exceed 10 MB.");
 
             var extension = Path.GetExtension(file.FileName).ToLower();
+            var allowed = allowedExtensions ?? _allowedExtensions;
 
-            if (!_allowedExtensions.Contains(extension))
-                throw new InvalidOperationException("Only JPG, JPEG, PNG and PDF files are allowed.");
+            if (!allowed.Contains(extension))
+                throw new InvalidOperationException($"Only {string.Join(", ", allowed)} files are allowed.");
 
             var folderPath = GetFolderPath(folderName);
 
@@ -49,8 +50,10 @@ namespace AkerpSuite.Server.Helpers
             return $"{folderName}/{fileName}".Replace("\\", "/");
         }
 
-        // 2. Handles Base64 JSON payloads (used by HR document upload/update).
-        public async Task<string?> SaveBase64FileAsync(string? base64String, string? extension, string folderName)
+        // 2. Handles Base64 JSON payloads (used by HR document upload/update, and public job applications).
+        // Pass a custom `allowedExtensions` list (e.g. CV uploads allow .pdf/.doc/.docx) —
+        // if omitted, falls back to the default image/PDF list.
+        public async Task<string?> SaveBase64FileAsync(string? base64String, string? extension, string folderName, string[]? allowedExtensions = null)
         {
             if (string.IsNullOrWhiteSpace(base64String))
                 return null;
@@ -80,9 +83,10 @@ namespace AkerpSuite.Server.Helpers
                 throw new InvalidOperationException("Uploaded file size cannot exceed 10 MB.");
 
             var cleanedExtension = extension.StartsWith(".") ? extension.ToLower() : $".{extension.ToLower()}";
+            var allowed = allowedExtensions ?? _allowedExtensions;
 
-            if (!_allowedExtensions.Contains(cleanedExtension))
-                throw new InvalidOperationException("Only JPG, JPEG, PNG and PDF files are allowed.");
+            if (!allowed.Contains(cleanedExtension))
+                throw new InvalidOperationException($"Only {string.Join(", ", allowed)} files are allowed.");
 
             var folderPath = GetFolderPath(folderName);
 
@@ -95,8 +99,7 @@ namespace AkerpSuite.Server.Helpers
         }
 
         // 3. Deletes a previously saved file given its stored relative path (e.g. "EmployeeDocuments/xxx.pdf").
-        // Intentionally does not throw on failure — a missing/locked file on cleanup should not break the
-        // calling operation (upload rollback, update replacement, delete). Failures are logged instead.
+       
         public void DeleteFile(string? relativePath)
         {
             if (string.IsNullOrWhiteSpace(relativePath))

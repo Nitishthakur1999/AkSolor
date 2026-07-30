@@ -188,7 +188,7 @@ namespace AkerpSuite.Server.Repositories
 
         #region Application System
         Task<(int Id, string ApplicationCode)> CreateApplicationAsync(CandidateApplicationRequestDto request);
-
+        Task MarkAcknowledgementSentAsync(int candidateId);
         // Candidate Management
         Task<IEnumerable<dynamic>> SearchCandidatesAsync(CandidateSearchRequestDto filter);
         Task<dynamic?> GetCandidateByIdAsync(int id);

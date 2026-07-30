@@ -161,7 +161,7 @@ export const adminService = {
     getRecruitmentStatusReport: (filters: any = {}) => apiCall(`${API_BASE}/reports/recruitment-status${buildQuery(filters)}`),
 
     // C. Application System
-    applyForJob: (data?: any) => apiCall(`${API_BASE}/apply`, "POST", data),
+    applyForJob: (data?: any) => apiCall(`${BASE}/api/admin/apply`, "POST", data),
 
     // D. Candidate Management
     searchCandidates: (filters?: any) => apiCall(`${API_BASE}/candidates${buildQuery(filters)}`),

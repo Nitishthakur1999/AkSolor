@@ -635,221 +635,218 @@ namespace AkerpSuite.Server.Services
         public Task<IEnumerable<SalaryHistoryResponseDto>> GetAllIncrementsAsync(DateTime? fromDate, DateTime? toDate)
             => _repository.GetAllIncrementsAsync(fromDate, toDate);
         #endregion
-
-
    
-    #region Public Site – Banner
+        #region Public Site – Banner
 
-public async Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath)
-    => await _repository.CreateBannerAsync(request, imagePath);
+    public async Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath)
+        => await _repository.CreateBannerAsync(request, imagePath);
 
-    public async Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync()
-        => await _repository.GetAllBannersAsync();
+        public async Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync()
+            => await _repository.GetAllBannersAsync();
 
-    public async Task<IEnumerable<BannerResponseDto>> GetActiveBannersAsync()
-        => await _repository.GetActiveBannersAsync();
+        public async Task<IEnumerable<BannerResponseDto>> GetActiveBannersAsync()
+            => await _repository.GetActiveBannersAsync();
 
-    public async Task<bool> UpdateBannerAsync(BannerUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
-    {
-        var existing = await _repository.GetBannerByIdAsync(request.Id);
+        public async Task<bool> UpdateBannerAsync(BannerUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
+        {
+            var existing = await _repository.GetBannerByIdAsync(request.Id);
 
-        var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
-            ? DeleteOldAndReturnNew(existing?.ImagePath, newImagePath, fileHelper)
-            : existing?.ImagePath;
+            var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
+                ? DeleteOldAndReturnNew(existing?.ImagePath, newImagePath, fileHelper)
+                : existing?.ImagePath;
 
-        return await _repository.UpdateBannerAsync(request, finalImagePath);
-    }
+            return await _repository.UpdateBannerAsync(request, finalImagePath);
+        }
 
-    public async Task<bool> DeleteBannerAsync(int id, FileUploadHelper fileHelper)
-    {
-        var existing = await _repository.GetBannerByIdAsync(id);
-        if (existing != null && !string.IsNullOrWhiteSpace(existing.ImagePath))
-            fileHelper.DeleteFile(existing.ImagePath);
+        public async Task<bool> DeleteBannerAsync(int id, FileUploadHelper fileHelper)
+        {
+            var existing = await _repository.GetBannerByIdAsync(id);
+            if (existing != null && !string.IsNullOrWhiteSpace(existing.ImagePath))
+                fileHelper.DeleteFile(existing.ImagePath);
 
-        return await _repository.DeleteBannerAsync(id);
-    }
+            return await _repository.DeleteBannerAsync(id);
+        }
+
+            #endregion
+
+        #region Public Site – Gallery
+
+        public async Task<GalleryResponseDto> CreateGalleryAsync(GalleryRequestDto request, string? imagePath)
+            => await _repository.CreateGalleryAsync(request, imagePath);
+
+        public async Task<IEnumerable<GalleryResponseDto>> GetAllGalleryAsync()
+            => await _repository.GetAllGalleryAsync();
+
+        public async Task<IEnumerable<GalleryResponseDto>> GetActiveGalleryAsync()
+            => await _repository.GetActiveGalleryAsync();
+
+        public async Task<bool> UpdateGalleryAsync(GalleryUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
+        {
+            var all = await _repository.GetAllGalleryAsync();
+            var current = all.FirstOrDefault(g => g.Id == request.Id);
+
+            var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
+                ? DeleteOldAndReturnNew(current?.ImagePath, newImagePath, fileHelper)
+                : current?.ImagePath;
+
+            return await _repository.UpdateGalleryAsync(request, finalImagePath);
+        }
+
+        public async Task<bool> DeleteGalleryAsync(int id, FileUploadHelper fileHelper)
+        {
+            var all = await _repository.GetAllGalleryAsync();
+            var current = all.FirstOrDefault(g => g.Id == id);
+            if (current != null && !string.IsNullOrWhiteSpace(current.ImagePath))
+                fileHelper.DeleteFile(current.ImagePath);
+
+            return await _repository.DeleteGalleryAsync(id);
+        }
 
         #endregion
 
-    #region Public Site – Gallery
+        #region Public Site – Team
 
-    public async Task<GalleryResponseDto> CreateGalleryAsync(GalleryRequestDto request, string? imagePath)
-        => await _repository.CreateGalleryAsync(request, imagePath);
+        public async Task<TeamResponseDto> CreateTeamAsync(TeamRequestDto request, string? imagePath)
+            => await _repository.CreateTeamAsync(request, imagePath);
 
-    public async Task<IEnumerable<GalleryResponseDto>> GetAllGalleryAsync()
-        => await _repository.GetAllGalleryAsync();
+        public async Task<IEnumerable<TeamResponseDto>> GetAllTeamAsync()
+            => await _repository.GetAllTeamAsync();
 
-    public async Task<IEnumerable<GalleryResponseDto>> GetActiveGalleryAsync()
-        => await _repository.GetActiveGalleryAsync();
+        public async Task<IEnumerable<TeamResponseDto>> GetActiveTeamAsync()
+            => await _repository.GetActiveTeamAsync();
 
-    public async Task<bool> UpdateGalleryAsync(GalleryUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
-    {
-        var all = await _repository.GetAllGalleryAsync();
-        var current = all.FirstOrDefault(g => g.Id == request.Id);
+        public async Task<bool> UpdateTeamAsync(TeamUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
+        {
+            var all = await _repository.GetAllTeamAsync();
+            var current = all.FirstOrDefault(t => t.Id == request.Id);
 
-        var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
-            ? DeleteOldAndReturnNew(current?.ImagePath, newImagePath, fileHelper)
-            : current?.ImagePath;
+            var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
+                ? DeleteOldAndReturnNew(current?.ImagePath, newImagePath, fileHelper)
+                : current?.ImagePath;
 
-        return await _repository.UpdateGalleryAsync(request, finalImagePath);
+            return await _repository.UpdateTeamAsync(request, finalImagePath);
+        }
+
+        public async Task<bool> DeleteTeamAsync(int id, FileUploadHelper fileHelper)
+        {
+            var all = await _repository.GetAllTeamAsync();
+            var current = all.FirstOrDefault(t => t.Id == id);
+            if (current != null && !string.IsNullOrWhiteSpace(current.ImagePath))
+                fileHelper.DeleteFile(current.ImagePath);
+
+            return await _repository.DeleteTeamAsync(id);
+        }
+
+        #endregion
+
+        #region Public Site – Projects (multi-image)
+
+        public async Task<ProjectResponseDto> CreateProjectAsync(ProjectRequestDto request, List<string> imagePaths)
+            => await _repository.CreateProjectAsync(request, imagePaths);
+
+        public async Task<IEnumerable<ProjectResponseDto>> GetAllProjectsAsync()
+            => await _repository.GetAllProjectsAsync();
+
+        public async Task<IEnumerable<ProjectResponseDto>> GetActiveProjectsAsync()
+            => await _repository.GetActiveProjectsAsync();
+
+        public async Task<bool> UpdateProjectAsync(ProjectUpdateRequestDto request, List<string> newImagePaths, FileUploadHelper fileHelper)
+        {
+            var (success, removedPaths) = await _repository.UpdateProjectAsync(request, newImagePaths);
+            removedPaths.ForEach(fileHelper.DeleteFile);
+            return success;
+        }
+
+        public async Task<bool> DeleteProjectAsync(int id, FileUploadHelper fileHelper)
+        {
+            var (success, deletedPaths) = await _repository.DeleteProjectAsync(id);
+            deletedPaths.ForEach(fileHelper.DeleteFile);
+            return success;
+        }
+
+        #endregion
+
+        #region Public Site – Highlights
+        public async Task<HighlightResponseDto> CreateHighlightAsync(HighlightRequestDto request, string? imagePath)
+            => await _repository.CreateHighlightAsync(request, imagePath);
+
+        public async Task<IEnumerable<HighlightResponseDto>> GetAllHighlightsAsync()
+            => await _repository.GetAllHighlightsAsync();
+
+        public async Task<IEnumerable<HighlightResponseDto>> GetActiveHighlightsAsync()
+            => await _repository.GetActiveHighlightsAsync();
+
+        public async Task<bool> UpdateHighlightAsync(HighlightUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
+        {
+            var all = await _repository.GetAllHighlightsAsync();
+            var current = all.FirstOrDefault(h => h.Id == request.Id);
+
+            var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
+                ? DeleteOldAndReturnNew(current?.ImagePath, newImagePath, fileHelper)
+                : current?.ImagePath;
+
+            return await _repository.UpdateHighlightAsync(request, finalImagePath);
+        }
+
+        public async Task<bool> DeleteHighlightAsync(int id, FileUploadHelper fileHelper)
+        {
+            var all = await _repository.GetAllHighlightsAsync();
+            var current = all.FirstOrDefault(h => h.Id == id);
+            if (current != null && !string.IsNullOrWhiteSpace(current.ImagePath))
+                fileHelper.DeleteFile(current.ImagePath);
+
+            return await _repository.DeleteHighlightAsync(id);
+        }
+
+        #endregion
+
+        #region Public Site – Career (no images)
+
+        public async Task<CareerResponseDto> CreateCareerAsync(CareerRequestDto request)
+            => await _repository.CreateCareerAsync(request);
+
+        public async Task<IEnumerable<CareerResponseDto>> GetAllCareersAsync()
+            => await _repository.GetAllCareersAsync();
+
+        public async Task<IEnumerable<CareerResponseDto>> GetOpenCareersAsync()
+            => await _repository.GetOpenCareersAsync();
+
+        public async Task<bool> UpdateCareerAsync(CareerUpdateRequestDto request)
+            => await _repository.UpdateCareerAsync(request);
+
+        public async Task<bool> DeleteCareerAsync(int id)
+            => await _repository.DeleteCareerAsync(id);
+
+        #endregion
+
+        #region Public Site – Contact Query (no images)
+
+        public async Task<int> CreateContactQueryAsync(ContactQueryRequestDto request)
+            => await _repository.CreateContactQueryAsync(request);
+
+        public async Task<IEnumerable<ContactQueryResponseDto>> GetAllContactQueriesAsync(bool? isRead)
+            => await _repository.GetAllContactQueriesAsync(isRead);
+
+        public async Task<bool> MarkQueryReadAsync(int id)
+            => await _repository.MarkQueryReadAsync(id);
+
+        public async Task<bool> DeleteContactQueryAsync(int id)
+            => await _repository.DeleteContactQueryAsync(id);
+
+        #endregion
+
+        #region Private Helper
+
+        // Deletes the old image (if present) and returns the new path — keeps update methods short & arrow-friendly
+        private string? DeleteOldAndReturnNew(string? oldPath, string? newPath, FileUploadHelper fileHelper)
+        {
+            if (!string.IsNullOrWhiteSpace(oldPath))
+                fileHelper.DeleteFile(oldPath);
+
+            return newPath;
+        }
+
+        #endregion
+
     }
-
-    public async Task<bool> DeleteGalleryAsync(int id, FileUploadHelper fileHelper)
-    {
-        var all = await _repository.GetAllGalleryAsync();
-        var current = all.FirstOrDefault(g => g.Id == id);
-        if (current != null && !string.IsNullOrWhiteSpace(current.ImagePath))
-            fileHelper.DeleteFile(current.ImagePath);
-
-        return await _repository.DeleteGalleryAsync(id);
-    }
-
-    #endregion
-
-    #region Public Site – Team
-
-    public async Task<TeamResponseDto> CreateTeamAsync(TeamRequestDto request, string? imagePath)
-        => await _repository.CreateTeamAsync(request, imagePath);
-
-    public async Task<IEnumerable<TeamResponseDto>> GetAllTeamAsync()
-        => await _repository.GetAllTeamAsync();
-
-    public async Task<IEnumerable<TeamResponseDto>> GetActiveTeamAsync()
-        => await _repository.GetActiveTeamAsync();
-
-    public async Task<bool> UpdateTeamAsync(TeamUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
-    {
-        var all = await _repository.GetAllTeamAsync();
-        var current = all.FirstOrDefault(t => t.Id == request.Id);
-
-        var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
-            ? DeleteOldAndReturnNew(current?.ImagePath, newImagePath, fileHelper)
-            : current?.ImagePath;
-
-        return await _repository.UpdateTeamAsync(request, finalImagePath);
-    }
-
-    public async Task<bool> DeleteTeamAsync(int id, FileUploadHelper fileHelper)
-    {
-        var all = await _repository.GetAllTeamAsync();
-        var current = all.FirstOrDefault(t => t.Id == id);
-        if (current != null && !string.IsNullOrWhiteSpace(current.ImagePath))
-            fileHelper.DeleteFile(current.ImagePath);
-
-        return await _repository.DeleteTeamAsync(id);
-    }
-
-    #endregion
-
-    #region Public Site – Projects (multi-image)
-
-    public async Task<ProjectResponseDto> CreateProjectAsync(ProjectRequestDto request, List<string> imagePaths)
-        => await _repository.CreateProjectAsync(request, imagePaths);
-
-    public async Task<IEnumerable<ProjectResponseDto>> GetAllProjectsAsync()
-        => await _repository.GetAllProjectsAsync();
-
-    public async Task<IEnumerable<ProjectResponseDto>> GetActiveProjectsAsync()
-        => await _repository.GetActiveProjectsAsync();
-
-    public async Task<bool> UpdateProjectAsync(ProjectUpdateRequestDto request, List<string> newImagePaths, FileUploadHelper fileHelper)
-    {
-        var (success, removedPaths) = await _repository.UpdateProjectAsync(request, newImagePaths);
-        removedPaths.ForEach(fileHelper.DeleteFile);
-        return success;
-    }
-
-    public async Task<bool> DeleteProjectAsync(int id, FileUploadHelper fileHelper)
-    {
-        var (success, deletedPaths) = await _repository.DeleteProjectAsync(id);
-        deletedPaths.ForEach(fileHelper.DeleteFile);
-        return success;
-    }
-
-    #endregion
-
-    #region Public Site – Highlights
-
-    public async Task<HighlightResponseDto> CreateHighlightAsync(HighlightRequestDto request, string? imagePath)
-        => await _repository.CreateHighlightAsync(request, imagePath);
-
-    public async Task<IEnumerable<HighlightResponseDto>> GetAllHighlightsAsync()
-        => await _repository.GetAllHighlightsAsync();
-
-    public async Task<IEnumerable<HighlightResponseDto>> GetActiveHighlightsAsync()
-        => await _repository.GetActiveHighlightsAsync();
-
-    public async Task<bool> UpdateHighlightAsync(HighlightUpdateRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
-    {
-        var all = await _repository.GetAllHighlightsAsync();
-        var current = all.FirstOrDefault(h => h.Id == request.Id);
-
-        var finalImagePath = !string.IsNullOrWhiteSpace(newImagePath)
-            ? DeleteOldAndReturnNew(current?.ImagePath, newImagePath, fileHelper)
-            : current?.ImagePath;
-
-        return await _repository.UpdateHighlightAsync(request, finalImagePath);
-    }
-
-    public async Task<bool> DeleteHighlightAsync(int id, FileUploadHelper fileHelper)
-    {
-        var all = await _repository.GetAllHighlightsAsync();
-        var current = all.FirstOrDefault(h => h.Id == id);
-        if (current != null && !string.IsNullOrWhiteSpace(current.ImagePath))
-            fileHelper.DeleteFile(current.ImagePath);
-
-        return await _repository.DeleteHighlightAsync(id);
-    }
-
-    #endregion
-
-    #region Public Site – Career (no images)
-
-    public async Task<CareerResponseDto> CreateCareerAsync(CareerRequestDto request)
-        => await _repository.CreateCareerAsync(request);
-
-    public async Task<IEnumerable<CareerResponseDto>> GetAllCareersAsync()
-        => await _repository.GetAllCareersAsync();
-
-    public async Task<IEnumerable<CareerResponseDto>> GetOpenCareersAsync()
-        => await _repository.GetOpenCareersAsync();
-
-    public async Task<bool> UpdateCareerAsync(CareerUpdateRequestDto request)
-        => await _repository.UpdateCareerAsync(request);
-
-    public async Task<bool> DeleteCareerAsync(int id)
-        => await _repository.DeleteCareerAsync(id);
-
-    #endregion
-
-    #region Public Site – Contact Query (no images)
-
-    public async Task<int> CreateContactQueryAsync(ContactQueryRequestDto request)
-        => await _repository.CreateContactQueryAsync(request);
-
-    public async Task<IEnumerable<ContactQueryResponseDto>> GetAllContactQueriesAsync(bool? isRead)
-        => await _repository.GetAllContactQueriesAsync(isRead);
-
-    public async Task<bool> MarkQueryReadAsync(int id)
-        => await _repository.MarkQueryReadAsync(id);
-
-    public async Task<bool> DeleteContactQueryAsync(int id)
-        => await _repository.DeleteContactQueryAsync(id);
-
-    #endregion
-
-    #region Private Helper
-
-    // Deletes the old image (if present) and returns the new path — keeps update methods short & arrow-friendly
-    private string? DeleteOldAndReturnNew(string? oldPath, string? newPath, FileUploadHelper fileHelper)
-    {
-        if (!string.IsNullOrWhiteSpace(oldPath))
-            fileHelper.DeleteFile(oldPath);
-
-        return newPath;
-    }
-
-    #endregion
-
-}
 }

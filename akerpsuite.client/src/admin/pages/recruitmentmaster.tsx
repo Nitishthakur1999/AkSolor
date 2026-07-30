@@ -3,7 +3,7 @@ import CandidateManagement from "./candidatemanagement";
 import { adminService } from "../../services/adminService"; // adjust path to your project structure
 
 const TABS = [
-    { id: "candidates", label: "Candidate Tracking (ATS)" },
+    { id: "candidates", label: "Candidate Tracking" },
     { id: "report", label: "Recruitment Report" },
 ];
 

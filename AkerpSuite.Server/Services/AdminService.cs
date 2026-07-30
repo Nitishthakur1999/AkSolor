@@ -16,13 +16,20 @@ namespace AkerpSuite.Server.Services
         private readonly FileUploadHelper _fileUploadHelper;
         private readonly IConfiguration _configuration;
         private readonly IHRService _hrService;
+        private readonly IEmailService _emailService;   // ← naya
 
-        public AdminService(IAdminRepositories repository, FileUploadHelper fileUploadHelper, IConfiguration configuration, IHRService hrService)   // ← parameter add kiya
+        public AdminService(
+            IAdminRepositories repository,
+            FileUploadHelper fileUploadHelper,
+            IConfiguration configuration,
+            IHRService hrService,
+            IEmailService emailService)   // ← naya parameter
         {
             _repository = repository;
             _fileUploadHelper = fileUploadHelper;
             _configuration = configuration;
             _hrService = hrService;
+            _emailService = emailService;   // ← naya
         }
 
 
@@ -1145,7 +1152,6 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Job Posting 
-
         public async Task<int> CreateJobPostingAsync(JobPostingRequestDto request)
         {
             var requisition = await _repository.GetRequisitionByIdAsync(request.RequisitionId)
@@ -1168,10 +1174,8 @@ namespace AkerpSuite.Server.Services
 
         public Task<bool> UpdateJobPostingAsync(JobPostingUpdateRequestDto request)
             => _repository.UpdateJobPostingAsync(request);
-
         public Task<IEnumerable<dynamic>> GetAllJobPostingsAsync(bool? publishedOnly)
             => _repository.GetAllJobPostingsAsync(publishedOnly);
-
         public Task<dynamic?> GetJobPostingByIdAsync(int id)
             => _repository.GetJobPostingByIdAsync(id);
 
@@ -1183,15 +1187,88 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Application System 
+        //public async Task<(int Id, string ApplicationCode)> ApplyAsync(CandidateApplicationRequestDto request)
+        //{
+        //    var posting = await _repository.GetJobPostingByIdAsync(request.JobPostingId)
+        //        ?? throw new InvalidOperationException("Job posting not found.");
+
+        //    if (string.IsNullOrWhiteSpace(request.CvBase64))
+        //        throw new InvalidOperationException("Resume file is required.");
+
+        //    // Ab request.CvBase64 aur request.CvExtension properly bind honge
+        //    request.CvPath = await _fileUploadHelper.SaveBase64FileAsync(
+        //        request.CvBase64,
+        //        request.CvExtension,
+        //        "CandidateCVs",
+        //        new[] { ".pdf", ".doc", ".docx" }
+        //    );
+
+        //    var result = await _repository.CreateApplicationAsync(request);
+        //    return result;
+        //}
+
         public async Task<(int Id, string ApplicationCode)> ApplyAsync(CandidateApplicationRequestDto request)
         {
             var posting = await _repository.GetJobPostingByIdAsync(request.JobPostingId)
                 ?? throw new InvalidOperationException("Job posting not found.");
 
+            if (string.IsNullOrWhiteSpace(request.CvBase64))
+                throw new InvalidOperationException("Resume file is required.");
+
+            request.CvPath = await _fileUploadHelper.SaveBase64FileAsync(
+                request.CvBase64,
+                request.CvExtension,
+                "CandidateCVs",
+                new[] { ".pdf", ".doc", ".docx" }
+            );
+
             var result = await _repository.CreateApplicationAsync(request);
+
+            // --- Candidate ko acknowledgement email ---
+            string jobTitle = posting.Title as string ?? "the position";
+
+            var candidateBody = $@"
+                <p>Hi {request.Name},</p>
+                <p>Thanks for applying to <strong>{jobTitle}</strong> at AKS Solar Systems Pvt. Ltd.</p>
+                <p>Your application ID is: <strong>{result.ApplicationCode}</strong></p>
+                <p>Please save this ID — you can use it to track your application status.</p>
+                <p>We'll be in touch if your profile matches our requirements.</p>
+                <p>— AKS Solar Systems HR Team</p>";
+
+            await _emailService.SendEmailAsync(
+                request.Email,
+                $"We've received your application — {result.ApplicationCode}",
+                candidateBody);
+
+            // --- HR ko notification email (Notifications:HrEmails array from appsettings.json) ---
+            var hrEmails = _configuration.GetSection("Notifications:HrEmails").Get<List<string>>();
+            if (hrEmails != null && hrEmails.Any())
+            {
+                var hrBody = $@"
+                <p>A new application has been submitted.</p>
+                <ul>
+                    <li><strong>Job:</strong> {jobTitle}</li>
+                    <li><strong>Application ID:</strong> {result.ApplicationCode}</li>
+                    <li><strong>Name:</strong> {request.Name}</li>
+                    <li><strong>Email:</strong> {request.Email}</li>
+                    <li><strong>Phone:</strong> {request.Phone}</li>
+                    <li><strong>Experience:</strong> {request.Experience ?? "N/A"}</li>
+                    <li><strong>Skills:</strong> {request.Skills ?? "N/A"}</li>
+                </ul>
+                <p>Log in to the admin panel to review the resume.</p>";
+
+                await _emailService.SendEmailAsync(
+                    hrEmails,
+                    $"New application: {jobTitle} — {result.ApplicationCode}",
+                    hrBody);
+            }
+
+            // Acknowledgement email chali gayi, ab DB flag update karo
+            await _repository.MarkAcknowledgementSentAsync(result.Id);
 
             return result;
         }
+
 
         // D. Candidate Management =====================
         public Task<IEnumerable<dynamic>> SearchCandidatesAsync(CandidateSearchRequestDto filter)

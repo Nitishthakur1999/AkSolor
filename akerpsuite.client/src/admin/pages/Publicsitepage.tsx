@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { adminService } from "@/services/adminService";
 
-// ────────────────────────────────────────────────────────────────────────────
-// Image URL helper
-// ────────────────────────────────────────────────────────────────────────────
-// This must match the ORIGIN of SITE_API_BASE (no /api/site path, just protocol+host+port).
-// Backend confirmed running at https://localhost:7272 (see Swagger at /swagger/index.html)
-const IMAGE_BASE_URL = "https://localhost:7272";
-
+const IMAGE_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 function resolveImageUrl(path?: string | null): string {
     if (!path) return "";
     if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -19,7 +13,6 @@ function resolveImageUrl(path?: string | null): string {
 // Types
 // ────────────────────────────────────────────────────────────────────────────
 type FieldType = "text" | "number" | "date" | "textarea" | "checkbox";
-
 interface FieldConfig {
     name: string;
     label: string;

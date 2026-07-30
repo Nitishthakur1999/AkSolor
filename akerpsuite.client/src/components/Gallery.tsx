@@ -3,7 +3,7 @@ import Reveal from './Reveal'
 import { publicSiteService } from '../services/publicService' 
 
 const API_ORIGIN = "https://localhost:7272"; // same host as PUBLIC_API_BASE, no /api/public
-
+//const API_ORIGIN = import.meta.env.VITE_API_BASE_URL; // production/dev dono me sahi URL milega
 function resolveImage(raw) {
     if (!raw) return "";
     if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;

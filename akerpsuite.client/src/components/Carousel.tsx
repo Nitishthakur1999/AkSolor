@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { publicSiteService } from "../services/publicService"; 
+import { publicSiteService } from "../services/publicService";
 
-const API_ORIGIN = "https://localhost:7272"; // same host as PUBLIC_API_BASE, no /api/public
+//const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
+const API_ORIGIN = "https://localhost:7272"; 
 
 interface Banner {
     image: string;
@@ -33,20 +34,27 @@ interface BannerSlideProps {
 function BannerSlide({ banner, active }: BannerSlideProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [cardTilt, setCardTilt] = useState({ rx: 0, ry: 0 });
+    const rafRef = useRef<number | null>(null);
 
     function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
         if (!active) return;
         const el = cardRef.current;
         if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const px = clamp((e.clientX - rect.left) / rect.width, 0, 1);
-        const py = clamp((e.clientY - rect.top) / rect.height, 0, 1);
-        setCardTilt({
-            rx: clamp((0.5 - py) * 9, -6, 6),
-            ry: clamp((px - 0.5) * 9, -6, 6),
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => {
+            const rect = el.getBoundingClientRect();
+            const px = clamp((clientX - rect.left) / rect.width, 0, 1);
+            const py = clamp((clientY - rect.top) / rect.height, 0, 1);
+            setCardTilt({
+                rx: clamp((0.5 - py) * 9, -6, 6),
+                ry: clamp((px - 0.5) * 9, -6, 6),
+            });
         });
     }
     function handleMouseLeave() {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
         setCardTilt({ rx: 0, ry: 0 });
     }
 
@@ -59,8 +67,10 @@ function BannerSlide({ banner, active }: BannerSlideProps) {
             style={{
                 ...CHAMFER,
                 transformStyle: "preserve-3d",
+                backfaceVisibility: "hidden",
                 transform: `perspective(1400px) rotateX(${cardTilt.rx}deg) rotateY(${cardTilt.ry}deg)`,
                 transition: "transform 300ms ease-out",
+                willChange: "transform",
                 border: "1px solid color-mix(in srgb, var(--color-gold-deep) 35%, transparent)",
                 boxShadow:
                     "inset 0 1px 0 rgba(255,196,90,0.15), 0 40px 70px -25px color-mix(in srgb, var(--color-gold-deep) 45%, black)",
@@ -98,6 +108,7 @@ export default function BannerCarousel() {
     const [isPaused, setIsPaused] = useState(false);
     const [autoplayKey, setAutoplayKey] = useState(0);
     const [drag, setDrag] = useState({ active: false, startX: 0, deltaX: 0 });
+    const [stageWidth, setStageWidth] = useState(1);
     const stageRef = useRef<HTMLDivElement>(null);
     const total = banners.length;
 
@@ -108,8 +119,6 @@ export default function BannerCarousel() {
                 setLoading(true);
                 const res = await publicSiteService.getBanners();
                 const raw = Array.isArray(res?.data) ? res.data : [];
-
-                console.log("Banners API raw response:", raw); // remove once field name confirmed
 
                 const list: Banner[] = raw.map((b: any) => ({
                     image: resolveImage(b.imagePath ?? b.imageUrl ?? b.image ?? b.photoUrl ?? b.bannerUrl),
@@ -128,20 +137,35 @@ export default function BannerCarousel() {
         return () => { cancelled = true; };
     }, []);
 
-    const goTo = useCallback((next: number, { fromUser = false } = {}) => {
+    // stage width ko resize pe bhi update karo, sirf pehle render pe nahi
+    useEffect(() => {
+        function updateWidth() {
+            if (stageRef.current) setStageWidth(stageRef.current.offsetWidth || 1);
+        }
+        updateWidth();
+        window.addEventListener("resize", updateWidth);
+        return () => window.removeEventListener("resize", updateWidth);
+    }, [total]);
+
+    const goTo = useCallback((next: number | ((prev: number) => number), { fromUser = false } = {}) => {
         if (total === 0) return;
-        setIndex(((next % total) + total) % total);
+        setIndex((prev) => {
+            const resolved = typeof next === "function" ? next(prev) : next;
+            return ((resolved % total) + total) % total;
+        });
         if (fromUser) setAutoplayKey((k) => k + 1);
     }, [total]);
 
-    const goPrev = () => goTo(index - 1, { fromUser: true });
-    const goNext = () => goTo(index + 1, { fromUser: true });
+    const goPrev = () => goTo((prev) => prev - 1, { fromUser: true });
+    const goNext = () => goTo((prev) => prev + 1, { fromUser: true });
 
     useEffect(() => {
         if (isPaused || drag.active || total === 0) return;
-        const id = setTimeout(() => goTo(index + 1), AUTOPLAY_MS);
-        return () => clearTimeout(id);
-    }, [index, isPaused, drag.active, goTo, autoplayKey, total]);
+        const id = setInterval(() => {
+            goTo((prev) => prev + 1);
+        }, AUTOPLAY_MS);
+        return () => clearInterval(id);
+    }, [isPaused, drag.active, total, goTo]);
 
     function onKeyDown(e: React.KeyboardEvent) {
         if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
@@ -163,7 +187,6 @@ export default function BannerCarousel() {
         setDrag({ active: false, startX: 0, deltaX: 0 });
     }
 
-    const stageWidth = stageRef.current?.offsetWidth || 1;
     const dragFraction = drag.active ? drag.deltaX / stageWidth : 0;
 
     if (loading) {
@@ -287,6 +310,8 @@ export default function BannerCarousel() {
                                     className="absolute inset-0"
                                     style={{
                                         transformStyle: "preserve-3d",
+                                        backfaceVisibility: "hidden",
+                                        willChange: "transform, opacity",
                                         transform: `translateX(${translateX}%) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
                                         opacity,
                                         zIndex,

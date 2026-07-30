@@ -1442,6 +1442,7 @@ namespace AkerpSuite.Server.Repositories
                 {
                     p_PostingId = request.PostingId,
                     p_Title = request.Title,
+                    p_Description = request.Description,   
                     p_Location = request.Location,
                     p_EmploymentType = request.EmploymentType,
                     p_SalaryRange = request.SalaryRange,
@@ -1514,6 +1515,15 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
 
             return (id, applicationCode);
+        }
+
+        public async Task MarkAcknowledgementSentAsync(int candidateId)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_MarkAcknowledgementSent",
+                new { p_CandidateId = candidateId },
+                commandType: CommandType.StoredProcedure);
         }
 
         // ===================== D. Candidate Management =====================

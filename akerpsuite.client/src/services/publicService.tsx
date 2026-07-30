@@ -1,5 +1,7 @@
 const PUBLIC_API_BASE = "https://localhost:7272/api/public";
 
+//const PUBLIC_API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/public`;
+
 interface ApiResponse<T> {
     success?: boolean;
     message?: string;
@@ -21,7 +23,7 @@ async function publicApiCall<T = any>(
     try {
         data = await res.json();
     } catch {
-        // no JSON body — fine for some responses
+       
     }
 
     if (!res.ok) {
