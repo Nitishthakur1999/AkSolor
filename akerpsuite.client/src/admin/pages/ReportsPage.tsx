@@ -396,6 +396,16 @@ export default function ReportsPage({ initialTab = "employees" }) {
     };
 
     // ---------- Table (per tab) ----------
+    // NOTE on keys: `paginatedRecords` is sliced from `filteredRecords`, which
+    // is derived straight from what the API returned (after role-visibility
+    // filtering). If the backend query behind a report joins in a way that
+    // produces more than one row per record (e.g. an employee matching more
+    // than one department/role via a join), the same ID can appear twice in
+    // the same page and React's reconciliation gets confused ("two children
+    // with the same key"). Combining the row's own index with its ID keeps
+    // React happy regardless of whether the underlying data has duplicates,
+    // without silently hiding or de-duplicating rows the user might actually
+    // need to see (and investigate on the backend).
     const renderTable = () => {
         if (loading) {
             return (
@@ -436,8 +446,8 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {paginatedRecords.map((e) => (
-                            <tr key={e.empId} className="hover:bg-gray-50">
+                        {paginatedRecords.map((e, i) => (
+                            <tr key={`emp-${e.empId}-${i}`} className="hover:bg-gray-50">
                                 <td className="px-4 py-3">{e.empCode}</td>
                                 <td className="px-4 py-3 font-medium">{e.fullName}</td>
                                 <td className="px-4 py-3">{e.deptName}</td>
@@ -468,8 +478,8 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {paginatedRecords.map((r) => (
-                            <tr key={r.attId} className="hover:bg-gray-50">
+                        {paginatedRecords.map((r, i) => (
+                            <tr key={`att-${r.attId}-${i}`} className="hover:bg-gray-50">
                                 <td className="px-4 py-3">{r.empCode}</td>
                                 <td className="px-4 py-3 font-medium">{r.fullName}</td>
                                 <td className="px-4 py-3">{formatDate(r.attDate)}</td>
@@ -502,8 +512,8 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {paginatedRecords.map((r) => (
-                            <tr key={r.leaveId} className="hover:bg-gray-50">
+                        {paginatedRecords.map((r, i) => (
+                            <tr key={`leave-${r.leaveId}-${i}`} className="hover:bg-gray-50">
                                 <td className="px-4 py-3">{r.empCode}</td>
                                 <td className="px-4 py-3 font-medium">{r.fullName}</td>
                                 <td className="px-4 py-3">{r.department}</td>
@@ -538,8 +548,8 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {paginatedRecords.map((r) => (
-                            <tr key={r.detailId} className="hover:bg-gray-50">
+                        {paginatedRecords.map((r, i) => (
+                            <tr key={`payroll-${r.detailId}-${i}`} className="hover:bg-gray-50">
                                 <td className="px-4 py-3">{r.empCode}</td>
                                 <td className="px-4 py-3 font-medium">{r.firstName} {r.lastName}</td>
                                 <td className="px-4 py-3">{r.deptName}</td>

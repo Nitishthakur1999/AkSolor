@@ -85,6 +85,18 @@ function BalanceCardSkeleton() {
     );
 }
 
+// A leave type counts as "inactive" if it's flagged that way with any of the
+// field names the backend might use (isActive boolean, or a status string).
+// Defensive on purpose — we only want to *hide*, never accidentally hide
+// everything just because a field name doesn't match what we expect.
+const isLeaveTypeActive = (t) => {
+    if (typeof t.isActive === "boolean") return t.isActive;
+    if (typeof t.IsActive === "boolean") return t.IsActive;
+    if (typeof t.status === "string") return t.status.toLowerCase() !== "inactive";
+    if (typeof t.Status === "string") return t.Status.toLowerCase() !== "inactive";
+    return true;
+};
+
 export default function MyLeaves() {
     const [balances, setBalances] = useState([]);
     const [leaveTypes, setLeaveTypes] = useState([]); // NEW — independent source for the dropdown
@@ -107,6 +119,11 @@ export default function MyLeaves() {
         toDate: "",
         reason: "",
     });
+
+    // Only the leave types HR has marked Active show up in the "your balances"
+    // cards above the table. Everything else about leaveTypes (e.g. the Apply
+    // Leave dropdown) still uses the full, unfiltered list.
+    const activeLeaveTypes = leaveTypes.filter(isLeaveTypeActive);
 
     useEffect(() => {
         fetchLeaveData();
@@ -264,18 +281,20 @@ export default function MyLeaves() {
             )}
 
             {/* ── Leave Balances (Cards with progress rings) ── */}
-            {/* ── Leave Balances (Cards with progress rings) ── */}
+            {/* Only Active leave types are shown here — Inactive ones (e.g. a leave
+                type HR turned off) are filtered out via activeLeaveTypes. */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {loading ? (
                     Array.from({ length: 3 }).map((_, i) => <BalanceCardSkeleton key={i} />)
-                ) : leaveTypes.length === 0 ? (
+                ) : activeLeaveTypes.length === 0 ? (
                     <div className="md:col-span-3 bg-white rounded-2xl border border-dashed border-slate-200 py-8 text-center text-slate-400 text-sm">
                         No leave types configured yet. Contact HR/Admin.
                     </div>
                 ) : (
-                    // 🆕 Har leaveType ke liye card dikhao — chahe balance initialize hua ho ya nahi.
-                    // Isse HR ke naye leave type add karte hi wo turant yahan dikhega.
-                    leaveTypes.map((t, i) => {
+                    // 🆕 Har active leaveType ke liye card dikhao — chahe balance initialize hua ho ya nahi.
+                    // Isse HR ke naye leave type add karte hi wo turant yahan dikhega. Inactive leave
+                    // types yahan bilkul nahi dikhaye jaate (activeLeaveTypes already filter kar chuka hai).
+                    activeLeaveTypes.map((t, i) => {
                         const accent = LEAVE_ACCENTS[i % LEAVE_ACCENTS.length];
                         const b = balances.find((bal) => bal.leaveTypeId === t.leaveTypeId);
 
@@ -283,33 +302,33 @@ export default function MyLeaves() {
                             .filter((r) => r.leaveTypeId === t.leaveTypeId && r.status === "Pending")
                             .reduce((sum, r) => sum + Number(r.totalDays || 0), 0);
 
-                        // 🆕 Balance abhi tak initialize nahi hua — placeholder card
-                        if (!b) {
-                            return (
-                                <div key={t.leaveTypeId} className="bg-white p-5 rounded-2xl border border-dashed border-slate-200 shadow-sm flex items-center gap-4">
-                                    <div className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 text-xs font-bold shrink-0">
-                                        —
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold text-slate-700 truncate">{t.leaveName}</p>
-                                        <p className="text-xs text-slate-400 mt-0.5">Balance not set — contact HR</p>
-                                    </div>
-                                </div>
-                            );
-                        }
+                        // 🆕 Agar HR ne is employee ke liye is leave type ka balance abhi tak
+                        // "Initialize Balance" se initialize nahi kiya, to yahan ek default/synthetic
+                        // balance bana lo (poora quota available, 0 used) — leave type ke apne
+                        // maxPerYear se. Isse employee ko "contact HR" placeholder ki jagah turant
+                        // apna leave quota dikh jaata hai, chahe HR ne abhi tak record initialize
+                        // kiya ho ya nahi. Actual applied/approved leaves already `requests` se
+                        // pendingDays ke through reflect ho rahe hain upar; agar zaroorat pade to
+                        // yahan bhi approved requests ka totalDays minus kiya ja sakta hai.
+                        const displayBalance = b ?? {
+                            leaveName: t.leaveName,
+                            totalLeaves: t.maxPerYear ?? 0,
+                            usedLeaves: 0,
+                            balanceLeaves: t.maxPerYear ?? 0,
+                        };
 
                         return (
-                            <div key={b.balanceId} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                            <div key={`leave-${t.leaveTypeId}`} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all">
                                 <div className={`relative flex items-center justify-center rounded-full ${accent.wash}`}>
-                                    <BalanceRing used={b.usedLeaves} total={b.totalLeaves} accent={accent.ring} />
+                                    <BalanceRing used={displayBalance.usedLeaves} total={displayBalance.totalLeaves} accent={accent.ring} />
                                     <span className={`absolute text-[13px] font-bold ${accent.text}`}>
-                                        {b.balanceLeaves}
+                                        {displayBalance.balanceLeaves}
                                     </span>
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-sm font-bold text-slate-700 truncate">{b.leaveName}</p>
+                                    <p className="text-sm font-bold text-slate-700 truncate">{displayBalance.leaveName}</p>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        {b.balanceLeaves} of {b.totalLeaves} left · {b.usedLeaves} used
+                                        {displayBalance.balanceLeaves} of {displayBalance.totalLeaves} left · {displayBalance.usedLeaves} used
                                     </p>
                                     {pendingDays > 0 && (
                                         <p className="text-[11px] text-amber-600 font-semibold mt-1 inline-flex items-center gap-1">

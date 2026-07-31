@@ -381,9 +381,26 @@ export default function EmployeeMasterData() {
                                         <label className="text-xs font-medium text-slate-500 mb-1 block">IFSC Code *</label>
                                         <input
                                             required
-                                            maxLength={20}
+                                            maxLength={11}
                                             value={bankForm.ifscCode}
-                                            onChange={(e) => setBankForm({ ...bankForm, ifscCode: e.target.value.toUpperCase() })}
+                                            onChange={(e) => {
+                                                const value = e.target.value.toUpperCase();
+                                                setBankForm({ ...bankForm, ifscCode: value });
+
+                                                const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+                                                if (value && !ifscRegex.test(value)) {
+                                                    setErrors((prev) => ({
+                                                        ...prev,
+                                                        IfscCode: ["Invalid IFSC code format (e.g., SBIN0001234)."],
+                                                    }));
+                                                } else {
+                                                    setErrors((prev) => {
+                                                        const updated = { ...prev };
+                                                        delete updated.IfscCode;
+                                                        return updated;
+                                                    });
+                                                }
+                                            }}
                                             className={`${inputClass} uppercase`}
                                             placeholder="SBIN0001234"
                                         />

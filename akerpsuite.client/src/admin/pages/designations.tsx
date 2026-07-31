@@ -339,14 +339,15 @@ export default function Designations() {
                                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500 transition-colors"
                                 >
                                     <option value="">-- Choose department map segment --</option>
-                                    {departments.map(dep => (
-                                        <option key={dep.deptId} value={dep.deptId}>
-                                            {dep.departmentName}
-                                        </option>
-                                    ))}
+                                    {departments
+                                        .filter(dep => dep.isActive)
+                                        .map(dep => (
+                                            <option key={dep.deptId} value={dep.deptId}>
+                                                {dep.departmentName}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
-
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hierarchy Level Tier</label>
                                 <input
@@ -407,11 +408,13 @@ export default function Designations() {
                                     onChange={e => setEditForm({ ...editForm, deptId: e.target.value })}
                                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500 transition-colors"
                                 >
-                                    {departments.map(dep => (
-                                        <option key={dep.deptId} value={dep.deptId}>
-                                            {dep.departmentName}
-                                        </option>
-                                    ))}
+                                    {departments
+                                        .filter(dep => dep.isActive)
+                                        .map(dep => (
+                                            <option key={dep.deptId} value={dep.deptId}>
+                                                {dep.departmentName}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
 

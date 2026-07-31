@@ -1,10 +1,158 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Reveal from './Reveal'
 import { CONTACT } from '../data/siteData'
 import { publicSiteService } from '../services/publicService'
 
 const inputCls = 'w-full border border-line-strong bg-mist px-4 py-[13px] font-sans text-[0.9rem] text-charcoal transition-colors duration-200 placeholder:text-slate-light focus:border-gold-deep focus:bg-paper focus:outline-none'
+const inputErrorCls = 'w-full border border-red-400 bg-mist px-4 py-[13px] font-sans text-[0.9rem] text-charcoal transition-colors duration-200 placeholder:text-slate-light focus:border-red-500 focus:bg-paper focus:outline-none'
 const labelCls = 'mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-slate'
+
+// All Indian States + Union Territories (alphabetical)
+const INDIA_STATES = [
+    'Andaman and Nicobar Islands',
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chandigarh',
+    'Chhattisgarh',
+    'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi / NCR',
+    'Goa',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jammu and Kashmir',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Ladakh',
+    'Lakshadweep',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Puducherry',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
+    'Other',
+]
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// A searchable "select" — types like a normal input, filters the option
+// list as you type, but submits through a hidden field so it still works
+// with the existing FormData-based submit flow. Visually it matches the
+// other inputs on the form (same inputCls), so the form doesn't look any
+// different until you start typing.
+function SearchableSelect({
+    name,
+    options,
+    placeholder,
+    defaultValue = '',
+}: {
+    name: string
+    options: string[]
+    placeholder: string
+    defaultValue?: string
+}) {
+    const [query, setQuery] = useState('')
+    const [selected, setSelected] = useState(defaultValue)
+    const [open, setOpen] = useState(false)
+    const [highlight, setHighlight] = useState(0)
+    const wrapRef = useRef<HTMLDivElement | null>(null)
+
+    const filtered = options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
+
+    useEffect(() => {
+        function onClickOutside(e: MouseEvent) {
+            if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+                setOpen(false)
+                setQuery('')
+            }
+        }
+        document.addEventListener('mousedown', onClickOutside)
+        return () => document.removeEventListener('mousedown', onClickOutside)
+    }, [])
+
+    function pick(value: string) {
+        setSelected(value)
+        setQuery('')
+        setOpen(false)
+    }
+
+    function onKeyDown(e: React.KeyboardEvent) {
+        if (!open) return
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setHighlight((h) => Math.min(h + 1, filtered.length - 1))
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setHighlight((h) => Math.max(h - 1, 0))
+        } else if (e.key === 'Enter') {
+            e.preventDefault()
+            if (filtered[highlight]) pick(filtered[highlight])
+        } else if (e.key === 'Escape') {
+            setOpen(false)
+        }
+    }
+
+    return (
+        <div className="relative" ref={wrapRef}>
+            <input
+                type="text"
+                className={inputCls}
+                placeholder={placeholder}
+                autoComplete="off"
+                value={open ? query : selected}
+                onFocus={() => {
+                    setOpen(true)
+                    setQuery('')
+                    setHighlight(0)
+                }}
+                onChange={(e) => {
+                    setQuery(e.target.value)
+                    setSelected('')
+                    setOpen(true)
+                    setHighlight(0)
+                }}
+                onKeyDown={onKeyDown}
+            />
+            <input type="hidden" name={name} value={selected} />
+            {open && (
+                <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto border border-line-strong bg-paper shadow-lg">
+                    {filtered.length === 0 ? (
+                        <li className="px-4 py-2 text-sm text-slate-light">No match found</li>
+                    ) : (
+                        filtered.map((opt, i) => (
+                            <li
+                                key={opt}
+                                onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    pick(opt)
+                                }}
+                                className={`cursor-pointer px-4 py-2 text-sm text-charcoal transition-colors ${i === highlight ? 'bg-gold/15' : 'hover:bg-gold/10'
+                                    }`}
+                            >
+                                {opt}
+                            </li>
+                        ))
+                    )}
+                </ul>
+            )}
+        </div>
+    )
+}
 
 export default function Contact() {
     const formRef = useRef<HTMLFormElement | null>(null)
@@ -12,26 +160,46 @@ export default function Contact() {
     const [sent, setSent] = useState(false)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
+    const [emailError, setEmailError] = useState('')
+    const [phoneDigits, setPhoneDigits] = useState('')
 
     async function handleSubmit() {
         const form = formRef.current
         if (!form) return
+
+        setEmailError('')
+
         if (!form.checkValidity()) {
             form.reportValidity()
             return
         }
 
-        setError('')
-        setSubmitting(true)
-
         const fd = new FormData(form)
         const name = fd.get('name')?.toString().trim() || ''
-        const phone = fd.get('phone')?.toString().trim() || ''
         const email = fd.get('email')?.toString().trim() || ''
         const location = fd.get('location')?.toString().trim() || ''
         const service = fd.get('service')?.toString().trim() || ''
         const budget = fd.get('budget')?.toString().trim() || ''
         const message = fd.get('message')?.toString().trim() || ''
+
+        // Email is optional, but if the person entered one it must be a
+        // properly formed address before we submit.
+        if (email && !EMAIL_REGEX.test(email)) {
+            setEmailError('Please enter a valid email address.')
+            return
+        }
+
+        // Phone always carries the +91 country code; only the 10-digit
+        // number is typed by the user.
+        const digits = phoneDigits.replace(/\D/g, '')
+        if (digits.length !== 10) {
+            setError('Please enter a valid 10-digit mobile number.')
+            return
+        }
+        const phone = `+91-${digits}`
+
+        setError('')
+        setSubmitting(true)
 
         // Backend ContactQuery only has Name / Phone / Email / Subject / Message,
         // so fold the extra form fields (location, service, budget) into Subject/Message.
@@ -56,6 +224,7 @@ export default function Contact() {
             setTimeout(() => {
                 setSubmitLabel("Send Enquiry — It's Free")
                 setSent(false)
+                setPhoneDigits('')
                 form.reset()
             }, 4000)
         } catch (err: any) {
@@ -156,24 +325,40 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <label className={labelCls}>Phone Number</label>
-                                    <input name="phone" type="tel" className={inputCls} placeholder="+91-9805763000" required pattern="[0-9+\s-]{8,15}" />
+                                    <div className="flex">
+                                        <span className="flex items-center border border-r-0 border-line-strong bg-mist px-3 font-sans text-[0.9rem] text-charcoal">
+                                            +91
+                                        </span>
+                                        <input
+                                            type="tel"
+                                            inputMode="numeric"
+                                            className={`${inputCls} border-l-0`}
+                                            placeholder="98057 63000"
+                                            required
+                                            value={phoneDigits}
+                                            maxLength={10}
+                                            onChange={(e) => setPhoneDigits(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                        />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className={labelCls}>Email Address</label>
-                                    <input name="email" type="email" className={inputCls} placeholder="you@example.com" />
+                                    <input
+                                        name="email"
+                                        type="email"
+                                        className={emailError ? inputErrorCls : inputCls}
+                                        placeholder="you@example.com"
+                                        onChange={() => emailError && setEmailError('')}
+                                    />
+                                    {emailError && <p className="mt-1.5 text-[0.78rem] text-red-600">{emailError}</p>}
                                 </div>
                                 <div>
                                     <label className={labelCls}>Location / State</label>
-                                    <select name="location" className={inputCls} defaultValue="">
-                                        <option value="">Select State</option>
-                                        <option>Himachal Pradesh</option>
-                                        <option>Uttar Pradesh</option>
-                                        <option>Delhi / NCR</option>
-                                        <option>Punjab</option>
-                                        <option>Haryana</option>
-                                        <option>Uttarakhand</option>
-                                        <option>Other</option>
-                                    </select>
+                                    <SearchableSelect
+                                        name="location"
+                                        options={INDIA_STATES}
+                                        placeholder="Start typing a state…"
+                                    />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Service Required</label>
@@ -216,8 +401,8 @@ export default function Contact() {
                                         onClick={handleSubmit}
                                         disabled={submitting}
                                         className={`group flex w-full items-center justify-center gap-2.5 border py-[17px] font-sans text-[0.95rem] font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-70 ${sent
-                                                ? 'border-green bg-green text-chalk'
-                                                : 'border-charcoal bg-charcoal text-chalk hover:-translate-y-0.5 hover:border-gold-deep hover:bg-gold-deep'
+                                            ? 'border-green bg-green text-chalk'
+                                            : 'border-charcoal bg-charcoal text-chalk hover:-translate-y-0.5 hover:border-gold-deep hover:bg-gold-deep'
                                             }`}
                                     >
                                         {sent && (

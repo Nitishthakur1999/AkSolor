@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { publicSiteService } from "../services/publicService";
 
-//const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
-const API_ORIGIN = "https://localhost:7272"; 
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
+//const API_ORIGIN = "https://localhost:7272"; 
 
 interface Banner {
     image: string;
 }
 
-const AUTOPLAY_MS = 5500;
+const AUTOPLAY_MS = 2500;
 const DRAG_THRESHOLD = 60;
 
 const CHAMFER: React.CSSProperties = { clipPath: "polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%)" };
@@ -318,7 +318,7 @@ export default function BannerCarousel() {
                                         pointerEvents: isCentered ? "auto" : "none",
                                         transition: drag.active
                                             ? "none"
-                                            : "transform 650ms cubic-bezier(0.22,1,0.36,1), opacity 500ms ease",
+                                            : "transform 300ms cubic-bezier(0.22,1,0.36,1), opacity 300ms ease",
                                     }}
                                 >
                                     <BannerSlide banner={banner} active={isCentered} />

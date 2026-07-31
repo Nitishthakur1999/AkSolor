@@ -388,7 +388,8 @@ function PayrollResultTable({ title, period, list, loading }) {
 function PayrollTab({ months, onRefresh }) {
     const [genForm, setGenForm] = useState({ month: currentMonth, year: currentYear, empId: "", createdBy: "1" });
     const [genForAll, setGenForAll] = useState(true);
-    const [finForm, setFinForm] = useState({ month: currentMonth, year: currentYear, approvedBy: "" });
+    //const [finForm, setFinForm] = useState({ month: currentMonth, year: currentYear, approvedBy: "" 
+    const [finForm, setFinForm] = useState({ month: currentMonth, year: currentYear });
     const [paidForm, setPaidForm] = useState({ month: currentMonth, year: currentYear });
     const [showGen, setShowGen] = useState(false);
     const [showFin, setShowFin] = useState(false);
@@ -458,12 +459,20 @@ function PayrollTab({ months, onRefresh }) {
         }
     };
 
+    // const doFinalize = () => {
+    //     if (!finForm.approvedBy) { alert("Approved By (User ID) is required to finalize payroll."); return; }
+    //     act("Finalize", () => adminService.finalizePayroll({
+    //         month: finForm.month,
+    //         year: finForm.year,
+    //         approvedBy: parseInt(finForm.approvedBy),
+    //     }));
+    // 
     const doFinalize = () => {
-        if (!finForm.approvedBy) { alert("Approved By (User ID) is required to finalize payroll."); return; }
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
         act("Finalize", () => adminService.finalizePayroll({
             month: finForm.month,
             year: finForm.year,
-            approvedBy: parseInt(finForm.approvedBy),
+            approvedBy: user?.userId ?? user?.UserId ?? 1,
         }));
     };
 
@@ -597,13 +606,8 @@ function PayrollTab({ months, onRefresh }) {
                     <div className="flex flex-wrap gap-3 items-end">
                         <MonthYearPicker month={finForm.month} year={finForm.year}
                             onChange={(m, y) => setFinForm(f => ({ ...f, month: m, year: y }))} />
-                        <Field label="Approved By (User ID) *">
-                            <Input type="number" placeholder="e.g. 1" value={finForm.approvedBy}
-                                onChange={e => setFinForm(f => ({ ...f, approvedBy: e.target.value }))}
-                                style={{ width: 150 }} />
-                        </Field>
                         <button disabled={loading === "Finalize"} onClick={doFinalize}
-                            className="px-6 py-2.5  bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-900 disabled:opacity-60 transition-all self-end">
+                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-900 disabled:opacity-60 transition-all self-end">
                             {loading === "Finalize" ? "Finalizing…" : "Finalize"}
                         </button>
                         <button onClick={() => setShowFin(false)}

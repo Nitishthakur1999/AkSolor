@@ -32,7 +32,7 @@ const apiCall = async (url: string, method: string = "GET", body: any = null): P
 export const getDocumentUrl = (path?: string): string => {
     if (!path) return "";
     if (path.startsWith("http")) return path;
-    const root = BASE.replace(/\/api\/?$/, ""); // /api hata do agar hai
+    const root = BASE.replace(/\/api\/?$/, ""); 
     return `${root}/${path.replace(/^\//, "")}`;
 };
 
@@ -206,6 +206,7 @@ export const adminService = {
     getPayrollReportData: (filters?: any) => apiCall(`${BASE}/api/hr/payroll${buildQuery(filters)}`),
 
     // ── 22. Sales & Lead Pipeline (FULLY ALIGNED WITH C# CONTROLLER) ──────
+
     // Segments
     getSegments: () => apiCall(`${SALES_API_BASE}/segments`),
     createSegment: (data?: any) => apiCall(`${SALES_API_BASE}/segments`, "POST", data),
@@ -240,12 +241,14 @@ export const adminService = {
     // BOM (Material Booking)
     getBomByLead: (leadId?: any) => apiCall(`${SALES_API_BASE}/bom/lead/${leadId}`),
     createBom: (data?: any) => apiCall(`${SALES_API_BASE}/bom`, "POST", data),
+
     // FIXED: Changed to PATCH as per C# [HttpPatch("bom/booking")]
     updateBomBooking: (data?: any) => apiCall(`${SALES_API_BASE}/bom/booking`, "PATCH", data),
 
     // Dispatch
     getDispatchByLead: (leadId?: any) => apiCall(`${SALES_API_BASE}/dispatch/lead/${leadId}`),
     createDispatch: (data?: any) => apiCall(`${SALES_API_BASE}/dispatch`, "POST", data),
+
     // FIXED: Changed to PATCH as per C# [HttpPatch("dispatch/status")]
     updateDispatchStatus: (data?: any) => apiCall(`${SALES_API_BASE}/dispatch/status`, "PATCH", data),
 
@@ -304,6 +307,7 @@ export const adminService = {
     getAllIncrements: (filters?: any) => apiCall(`${BASE}/api/hr/salary/increments${buildQuery(filters)}`),
 
     //--27-- Employee Documents & Bank Details (HRController → /api/hr)
+
     // ── Employee Documents ──
     getEmployeeDocuments: (empId?: any) => apiCall(`${SALES_API_BASE}/document/${empId}`),
     getEmployeeDocumentById: (docId?: any) => apiCall(`${SALES_API_BASE}/document/details/${docId}`),
@@ -363,7 +367,7 @@ export const adminService = {
 
     // Contact Queries (read / mark-read / delete only — no create)
     getContactQueries: (isRead?: any) =>
-      apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
+    apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
     markQueryRead: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}/mark-read`, "PATCH"),
     deleteContactQuery: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}`, "DELETE"),
  

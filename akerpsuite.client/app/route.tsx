@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
+
 import HomeLayout from "@/layout/HomeLayout";
 import HomePage from "@/pages/HomePage";
 import AboutPage from "@/pages/AboutPage";
@@ -8,8 +9,6 @@ import GalleryPage from "@/pages/GalleryPage";
 import ContactPage from "@/pages/ContactPage";
 import CmdLayout from "@/layout/cmdlayout";
 import Login from "@/admin/pages/LoginPage";
-
-// ── Built pages ────────────────────────────────────────────────────────────
 import Dashboard from "@/admin/pages/dashboard";
 import Employees from "@/admin/pages/employees";
 import EmployeeMasterData from "@/admin/pages/EmployeeMasterData";
@@ -22,8 +21,6 @@ import LeaveManagement from "@/admin/pages/leavemanagement";
 import LeaveRequests from "@/admin/pages/leaverequests";
 import PayrollManagement from "@/admin/pages/payrollmanagement";
 import PayslipViewer from "@/admin/pages/payslipviewer";
-
-// 🆕 Recruitment Pages
 import JobRequisitions from "@/admin/pages/jobrequisitions";
 import JobPostings from "@/admin/pages/jobpostings";
 import CandidateManagement from "@/admin/pages/candidatemanagement";
@@ -34,15 +31,9 @@ import MyProfile from "@/admin/pages/MyProfile";
 import MyAttendance from "@/admin/pages/Myattendance";
 import MyPayslip from "@/admin/pages/Mypayslip";
 import ReportsPage from "@/admin/pages/ReportsPage";
-
-// 🆕 Sales & Pipeline Pages
 import Segments from "@/admin/pages/Segments";
 import Leads from "@/admin/pages/Leads";
 import LeadDetail from "@/admin/pages/LeadDetail";
-
-
-
-// 🆕 Inventory Single Page
 import Inventory from "@/admin/pages/Inventory";
 import PublicSitePage from "@/admin/pages/Publicsitepage";
  
@@ -63,7 +54,6 @@ function ComingSoon({ title = "Page", icon = "fa-solid fa-circle" }) {
     );
 }
 
-//  COMPONENT MAP  —  pageLink (from DB)  →  JSX element
 //  Add new pages here as they get built.
 const COMPONENT_MAP = {
 

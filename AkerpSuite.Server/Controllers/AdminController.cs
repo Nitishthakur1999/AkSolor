@@ -469,18 +469,6 @@ namespace AkerpSuite.Server.Controllers
 
         #region Attendance – Marking, History, Regularization & Summary
 
-        //[HttpPost("mark")]
-        //[Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
-        //public async Task<IActionResult> MarkAttendance([FromBody] AttendanceRequestDto request)
-        //{
-        //    if (User.IsInRole(Roles.Employee))
-        //    {
-        //        request.EmpId = User.GetEmpId();
-        //    }
-        //    var attId = await _service.MarkAttendanceAsync(request);
-        //    return Ok(new { Success = true, Message = "Attendance marked successfully", AttId = attId });
-        //}
-
         [HttpPost("mark")]
         [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
         public async Task<IActionResult> MarkAttendance([FromBody] AttendanceRequestDto request)

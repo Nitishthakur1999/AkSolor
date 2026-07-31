@@ -766,7 +766,7 @@ export default function Employees() {
                                     <tr className="bg-slate-50/70 text-[11px] font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
                                         <th className="px-6 py-4">Code / Username</th>
                                         <th className="px-6 py-4">Full Name</th>
-                                        <th className="px-6 py-4">Official Email</th>
+                                        <th className="px-6 py-4">Role</th>
                                         <th className="px-6 py-4">Mobile Contact</th>
                                         <th className="px-6 py-4">Gender</th>
                                         <th className="px-6 py-4">City & State</th>
@@ -793,8 +793,10 @@ export default function Employees() {
                                                     <span>{emp.firstName} {emp.lastName}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600">
-                                                {emp.officialEmail}
+                                            <td className="px-6 py-4">
+                                                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
+                                                    {emp.roleName || "—"}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 font-mono text-xs text-slate-500">
                                                 {emp.mobile}
@@ -858,8 +860,8 @@ export default function Employees() {
                                                     >
                                                         History
                                                     </button>
-                                                    
-                                                    
+
+
                                                     {/* 🆕 Credentials */}
                                                     <button
                                                         type="button"
@@ -1081,14 +1083,18 @@ export default function Employees() {
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Department *</label>
                                         <select required value={createForm.deptId} onChange={e => setCreateForm({ ...createForm, deptId: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
                                             <option value="">-- Choose Dept --</option>
-                                            {departments.map(d => <option key={d.deptId} value={d.deptId}>{d.departmentName}</option>)}
+                                            {departments
+                                                .filter(d => d.isActive)
+                                                .map(d => <option key={d.deptId} value={d.deptId}>{d.departmentName}</option>)}
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation *</label>
                                         <select required value={createForm.desigId} onChange={e => setCreateForm({ ...createForm, desigId: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
                                             <option value="">-- Choose Designation --</option>
-                                            {designations.map(ds => <option key={ds.desigId} value={ds.desigId}>{ds.designationName}</option>)}
+                                            {designations
+                                                .filter(ds => ds.isActive)
+                                                .map(ds => <option key={ds.desigId} value={ds.desigId}>{ds.designationName}</option>)}
                                         </select>
                                     </div>
 
@@ -1110,8 +1116,8 @@ export default function Employees() {
                                                 ))}
                                         </select>
                                     </div>
-                                  
-                                    
+
+
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">System Security Role *</label>
                                         <select
@@ -1344,13 +1350,25 @@ export default function Employees() {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Department *</label>
                                         <select required value={editForm.deptId} onChange={e => setEditForm({ ...editForm, deptId: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
-                                            {departments.map(d => <option key={d.deptId} value={d.deptId}>{d.departmentName}</option>)}
+                                            {departments
+                                                .filter(d => d.isActive || d.deptId.toString() === editForm.deptId)
+                                                .map(d => (
+                                                    <option key={d.deptId} value={d.deptId}>
+                                                        {d.departmentName}{!d.isActive ? " (Inactive)" : ""}
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation *</label>
                                         <select required value={editForm.desigId} onChange={e => setEditForm({ ...editForm, desigId: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
-                                            {designations.map(ds => <option key={ds.desigId} value={ds.desigId}>{ds.designationName}</option>)}
+                                            {designations
+                                                .filter(ds => ds.isActive || ds.desigId.toString() === editForm.desigId)
+                                                .map(ds => (
+                                                    <option key={ds.desigId} value={ds.desigId}>
+                                                        {ds.designationName}{!ds.isActive ? " (Inactive)" : ""}
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
 
@@ -1435,7 +1453,9 @@ export default function Employees() {
                                     className="w-full px-3 py-2 rounded-xl border text-sm bg-white"
                                 >
                                     <option value="">-- Select --</option>
-                                    {designations.map(ds => <option key={ds.desigId} value={ds.desigId}>{ds.designationName}</option>)}
+                                    {designations
+                                        .filter(ds => ds.isActive)
+                                        .map(ds => <option key={ds.desigId} value={ds.desigId}>{ds.designationName}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -1446,7 +1466,9 @@ export default function Employees() {
                                     className="w-full px-3 py-2 rounded-xl border text-sm bg-white"
                                 >
                                     <option value="">-- Keep current department --</option>
-                                    {departments.map(d => <option key={d.deptId} value={d.deptId}>{d.departmentName}</option>)}
+                                    {departments
+                                        .filter(d => d.isActive)
+                                        .map(d => <option key={d.deptId} value={d.deptId}>{d.departmentName}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -1690,40 +1712,40 @@ export default function Employees() {
                                     </div>
                                 )}
 
-                                    {historyTab === "salary" && (
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm border-collapse">
-                                                <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                                                    <tr>
-                                                        <th className="px-4 py-2.5 text-left">Effective From</th>
-                                                        <th className="px-4 py-2.5 text-left">Effective To</th>
-                                                        <th className="px-4 py-2.5 text-left">Gross Salary</th>
-                                                        <th className="px-4 py-2.5 text-left">Net Salary</th>
-                                                        <th className="px-4 py-2.5 text-left">Increment Amount</th>
+                                {historyTab === "salary" && (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm border-collapse">
+                                            <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                                                <tr>
+                                                    <th className="px-4 py-2.5 text-left">Effective From</th>
+                                                    <th className="px-4 py-2.5 text-left">Effective To</th>
+                                                    <th className="px-4 py-2.5 text-left">Gross Salary</th>
+                                                    <th className="px-4 py-2.5 text-left">Net Salary</th>
+                                                    <th className="px-4 py-2.5 text-left">Increment Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {salaryHistory.length === 0 ? (
+                                                    <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No salary increment history found.</td></tr>
+                                                ) : salaryHistory.map((s, i) => (
+                                                    <tr key={s.salId ?? i}>
+                                                        <td className="px-4 py-2.5 text-slate-600">{s.effectiveFrom ? new Date(s.effectiveFrom).toLocaleDateString("en-IN") : "—"}</td>
+                                                        <td className="px-4 py-2.5 text-slate-500">{s.effectiveTo ? new Date(s.effectiveTo).toLocaleDateString("en-IN") : "Current"}</td>
+                                                        <td className="px-4 py-2.5 text-slate-600">{s.grossSalary ?? "—"}</td>
+                                                        <td className="px-4 py-2.5 font-semibold text-slate-800">{s.netSalary ?? "—"}</td>
+                                                        <td className="px-4 py-2.5">
+                                                            {s.incrementAmount != null ? (
+                                                                <span className={s.incrementAmount >= 0 ? "text-emerald-600 font-semibold" : "text-rose-600 font-semibold"}>
+                                                                    {s.incrementAmount >= 0 ? "+" : ""}{s.incrementAmount}
+                                                                </span>
+                                                            ) : "—"}
+                                                        </td>
                                                     </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {salaryHistory.length === 0 ? (
-                                                        <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No salary increment history found.</td></tr>
-                                                    ) : salaryHistory.map((s, i) => (
-                                                        <tr key={s.salId ?? i}>
-                                                            <td className="px-4 py-2.5 text-slate-600">{s.effectiveFrom ? new Date(s.effectiveFrom).toLocaleDateString("en-IN") : "—"}</td>
-                                                            <td className="px-4 py-2.5 text-slate-500">{s.effectiveTo ? new Date(s.effectiveTo).toLocaleDateString("en-IN") : "Current"}</td>
-                                                            <td className="px-4 py-2.5 text-slate-600">{s.grossSalary ?? "—"}</td>
-                                                            <td className="px-4 py-2.5 font-semibold text-slate-800">{s.netSalary ?? "—"}</td>
-                                                            <td className="px-4 py-2.5">
-                                                                {s.incrementAmount != null ? (
-                                                                    <span className={s.incrementAmount >= 0 ? "text-emerald-600 font-semibold" : "text-rose-600 font-semibold"}>
-                                                                        {s.incrementAmount >= 0 ? "+" : ""}{s.incrementAmount}
-                                                                    </span>
-                                                                ) : "—"}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>

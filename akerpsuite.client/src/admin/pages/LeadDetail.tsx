@@ -947,77 +947,99 @@ export default function LeadDetail() {
                             )}
 
                             {/* TAB 4: PROPOSAL & PAYMENT */}
-                            {activeTab === "proposal" && (
-                                <div>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Proposal Details</h3>
-                                    </div>
+                                {activeTab === "proposal" && (
+                                    <div>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Proposal Details</h3>
+                                        </div>
 
-                                    {/* NEW: Generate Proposal form */}
-                                    <div className="border border-slate-200 rounded-2xl p-6 mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">System Size (kW) *</label>
-                                            <input
-                                                type="number"
-                                                value={systemSizeKw}
-                                                onChange={e => setSystemSizeKw(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Total Amount (₹) *</label>
-                                            <input
-                                                type="number"
-                                                value={totalAmount}
-                                                onChange={e => setTotalAmount(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Subsidy Amount (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={subsidyAmount}
-                                                onChange={e => setSubsidyAmount(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
-                                            />
-                                        </div>
-                                        <div className="flex items-end">
-                                            <button onClick={handleGenerateProposal} disabled={actionLoading} className="w-full px-4 py-2 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 disabled:opacity-60 transition-all">
-                                                {actionLoading ? "Generating..." : "Generate New Proposal"}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                        {(proposals || []).length === 0 ? (
-                                            <p className="text-sm text-slate-400">No proposals yet.</p>
-                                        ) : proposals.map((p, idx) => (
-                                            <div key={p.proposalId || idx} className="border border-slate-200 rounded-2xl p-6  flex justify-between items-center mb-3">
-                                                <div className="flex gap-8">
-                                                    <div>
-                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">System Size</p>
-                                                        <p className="text-lg font-bold text-slate-800">{p.systemSizeKw || "-"} kW</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs font-bold text-slate-400 uppercase ml-20 tracking-wide">Total Amount</p>
-                                                        <p className="text-lg font-bold text-slate-800 ml-20">₹ {Number(p.totalAmount || 0).toLocaleString("en-IN")}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs font-bold text-slate-400 uppercase ml-20 tracking-wide">Subsidy Amount</p>
-                                                        <p className="text-lg font-bold text-slate-800  ml-20 ">₹ {Number(p.subsidyAmount || 0).toLocaleString("en-IN")}</p>
-                                                    </div>
-                                                </div>
-                                                <span className="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-xs font-bold">{p.status}</span>
-                                                {(p.status === "Draft" || p.status === "Pending") && (
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => handleProposalAction(p.proposalId, "Accepted")} disabled={actionLoading} className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl text-xs hover:bg-emerald-700 disabled:opacity-60 transition-all">Accept</button>
-                                                        <button onClick={() => handleProposalAction(p.proposalId, "Rejected")} disabled={actionLoading} className="px-4 py-2 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 disabled:opacity-60 transition-all">Reject</button>
-                                                    </div>
-                                                )}
+                                        {/* Generate Proposal form — unchanged */}
+                                        <div className="border border-slate-200 rounded-2xl p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">System Size (kW) *</label>
+                                                <input
+                                                    type="number"
+                                                    value={systemSizeKw}
+                                                    onChange={e => setSystemSizeKw(e.target.value)}
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
+                                                />
                                             </div>
-                                        ))}
-                                </div>
-                            )}
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Total Amount (₹) *</label>
+                                                <input
+                                                    type="number"
+                                                    value={totalAmount}
+                                                    onChange={e => setTotalAmount(e.target.value)}
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Subsidy Amount (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    value={subsidyAmount}
+                                                    onChange={e => setSubsidyAmount(e.target.value)}
+                                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
+                                                />
+                                            </div>
+                                            <div className="flex items-end">
+                                                <button onClick={handleGenerateProposal} disabled={actionLoading} className="w-full px-4 py-2 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 disabled:opacity-60 transition-all">
+                                                    {actionLoading ? "Generating..." : "Generate New Proposal"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Proposals table */}
+                                        <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">System Size</th>
+                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Total Amount</th>
+                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Subsidy Amount</th>
+                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Status</th>
+                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {(proposals || []).length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={5} className="px-6 py-8 text-sm text-slate-400 text-center">
+                                                                No proposals yet.
+                                                            </td>
+                                                        </tr>
+                                                    ) : proposals.map((p, idx) => (
+                                                        <tr key={p.proposalId || idx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-800">{p.systemSizeKw || "-"} kW</td>
+                                                            <td className="px-6 py-4 font-bold text-slate-800">₹ {Number(p.totalAmount || 0).toLocaleString("en-IN")}</td>
+                                                            <td className="px-6 py-4 font-bold text-slate-800">₹ {Number(p.subsidyAmount || 0).toLocaleString("en-IN")}</td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${p.status === "Accepted"
+                                                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                                                        : p.status === "Rejected"
+                                                                            ? "bg-red-50 text-red-600 border-red-200"
+                                                                            : "bg-amber-50 text-amber-600 border-amber-200"
+                                                                    }`}>
+                                                                    {p.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                {(p.status === "Draft" || p.status === "Pending") ? (
+                                                                    <div className="flex gap-2">
+                                                                        <button onClick={() => handleProposalAction(p.proposalId, "Accepted")} disabled={actionLoading} className="px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-xs hover:bg-emerald-700 disabled:opacity-60 transition-all">Accept</button>
+                                                                        <button onClick={() => handleProposalAction(p.proposalId, "Rejected")} disabled={actionLoading} className="px-4 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-50 disabled:opacity-60 transition-all">Reject</button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-slate-300">—</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
                                 {/* TAB 5: BOM & BOOKING */}
                                 {activeTab === "bom" && (
                                     <div className="space-y-4">

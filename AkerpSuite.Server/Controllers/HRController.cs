@@ -27,24 +27,20 @@ namespace AkerpSuite.Server.Controllers
 
 
         // ── Sales Pipeline (segments, leads, followups, surveys, proposals, dispatch, sales docs/reminders) ──
-        // NOTE: "Manager" here is being used loosely for Sales Manager until a dedicated
-        // Sales Manager role exists in the DB — swap in the real role name once it's added.
-        private const string SalesWriteRoles = "CMD,Admin,HR";
-        private const string SalesViewRoles = "CMD,Admin,HR";
+        private const string SalesWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
+        private const string SalesViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
 
         // Payment step: keep tighter — Accounts handles verification, Sales shouldn't record payments.
-        private const string PaymentWriteRoles = "CMD,Admin,HR";
-        private const string PaymentViewRoles = "CMD,Admin,HR";
+        private const string PaymentWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.Accounts;
+        private const string PaymentViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Accounts;
 
-        // BOM: Sales creates the request, but stock/booking action belongs to Inventory once that role exists.
-        private const string BomWriteRoles = "CMD,Admin,HR";
-        private const string BomViewRoles = "CMD,Admin,HR";
+        // BOM: Sales creates the request, stock/booking action belongs to Inventory.
+        private const string BomWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory;
+        private const string BomViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory;
 
         // ── Inventory Module (item master, stock in/out/adjustment, transactions, reports) ──
-        // Kept HR-only for now since there's no dedicated Inventory/Store role yet.
-        // Add "Inventory" to these the moment that role is created — do NOT add Sales here.
-        private const string InventoryWriteRoles = "CMD,Admin,HR";
-        private const string InventoryViewRoles = "CMD,Admin,HR";
+        private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Inventory;
+        private const string InventoryViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Inventory;
 
         public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
         {

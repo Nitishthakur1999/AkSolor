@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { adminService } from "@/services/adminService";
 import logo from "@/assets/logo.png";
+import { createPortal } from "react-dom";
 
 // Report sub-pages to hide from the sidebar nav.
 // Match is case-insensitive and ignores extra spaces.
@@ -375,40 +376,41 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </aside>
 
-      {/* ── Logout Modal ── */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="w-full max-w-[340px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
-              <i className="fa-solid fa-right-from-bracket text-xl text-red-500" />
-            </div>
+          {/* ── Logout Modal ── */}
+          {showLogoutModal && createPortal(
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+                  <div className="w-full max-w-[340px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                      <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                          <i className="fa-solid fa-right-from-bracket text-xl text-red-500" />
+                      </div>
 
-            <h2 className="text-lg font-semibold text-slate-900">Sign out</h2>
-            <p className="mt-1.5 text-sm leading-6 text-slate-500">
-              Your session will be cleared and you'll be redirected to the login
-              page.
-            </p>
+                      <h2 className="text-lg font-semibold text-slate-900">Sign out</h2>
+                      <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                          Your session will be cleared and you'll be redirected to the login
+                          page.
+                      </p>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setShowLogoutModal(false)}
-                className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-              >
-                Cancel
-              </button>
+                      <div className="flex gap-3 mt-6">
+                          <button
+                              type="button"
+                              onClick={() => setShowLogoutModal(false)}
+                              className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                              Cancel
+                          </button>
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                          <button
+                              type="button"
+                              onClick={handleLogout}
+                              className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
+                          >
+                              Sign out
+                          </button>
+                      </div>
+                  </div>
+              </div>,
+              document.body
+          )}
     </>
   );
 }

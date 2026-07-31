@@ -3,8 +3,8 @@ import Reveal from './Reveal'
 import Lightbox from './Lightbox'
 import { publicSiteService } from '../services/publicService' // adjust path as needed
 
-const API_ORIGIN = "https://localhost:7272"; // same host as PUBLIC_API_BASE, no /api/public
-//const API_ORIGIN = import.meta.env.VITE_API_BASE_URL; 
+//const API_ORIGIN = "https://localhost:7272"; // same host as PUBLIC_API_BASE, no /api/public
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL; 
 function resolveImage(raw) {
     if (!raw) return "";
     if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;

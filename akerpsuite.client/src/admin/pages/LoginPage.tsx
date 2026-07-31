@@ -503,9 +503,7 @@ export default function LoginPage() {
                                     <label htmlFor="password" className="bp-mono block text-[0.65rem] tracking-widest uppercase text-[color:var(--bp-dim)]">
                                         Password
                                     </label>
-                                    <a href="/forgot-password" className="text-[0.7rem] font-semibold transition-all focus:outline-none focus:underline" style={{ color: "var(--bp-accent)" }}>
-                                        Forgot?
-                                    </a>
+                                  
                                 </div>
                                 <div className="bp-field-wrap relative">
                                     <span className="bp-field-icon">
