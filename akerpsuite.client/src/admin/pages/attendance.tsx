@@ -54,12 +54,36 @@ export default function Attendance() {
     const ITEMS_PER_PAGE = 10;
 
     const [showMarkModal, setShowMarkModal] = useState(false);
+    // Searchable employee dropdown state — sirf Mark Attendance modal ke Employee
+    // select ke liye (admin-level users ko type-to-search karne dene ke liye)
+    const [empSearchOpen, setEmpSearchOpen] = useState(false);
+    const [empSearchText, setEmpSearchText] = useState("");
     const [showSummaryModal, setShowSummaryModal] = useState(false);
     const [showRegModal, setShowRegModal] = useState(false); // Regularization request modal
     const [actionLoading, setActionLoading] = useState(false);
 
+    // Helper: today's date as yyyy-mm-dd (for <input type="date"> value + payload)
+    const getTodayDateStr = () => {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    // Helper: current time as HH:mm (24hr) — used for punch in/out capture
+    const getCurrentTimeStr = () => {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    };
+
+    // Client-specified rule: Punch In by 9:05 AM = auto Present, no approval needed.
+    // Punch In after 9:05 AM = attendance still marked Present, but a regularization
+    // request is auto-created so HR can review/approve the late arrival.
+    const LATE_CUTOFF = "09:05";
+
     const [markForm, setMarkForm] = useState({
-        empId: "", attDate: "", checkIn: "", checkOut: "", status: "Present", remarks: ""
+        empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: ""
     });
     const [summaryForm, setSummaryForm] = useState<{ empId: string; month: string | number; year: string | number }>({
         empId: "", month: new Date().getMonth() + 1, year: new Date().getFullYear()
@@ -139,6 +163,48 @@ export default function Attendance() {
         }
     };
 
+    // Aaj (attDate === today) ke liye is empId ka attendance record already
+    // maujood hai ya nahi — isi se decide hota hai ki modal me Punch In dikhana
+    // hai ya Punch Out. getAttendanceAll() poori list deta hai, usme se aaj +
+    // empId match karke dhoondte hain (koi alag "today's status" endpoint
+    // nahi hai, isliye existing data hi reuse kar rahe hain).
+    const determinePunchMode = async (empId) => {
+        if (!empId) {
+            setPunchMode(null);
+            setTodaysRecord(null);
+            return;
+        }
+        setPunchMode("checking");
+        try {
+            const res = await adminService.getAttendanceAll();
+            const list = res.Data || res.data || [];
+            const today = getTodayDateStr();
+            const rec = list.find(
+                (r) => Number(r.empId) === Number(empId) && (r.attDate || "").slice(0, 10) === today
+            );
+            if (!rec) {
+                setTodaysRecord(null);
+                setPunchMode("in");
+            } else if (rec.checkIn && rec.checkOut) {
+                setTodaysRecord(rec);
+                setPunchMode("done");
+            } else if (rec.checkIn && !rec.checkOut) {
+                setTodaysRecord(rec);
+                setPunchMode("out");
+            } else {
+                // Record hai lekin checkIn khaali (e.g. Absent/Leave/Holiday manually mark
+                // kiya gaya tha) — Punch In abhi bhi allow karo.
+                setTodaysRecord(rec);
+                setPunchMode("in");
+            }
+        } catch (err) {
+            console.error("Failed to check today's attendance status:", err);
+            // Fail-open: check fail ho jaaye to bhi Punch In allow karo, form block mat karo.
+            setTodaysRecord(null);
+            setPunchMode("in");
+        }
+    };
+
     // Modal openers — Employee role ka empId auto-select ho jaata hai,
     // admin-level users ke liye dropdown khaali khulta hai (unhe choose karna hota hai)
     const openMarkModal = () => {
@@ -149,11 +215,36 @@ export default function Attendance() {
             alert("Your account is not linked to an employee record, so you can't mark attendance. Please contact HR/Admin.");
             return;
         }
-        setMarkForm(prev => ({
-            ...prev,
-            empId: isAdminLevel ? "" : loggedInEmpId.toString()
-        }));
+        // Fresh state har baar modal khulne par — date aaj ki, punch times/location clear
+        setMarkForm({
+            empId: isAdminLevel ? "" : loggedInEmpId.toString(),
+            attDate: getTodayDateStr(),
+            checkIn: "",
+            checkOut: "",
+            status: "Present",
+            remarks: ""
+        });
+        setLocationStatus("idle");
+        setCapturedLocation({ latitude: null, longitude: null, address: null });
+        setTodaysRecord(null);
+        setEmpSearchOpen(false);
+        setEmpSearchText("");
+        // Employee role ke liye empId turant maloom hai, to abhi hi punch-mode check kar lo.
+        // Admin-level ke liye employee dropdown khaali khulta hai — jab tak koi select na
+        // kare, punchMode null rehta hai (form neeche khud-ba-khud hidden rahega).
+        if (!isAdminLevel) {
+            determinePunchMode(loggedInEmpId);
+        } else {
+            setPunchMode(null);
+        }
         setShowMarkModal(true);
+    };
+
+    // Admin-level user ne employee dropdown me koi employee select/change kiya —
+    // uske liye bhi aaj ka punch-status turant check karo.
+    const handleMarkEmployeeChange = (empId) => {
+        setMarkForm(prev => ({ ...prev, empId }));
+        determinePunchMode(empId);
     };
 
     const openSummaryModal = () => {
@@ -225,28 +316,96 @@ export default function Attendance() {
     const [locationStatus, setLocationStatus] = useState("idle"); // idle | fetching | captured | denied
     const [capturedLocation, setCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
 
+    // punchMode drives what the Mark Attendance modal shows:
+    // null = admin hasn't picked an employee yet | "checking" = looking up today's record |
+    // "in" = no record yet today, show Punch In | "out" = checked in, not out yet, show Punch Out |
+    // "done" = both already done today, show a message instead of the form
+    const [punchMode, setPunchMode] = useState(null);
+    const [todaysRecord, setTodaysRecord] = useState(null);
+
+    // Jab punchMode "out" ban jaata hai (matlab aaj subah ka Punch In record
+    // mil gaya), uska checkIn time form me dikhane ke liye sync kar do —
+    // display ke liye hi hai, submit ke waqt original todaysRecord.checkIn
+    // hi payload me jaayega (raw format preserve karne ke liye).
+    useEffect(() => {
+        if (punchMode === "out" && todaysRecord) {
+            setMarkForm(prev => ({
+                ...prev,
+                checkIn: (todaysRecord.checkIn || "").slice(0, 5),
+                status: todaysRecord.status || prev.status
+            }));
+        }
+    }, [punchMode, todaysRecord]);
+
+    // Punch In — sirf tab chalta hai jab punchMode "in" ho (matlab aaj ka koi
+    // record nahi mila). Current time ko checkIn me capture karta hai + turant
+    // location fetch karna shuru kar deta hai (taaki submit se pehle hi
+    // location dikh jaaye). Status bhi "Present" set kar deta hai.
+    const handlePunchIn = () => {
+        const time = getCurrentTimeStr();
+        setMarkForm(prev => ({ ...prev, checkIn: time, status: "Present" }));
+        if (locationStatus === "idle" || locationStatus === "denied") {
+            getCurrentLocation();
+        }
+    };
+
+    // Punch Out — sirf tab chalta hai jab punchMode "out" ho (matlab subah
+    // Punch In already ho chuka hai). Current time ko checkOut me capture karta hai.
+    const handlePunchOut = () => {
+        const time = getCurrentTimeStr();
+        setMarkForm(prev => ({ ...prev, checkOut: time }));
+        if (locationStatus === "idle" || locationStatus === "denied") {
+            getCurrentLocation();
+        }
+    };
+
     const handleMarkAttendance = async (e) => {
         e.preventDefault();
 
-        // Basic sanity check: checkout should not be before checkin (same-day shift).
+        if (punchMode === "done") {
+            alert("Aaj ke liye attendance already mark ho chuka hai (Punch In + Punch Out dono).");
+            return;
+        }
+
+        // Ab check-in/check-out manually type nahi hote — Punch In/Punch Out
+        // buttons se hi aate hain. Har mode me sirf uska apna punch zaroori hai
+        // (sirf Absent/Leave/Holiday jaise no-punch statuses ke liye chhod diya gaya hai).
+        const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
+        if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
+            alert("Please tap Punch In before submitting.");
+            return;
+        }
+        if (punchMode === "out" && !markForm.checkOut) {
+            alert("Please tap Punch Out before submitting.");
+            return;
+        }
         if (markForm.checkIn && markForm.checkOut && markForm.checkOut < markForm.checkIn) {
-            alert("Check-out time can't be before check-in time.");
+            alert("Punch-out time can't be before punch-in time.");
             return;
         }
 
         setActionLoading(true);
         try {
-            // Attendance submit hone se pehle current location + address capture karo
-            const { latitude, longitude, address } = await getCurrentLocation();
+            // Agar location punch ke waqt already capture ho chuki hai to usi ko reuse karo,
+            // warna (denied ho gayi thi ya kisi wajah se miss ho gayi) submit se pehle ek aakhri try.
+            const { latitude, longitude, address } =
+                locationStatus === "captured" ? capturedLocation : await getCurrentLocation();
+
+            // Punch Out mode me subah wala checkIn raw format me (jaisa backend se aaya tha)
+            // wapas bhejo — display ke liye truncate kiya gaya HH:mm nahi. Isi empId+attDate
+            // ke record ko backend match karke update karega (naya row insert nahi hoga).
+            const checkInForPayload = punchMode === "out"
+                ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
+                : (markForm.checkIn ? markForm.checkIn + ":00" : null);
 
             const payload = {
                 empId: parseInt(markForm.empId, 10),
                 attDate: markForm.attDate ? `${markForm.attDate}T00:00:00` : null,
-                checkIn: markForm.checkIn ? markForm.checkIn + ":00" : null,
+                checkIn: checkInForPayload,
                 checkOut: markForm.checkOut ? markForm.checkOut + ":00" : null,
                 status: markForm.status,
                 source: "Manual",
-                remarks: markForm.remarks,
+                remarks: "",
                 createdBy: user?.userId ?? user?.UserId ?? 1,
                 latitude,
                 longitude,
@@ -255,11 +414,38 @@ export default function Attendance() {
 
             const res = await adminService.markAttendance(payload);
             if (res.Success || res.success) {
+                // Client rule: agar Punch In cutoff (9:05 AM) ke baad hua hai, to attendance
+                // record ke saath-saath ek regularization request bhi khud-ba-khud ban jaani
+                // chahiye taaki HR use "Regularization Requests" tab me Approve/Reject kar sake.
+                // Ye poori tarah frontend se hi handle ho raha hai — koi backend change nahi.
+                const isLatePunchIn = punchMode === "in" && !noPunchStatus && markForm.checkIn > LATE_CUTOFF;
+                if (isLatePunchIn) {
+                    try {
+                        await adminService.createRegRequest({
+                            empId: parseInt(markForm.empId, 10),
+                            attDate: `${markForm.attDate}T00:00:00`,
+                            requestedCheckIn: markForm.checkIn + ":00",
+                            requestedCheckOut: null,
+                            reason: `Late arrival — punched in at ${markForm.checkIn} (after ${LATE_CUTOFF} cutoff)`,
+                        });
+                    } catch (regErr) {
+                        // Attendance khud successfully mark ho chuki hai — regularization
+                        // request banane me koi glitch aaye to bhi user ko block mat karo,
+                        // bas console me log kar do taaki HR ko manually pata chal sake agar zaroorat pade.
+                        console.error("Auto regularization request failed:", regErr);
+                    }
+                }
+
                 setShowMarkModal(false);
-                setMarkForm({ empId: "", attDate: "", checkIn: "", checkOut: "", status: "Present", remarks: "" });
+                setMarkForm({ empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: "" });
                 setLocationStatus("idle");
                 setCapturedLocation({ latitude: null, longitude: null, address: null });
+                setPunchMode(null);
+                setTodaysRecord(null);
                 loadAttendanceData();
+                if (isLatePunchIn) {
+                    alert("Attendance marked. Aapka Punch In 9:05 AM ke baad hua hai, isliye HR approval ke liye bhej diya gaya hai.");
+                }
             } else {
                 alert(res.Message || "Failed to mark attendance.");
             }
@@ -756,19 +942,51 @@ export default function Attendance() {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Employee *</label>
                             {isAdminLevel ? (
-                                <select
-                                    required
-                                    value={markForm.empId}
-                                    onChange={(e) => setMarkForm({ ...markForm, empId: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
-                                >
-                                    <option value="" disabled>-- Select Employee --</option>
-                                    {selectableEmployees.map((emp) => (
-                                        <option key={emp.empId} value={emp.empId}>
-                                            {emp.firstName} {emp.lastName} ({emp.empCode})
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        required={!markForm.empId}
+                                        value={
+                                            empSearchOpen
+                                                ? empSearchText
+                                                : (() => {
+                                                    const sel = selectableEmployees.find((emp) => String(emp.empId) === String(markForm.empId));
+                                                    return sel ? `${sel.firstName} ${sel.lastName} (${sel.empCode})` : "";
+                                                })()
+                                        }
+                                        onFocus={() => { setEmpSearchOpen(true); setEmpSearchText(""); }}
+                                        onChange={(e) => setEmpSearchText(e.target.value)}
+                                        onBlur={() => setTimeout(() => setEmpSearchOpen(false), 150)}
+                                        placeholder="-- Select Employee --"
+                                        className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+                                    />
+                                    {empSearchOpen && (
+                                        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border rounded-xl shadow-lg">
+                                            {(() => {
+                                                const q = empSearchText.trim().toLowerCase();
+                                                const filtered = selectableEmployees.filter((emp) =>
+                                                    `${emp.firstName} ${emp.lastName} ${emp.empCode}`.toLowerCase().includes(q)
+                                                );
+                                                if (filtered.length === 0) {
+                                                    return <div className="px-3 py-2 text-sm text-slate-400">No employees found</div>;
+                                                }
+                                                return filtered.map((emp) => (
+                                                    <div
+                                                        key={emp.empId}
+                                                        onMouseDown={() => {
+                                                            handleMarkEmployeeChange(emp.empId.toString());
+                                                            setEmpSearchText("");
+                                                            setEmpSearchOpen(false);
+                                                        }}
+                                                        className="px-3 py-2 text-sm hover:bg-amber-50 cursor-pointer"
+                                                    >
+                                                        {emp.firstName} {emp.lastName} ({emp.empCode})
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 // Employee role — dropdown ki jagah apna khud ka naam read-only dikhado
                                 <input
@@ -783,73 +1001,118 @@ export default function Attendance() {
                                 />
                             )}
                         </div>
-                        <form onSubmit={handleMarkAttendance} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date *</label>
-                                <input type="date" required value={markForm.attDate}
-                                    onChange={e => setMarkForm({ ...markForm, attDate: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border text-sm" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Check In</label>
-                                    <input type="time" value={markForm.checkIn}
-                                        onChange={e => setMarkForm({ ...markForm, checkIn: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-xl border text-sm" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Check Out</label>
-                                    <input type="time" value={markForm.checkOut}
-                                        onChange={e => setMarkForm({ ...markForm, checkOut: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-xl border text-sm" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
-                                <select value={markForm.status}
-                                    onChange={e => setMarkForm({ ...markForm, status: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
-                                    <option>Present</option>
-                                    <option>Absent</option>
-                                    <option>Half-Day</option>
-                                    <option>Holiday</option>
-                                    <option>Leave</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Remarks</label>
-                                <input type="text" placeholder="Reason for manual entry" value={markForm.remarks}
-                                    onChange={e => setMarkForm({ ...markForm, remarks: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border text-sm" />
-                            </div>
 
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
-                                <div className="w-full px-3 py-2 rounded-xl border text-xs bg-slate-50 text-slate-500 flex items-center gap-2 overflow-hidden">
-                                    {locationStatus === "idle" && (
-                                        <span> Location will be captured automatically on submit</span>
-                                    )}
-                                    {locationStatus === "fetching" && (
-                                        <span className="text-amber-500 animate-pulse"> Getting your location...</span>
-                                    )}
-                                    {locationStatus === "captured" && (
-                                        <span className="text-emerald-600 font-medium truncate">
-                                            📍 {capturedLocation.address
-                                                ? capturedLocation.address
-                                                : `${capturedLocation.latitude?.toFixed(5)}, ${capturedLocation.longitude?.toFixed(5)}`}
-                                        </span>
-                                    )}
-                                    {locationStatus === "denied" && (
-                                        <span className="text-amber-600"> Location unavailable — attendance will still be marked</span>
-                                    )}
-                                </div>
+                        {/* Admin ne abhi tak employee select nahi kiya — form hidden rehta hai
+                            jab tak koi employee choose na ho, warna galat empId pe punch lag sakta hai */}
+                        {isAdminLevel && punchMode === null ? (
+                            <div className="p-6 text-center text-sm text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                                Select an employee to continue
                             </div>
+                        ) : punchMode === "checking" ? (
+                            <div className="p-6 text-center text-sm text-amber-600 animate-pulse">
+                                Checking today's attendance status...
+                            </div>
+                        ) : punchMode === "done" ? (
+                            // Aaj ke liye Punch In + Punch Out dono ho chuke hain — dobara punch
+                            // ki zaroorat nahi, form ki jagah sirf summary dikhado
+                            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 space-y-1">
+                                <p className="font-bold">Attendance already marked for today ✅</p>
+                                <p className="text-xs">
+                                    Punch In: {(todaysRecord?.checkIn || "").slice(0, 5) || "--:--"} · Punch Out: {(todaysRecord?.checkOut || "").slice(0, 5) || "--:--"}
+                                </p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleMarkAttendance} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+                                    {/* Date ab manual pick nahi hoti — hamesha aaj ki date auto-fill
+                                        hoti hai (read-only), taaki koi purani/future date galti se select na ho jaaye. */}
+                                    <input
+                                        type="date"
+                                        disabled
+                                        value={markForm.attDate}
+                                        className="w-full px-3 py-2 rounded-xl border text-sm bg-slate-50 text-slate-500"
+                                    />
+                                </div>
 
-                            <button type="submit" disabled={actionLoading}
-                                className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity">
-                                {actionLoading ? "Saving..." : "Mark Attendance"}
-                            </button>
-                        </form>
+                                {/* Punch In / Punch Out — manual time-type ki jagah ab ek tap se
+                                    current system time capture hoti hai. Sirf ek hi button active
+                                    hota hai ek waqt me:
+                                    - punchMode "in"  → sirf Punch In tap kiya ja sakta hai (Punch Out disabled — subah abhi punch-in hi nahi hua)
+                                    - punchMode "out" → Punch In already ho chuka (read-only ✅), sirf Punch Out tap kiya ja sakta hai */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Punch In</label>
+                                        <button
+                                            type="button"
+                                            onClick={handlePunchIn}
+                                            disabled={punchMode !== "in" || !!markForm.checkIn}
+                                            className={`w-full px-3 py-2.5 rounded-xl border text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${markForm.checkIn
+                                                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                                : "bg-white hover:bg-slate-50 text-slate-700"}`}
+                                        >
+                                            {markForm.checkIn ? `✅ ${markForm.checkIn}` : "Punch In"}
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Punch Out</label>
+                                        <button
+                                            type="button"
+                                            onClick={handlePunchOut}
+                                            disabled={punchMode !== "out" || !!markForm.checkOut}
+                                            className={`w-full px-3 py-2.5 rounded-xl border text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${markForm.checkOut
+                                                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                                : "bg-white hover:bg-slate-50 text-slate-700"}`}
+                                        >
+                                            {markForm.checkOut ? `✅ ${markForm.checkOut}` : "Punch Out"}
+                                        </button>
+                                    </div>
+                                </div>
+                                {punchMode === "in" && (
+                                    <p className="text-xs text-slate-400 -mt-2">Punch Out tap karne ke liye pehle Punch In karo, phir dobara Mark Attendance kholo shaam ko.</p>
+                                )}
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
+                                    <select value={markForm.status}
+                                        onChange={e => setMarkForm({ ...markForm, status: e.target.value })}
+                                        disabled={punchMode === "out"}
+                                        className="w-full px-3 py-2 rounded-xl border text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500">
+                                        <option>Present</option>
+                                        <option>Absent</option>
+                                        <option>Half-Day</option>
+                                        <option>Holiday</option>
+                                        <option>Leave</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
+                                    <div className="w-full px-3 py-2 rounded-xl border text-xs bg-slate-50 text-slate-500 flex items-center gap-2 overflow-hidden">
+                                        {locationStatus === "idle" && (
+                                            <span> Location will be captured automatically on Punch {punchMode === "out" ? "Out" : "In"}</span>
+                                        )}
+                                        {locationStatus === "fetching" && (
+                                            <span className="text-amber-500 animate-pulse"> Getting your location...</span>
+                                        )}
+                                        {locationStatus === "captured" && (
+                                            <span className="text-emerald-600 font-medium truncate">
+                                                📍 {capturedLocation.address
+                                                    ? capturedLocation.address
+                                                    : `${capturedLocation.latitude?.toFixed(5)}, ${capturedLocation.longitude?.toFixed(5)}`}
+                                            </span>
+                                        )}
+                                        {locationStatus === "denied" && (
+                                            <span className="text-amber-600"> Location unavailable — attendance will still be marked</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <button type="submit" disabled={actionLoading}
+                                    className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity">
+                                    {actionLoading ? "Saving..." : punchMode === "out" ? "Confirm Punch Out" : "Mark Attendance"}
+                                </button>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}
@@ -967,10 +1230,7 @@ export default function Attendance() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Year *</label>
-                                    {/* Backend rejects any year greater than the current
-                                        year (see AttendanceService.GenerateSummaryAsync), so this
-                                        input is capped at the current year to prevent a silent
-                                        failure for any future year. */}
+                                    
                                     <input type="number" required min="2020" max={new Date().getFullYear()} value={summaryForm.year}
                                         onChange={e => setSummaryForm({ ...summaryForm, year: e.target.value })}
                                         className="w-full px-3 py-2 rounded-xl border text-sm" />

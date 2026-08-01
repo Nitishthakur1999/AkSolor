@@ -1,5 +1,5 @@
-//const PUBLIC_API_BASE = "https://localhost:7272/api/public";
-const PUBLIC_API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/public`;
+const PUBLIC_API_BASE = "https://localhost:7272/api/public";
+//const PUBLIC_API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/public`;
 
 interface ApiResponse<T> {
     success?: boolean;

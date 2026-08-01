@@ -4,6 +4,8 @@ import { adminService } from "@/services/adminService"; // Apna correct path che
 export default function MyProfile() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState(null);
+    const [noEmployeeRecord, setNoEmployeeRecord] = useState(false);
 
     useEffect(() => {
         fetchProfile();
@@ -11,13 +13,24 @@ export default function MyProfile() {
 
     const fetchProfile = async () => {
         setLoading(true);
+        setErrorMessage(null);
+        setNoEmployeeRecord(false);
         try {
             const res = await adminService.getMyProfile();
             if (res.success || res.Success) {
                 setProfile(res.data || res.Data);
+            } else {
+                setErrorMessage(res.message || res.Message || "Failed to load profile.");
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
+
+            const msg = error?.message || "";
+            if (msg.includes("not linked to an employee record")) {
+                setNoEmployeeRecord(true);
+            } else {
+                setErrorMessage("Failed to load profile. Please try again later.");
+            }
         } finally {
             setLoading(false);
         }
@@ -37,14 +50,72 @@ export default function MyProfile() {
         });
     };
 
+    // ── Loading state ──
     if (loading) {
-        return <div className="p-8 text-center text-slate-500 font-medium">Loading profile details...</div>;
+        return (
+            <div className="p-8 flex flex-col items-center justify-center min-h-[300px] text-slate-500 font-medium">
+                <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin mb-4"></div>
+                Loading profile details...
+            </div>
+        );
     }
 
-    if (!profile) {
-        return <div className="p-8 text-center text-red-500 font-medium">Failed to load profile.</div>;
+    if (noEmployeeRecord) {
+        return (
+            <div className="p-8 flex items-center justify-center min-h-[300px]">
+                <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 max-w-md w-full text-center shadow-sm">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-2xl">
+                        <i className="fa-solid fa-user-slash"></i>
+                    </div>
+
+                    <h2 className="text-lg font-bold text-slate-800 mb-2">
+                        Self-Service Unavailable
+                    </h2>
+
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                        Your account is not currently linked to an employee profile.
+                        As a result, self-service features such as{" "}
+                        <span className="font-semibold">
+                            My Profile, Attendance, and Leave
+                        </span>{" "}
+                        are not available.
+                    </p>
+
+                    <p className="text-slate-400 text-xs mt-4">
+                        If you believe this is incorrect, please contact your administrator
+                        to link your account with the appropriate employee record.
+                    </p>
+                </div>
+            </div>
+        );
     }
 
+    // ── Generic error / profile missing ──
+    if (errorMessage || !profile) {
+        return (
+            <div className="p-8 flex items-center justify-center min-h-[300px]">
+                <div className="bg-red-50 border border-red-200 rounded-3xl p-8 max-w-md w-full text-center shadow-sm">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center text-red-500 text-2xl">
+                        <i className="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-800 mb-2">
+                        Something Went Wrong
+                    </h2>
+                    <p className="text-red-500 text-sm font-medium mb-4">
+                        {errorMessage || "Failed to load profile."}
+                    </p>
+                    <button
+                        onClick={fetchProfile}
+                        className="px-5 py-2 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Success: full profile UI ──
     return (
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
 

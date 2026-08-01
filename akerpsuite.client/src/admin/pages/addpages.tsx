@@ -20,6 +20,16 @@ export default function PageManagement() {
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
+    // 🆕 Non-blocking toast state (alert() ki jagah — alert() UI thread ko block
+    // karta hai jisse page "freeze" jaisa feel hota hai jab tak user OK na dabaye)
+    const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+    useEffect(() => {
+        if (!toast) return;
+        const timer = setTimeout(() => setToast(null), 3000);
+        return () => clearTimeout(timer);
+    }, [toast]);
+
     // Data States
     const [roles, setRoles] = useState([]);
     const [allPages, setAllPages] = useState<any[]>([]);
@@ -197,8 +207,23 @@ export default function PageManagement() {
         setAssignedPageIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
+    // 🆕 Select All / Deselect All toggle
+    const allPageIds = useMemo(() => allPages.map(p => Number(p.pageId || p.PageId || p.id || p.Id)), [allPages]);
+    const isAllSelected = allPageIds.length > 0 && allPageIds.every(id => assignedPageIds.includes(id));
+
+    const handleSelectAllChange = () => {
+        if (isAllSelected) {
+            setAssignedPageIds([]); // sab uncheck kar do
+        } else {
+            setAssignedPageIds(allPageIds); // sab check kar do
+        }
+    };
+
     const handleSaveAssignment = async () => {
-        if (!selectedRole) return alert("Please select a role first!");
+        if (!selectedRole) {
+            setToast({ type: "error", message: "Please select a role first!" });
+            return;
+        }
         setActionLoading(true);
         try {
             const payload = {
@@ -207,11 +232,18 @@ export default function PageManagement() {
             };
             const res = await adminService.updateRolePages(payload);
             if (res.Success || res.success) {
-                alert("Pages assigned successfully!");
+                setToast({ type: "success", message: "Pages assigned successfully!" });
+
+                // 🆕 Reset role selection + checkboxes after successful save
+                setSelectedRole("");
+                setAssignedPageIds([]);
             } else {
-                alert(res.Message || "Failed to assign pages.");
+                setToast({ type: "error", message: res.Message || "Failed to assign pages." });
             }
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error(err);
+            setToast({ type: "error", message: "Failed to assign pages. Please check console." });
+        }
         finally { setActionLoading(false); }
     };
 
@@ -225,6 +257,16 @@ export default function PageManagement() {
 
     return (
         <div className="space-y-6">
+            {/* 🆕 TOAST NOTIFICATION (non-blocking, alert() ki jagah) */}
+            {toast && (
+                <div
+                    className={`fixed top-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all ${toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"
+                        }`}
+                >
+                    {toast.message}
+                </div>
+            )}
+
             {/* HEADER */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-bold text-slate-900">Page Master & Assignment</h2>
@@ -350,30 +392,49 @@ export default function PageManagement() {
                                 <div className="space-y-6 max-w-5xl mx-auto">
                                     <div className="max-w-md">
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Select Role *</label>
-                                            <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white transition-all">
-                                                <option value="" disabled>-- Choose Role --</option>
-                                                {roles
-                                                    .filter(r => {
-                                                        const roleName = (r.roleName || r.RoleName || "").toLowerCase();
-                                                        const currentRole = currentUserRole?.toLowerCase();
+                                        <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white transition-all">
+                                            <option value="" disabled>-- Choose Role --</option>
+                                            {roles
+                                                .filter(r => {
+                                                    const roleName = (r.roleName || r.RoleName || "").toLowerCase();
+                                                    const currentRole = currentUserRole?.toLowerCase();
 
-                                                        // Apna khud ka exact role kabhi mat dikhao
-                                                        if (roleName === currentRole) return false;
+                                                    // Apna khud ka exact role kabhi mat dikhao
+                                                    if (roleName === currentRole) return false;
 
-                                                        const currentLevel = getLevel(currentRole);
-                                                        const targetLevel = getLevel(roleName);
+                                                    const currentLevel = getLevel(currentRole);
+                                                    const targetLevel = getLevel(roleName);
 
-                                                        // Backend jaisa hi logic: target level >= apna level (barabar ya neeche wale)
-                                                        return targetLevel >= currentLevel;
-                                                    })
-                                                    .map(r => (
-                                                        <option key={r.roleId || r.RoleId} value={r.roleId || r.RoleId}>{r.roleName || r.RoleName}</option>
-                                                    ))}
-                                            </select>
+                                                    // Backend jaisa hi logic: target level >= apna level (barabar ya neeche wale)
+                                                    return targetLevel >= currentLevel;
+                                                })
+                                                .map(r => (
+                                                    <option key={r.roleId || r.RoleId} value={r.roleId || r.RoleId}>{r.roleName || r.RoleName}</option>
+                                                ))}
+                                        </select>
                                     </div>
 
                                     {selectedRole && (
                                         <div className="pt-6 border-t border-slate-100">
+
+                                            {/* 🆕 Select All / Deselect All */}
+                                            <div className="flex items-center justify-between mb-4">
+                                                <label className="flex items-center gap-2.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-all">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                                        checked={isAllSelected}
+                                                        onChange={handleSelectAllChange}
+                                                    />
+                                                    <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">
+                                                        {isAllSelected ? "Deselect All Pages" : "Select All Pages"}
+                                                    </span>
+                                                </label>
+                                                <span className="text-xs text-slate-400 font-medium">
+                                                    {assignedPageIds.length} of {allPageIds.length} selected
+                                                </span>
+                                            </div>
+
                                             <div className="grid grid-cols-1 gap-6">
                                                 {(Object.entries(groupedPages) as [string, any[]][]).map(([group, pages]) => (
                                                     <div key={group} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">

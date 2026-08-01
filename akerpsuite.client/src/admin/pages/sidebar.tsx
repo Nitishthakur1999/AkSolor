@@ -4,8 +4,7 @@ import { adminService } from "@/services/adminService";
 import logo from "@/assets/logo.png";
 import { createPortal } from "react-dom";
 
-// Report sub-pages to hide from the sidebar nav.
-// Match is case-insensitive and ignores extra spaces.
+
 const HIDDEN_PAGE_NAMES = [
   "attendance report",
   "leave report",
@@ -44,20 +43,26 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     return groups;
   }, {});
 
-  // ── Sidebar-only override: Sales module should show just "Leads" ──
-  // (Router/DB still has the other sales pages, we're only hiding the nav links here)
-  if (groupedPages["Sales"]) {
-    groupedPages["Sales"] = groupedPages["Sales"].filter(
-      (page) => page.pageLink === "/sales/leads",
-    );
-    if (groupedPages["Sales"].length === 0) delete groupedPages["Sales"];
-  }
+    // ── Sidebar-only override: Sales module should show just "Leads" ──
+    // (Router/DB still has the other sales pages, we're only hiding the nav links here)
+    if (groupedPages["Sales"]) {
+        groupedPages["Sales"] = groupedPages["Sales"].filter(
+            (page) => page.pageLink === "/sales/leads",
+        );
+        if (groupedPages["Sales"].length === 0) delete groupedPages["Sales"];
+    }
 
-  const activeGroups = GROUP_ORDER.filter((g) => groupedPages[g]);
+    // ── Sidebar-only override: CMD accounts are not linked to an Employee record ──
+    // (backend User.GetEmpId() throws for CMD, so Self-Service pages are unusable — hide them)
+    if (role === "CMD" && groupedPages["Self"]) {
+        delete groupedPages["Self"];
+    }
 
-  Object.keys(groupedPages).forEach((g) => {
-    if (!activeGroups.includes(g)) activeGroups.push(g);
-  });
+    const activeGroups = GROUP_ORDER.filter((g) => groupedPages[g]);
+
+    Object.keys(groupedPages).forEach((g) => {
+        if (!activeGroups.includes(g)) activeGroups.push(g);
+    });
 
   const [openGroups, setOpenGroups] = useState<Record<string, any>>(() => {
     // Auto-open the group that contains the current route so users land oriented.
@@ -158,7 +163,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </div>
             <div className="min-w-0">
               <p className="font-display text-base sm:text-lg font-bold text-white leading-tight truncate">
-                AkerpSuite
+               AKS SOLAR
               </p>
               <p className="text-[9px] sm:text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase mt-0.5">
                 Admin Panel

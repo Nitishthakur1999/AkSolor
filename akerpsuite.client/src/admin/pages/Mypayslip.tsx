@@ -61,6 +61,15 @@ export default function EmployeeDashboard() {
                 // Otherwise fetch the logged-in user's own (self) data.
                 const isSelf = !hasFullAccess || selectedEmpId === "";
 
+                // Admin accounts are not linked to an Employee record, so they never
+                // have a payslip of their own. Skip the API call and show a clear
+                // message instead of hitting the backend and getting a 404/400 error.
+                if (activeTab === "payslip" && isSelf && currentUserRole === "Admin") {
+                    setError("Admin accounts don't have a payslip. Select an employee above to view their payslip.");
+                    setLoading(false);
+                    return;
+                }
+
                 if (activeTab === "payslip") {
                     res = isSelf
                         ? await adminService.getMyPayslip(month, year)
@@ -87,14 +96,13 @@ export default function EmployeeDashboard() {
                 }
             } catch (err) {
                 console.error(err);
-                setError("Something went wrong. Please try again.");
+                setError(err.message || "Something went wrong. Please try again.");
             } finally {
                 setLoading(false);
-            }
+            };
         };
         loadData();
     }, [activeTab, month, year, selectedEmpId, hasFullAccess]);
-
     const handlePrint = () => window.print();
 
     // --- PAYSLIP CALCULATION LOGIC ---
