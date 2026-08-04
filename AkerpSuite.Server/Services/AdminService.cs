@@ -723,6 +723,28 @@ namespace AkerpSuite.Server.Services
             int? empId, int? month, int? year)
             => await _repository.GetSummaryAsync(empId, month, year);
 
+        public async Task<AttendanceDashboardStatsDto> GetAttendanceDashboardStatsAsync()
+        {
+            var today = DateTime.Today;
+
+            var employees = await _repository.GetAllEmployeesAsync(null, null, "Active", null);
+            int totalEmployees = employees.Count();
+
+            var todaysAttendance = await _repository.GetAllAttendanceAsync(null, today, null, null, null);
+            var attendanceList = todaysAttendance.ToList();
+
+            int presentToday = attendanceList.Count(a => a.Status == "Present" || a.Status == "Half-Day");
+            int absentToday = Math.Max(totalEmployees - presentToday, 0);
+            int lateArrivals = attendanceList.Count(a => a.LateMinutes > 0);
+
+            return new AttendanceDashboardStatsDto
+            {
+                TotalEmployees = totalEmployees,
+                PresentToday = presentToday,
+                AbsentToday = absentToday,
+                LateArrivals = lateArrivals
+            };
+        }
         #endregion
 
         #region Leave Types

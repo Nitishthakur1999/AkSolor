@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Reveal from './Reveal'
 import founderPhoto from '../assets/founder.png'
 import directorPhoto from '../assets/director.png'
-import { publicSiteService } from '../services/publicService' // adjust path as needed
+import { publicSiteService } from '../services/publicService' 
 
 const API_ORIGIN = "https://localhost:7272"; 
 //const API_ORIGIN = import.meta.env.VITE_API_BASE_URL; 

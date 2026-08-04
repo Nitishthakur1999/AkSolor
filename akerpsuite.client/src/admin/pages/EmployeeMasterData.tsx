@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 //import { adminService } from "../../services/adminService";
 import { adminService, getDocumentUrl } from "../../services/adminService";
 
@@ -34,6 +34,124 @@ const fileToBase64 = (file: File): Promise<string> =>
 
 const inputClass =
     "border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm w-full bg-slate-50/50 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400 focus:bg-white";
+
+// ── Searchable Employee Select ──────────────────────────────────────────
+type Employee = {
+    empId: number | string;
+    fullName: string;
+    empCode: string;
+};
+
+type SearchableEmployeeSelectProps = {
+    employeeList: Employee[];
+    selectedEmpId: string;
+    onSelect: (empId: string) => void;
+};
+
+function SearchableEmployeeSelect({
+    employeeList,
+    selectedEmpId,
+    onSelect,
+}: SearchableEmployeeSelectProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    const selectedEmp = employeeList.find(
+        (emp) => String(emp.empId) === String(selectedEmpId)
+    );
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+                setIsOpen(false);
+                setSearch("");
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Search by name or emp code
+    const filteredList = employeeList.filter((emp) => {
+        const query = search.toLowerCase();
+        return (
+            emp.fullName?.toLowerCase().includes(query) ||
+            emp.empCode?.toLowerCase().includes(query)
+        );
+    });
+
+    return (
+        <div className="relative min-w-[240px]" ref={wrapperRef}>
+            <input
+                type="text"
+                readOnly={!isOpen}
+                value={
+                    isOpen
+                        ? search
+                        : selectedEmp
+                            ? `${selectedEmp.fullName} (${selectedEmp.empCode})`
+                            : ""
+                }
+                onChange={(e) => setSearch(e.target.value)}
+                onClick={() => {
+                    setIsOpen(true);
+                    setSearch("");
+                }}
+                placeholder="-- Select Employee --"
+                className="w-full border border-amber-200 bg-amber-50 rounded-xl pl-4 pr-9 py-2.5 text-sm text-amber-800 font-semibold cursor-pointer transition-colors hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+            />
+
+            <svg
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+            >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+
+            {isOpen && (
+                <div className="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto bg-white border border-amber-200 rounded-xl shadow-lg">
+                    <div
+                        onClick={() => {
+                            onSelect("");
+                            setIsOpen(false);
+                            setSearch("");
+                        }}
+                        className="px-4 py-2 text-sm text-gray-500 cursor-pointer hover:bg-amber-50"
+                    >
+                        -- Select Employee --
+                    </div>
+
+                    {filteredList.length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-400">No employee found</div>
+                    ) : (
+                        filteredList.map((emp) => (
+                            <div
+                                key={emp.empId}
+                                onClick={() => {
+                                    onSelect(String(emp.empId));
+                                    setIsOpen(false);
+                                    setSearch("");
+                                }}
+                                className={`px-4 py-2 text-sm cursor-pointer hover:bg-amber-100 ${String(emp.empId) === String(selectedEmpId)
+                                        ? "bg-amber-100 font-semibold text-amber-800"
+                                        : "text-gray-700"
+                                    }`}
+                            >
+                                {emp.fullName} ({emp.empCode})
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+// ─────────────────────────────────────────────────────────────────────────
 
 export default function EmployeeMasterData() {
     const currentUserId = parseInt(localStorage.getItem("userId") || "0", 10);
@@ -255,39 +373,25 @@ export default function EmployeeMasterData() {
                     <h2 className="text-xl font-bold text-slate-900">Bank Details & Documents</h2>
                     <p className="text-xs text-slate-500 mt-0.5">Select an employee to manage their records.</p>
                 </div>
-                <div className="relative min-w-[240px]">
-                    <select
-                        value={selectedEmpId}
-                        onChange={(e) => {
-                            setSelectedEmpId(e.target.value);
-                            setBankForm(emptyBankForm);
-                            setDocForm(emptyDocForm);
-                            setSelectedFile(null);
-                        }}
-                        className="appearance-none w-full border border-amber-200 bg-amber-50 rounded-xl pl-4 pr-9 py-2.5 text-sm text-amber-800 font-semibold cursor-pointer transition-colors hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
-                    >
-                        <option value="">-- Select Employee --</option>
-                        {employeeList.map((emp) => (
-                            <option key={emp.empId} value={emp.empId}>
-                                {emp.fullName} ({emp.empCode})
-                            </option>
-                        ))}
-                    </select>
-                    <svg
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500"
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </div>
+
+                <SearchableEmployeeSelect
+                    employeeList={employeeList}
+                    selectedEmpId={selectedEmpId}
+                    onSelect={(empId) => {
+                        setSelectedEmpId(empId);
+                        setBankForm(emptyBankForm);
+                        setDocForm(emptyDocForm);
+                        setSelectedFile(null);
+                    }}
+                />
             </div>
 
             {/* ── Toast message ── */}
             {msg && (
                 <div
                     className={`flex items-center gap-2 text-sm px-4 py-3 rounded-xl border ${msgType === "error"
-                            ? "bg-red-50 border-red-200 text-red-700"
-                            : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        ? "bg-red-50 border-red-200 text-red-700"
+                        : "bg-emerald-50 border-emerald-200 text-emerald-700"
                         }`}
                 >
                     <span>{msgType === "error" ? "⚠️" : "✅"}</span>
@@ -333,8 +437,8 @@ export default function EmployeeMasterData() {
                                 key={sec.key}
                                 onClick={() => setActiveSection(sec.key)}
                                 className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeSection === sec.key
-                                        ? "bg-white text-amber-700 shadow-sm"
-                                        : "text-slate-500 hover:text-slate-700"
+                                    ? "bg-white text-amber-700 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
                                     }`}
                             >
                                 {sec.label}
@@ -610,13 +714,13 @@ export default function EmployeeMasterData() {
 
                                                 {doc.filePath && (
 
-                                                   <a href = { getDocumentUrl(doc.filePath)}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-amber-600 text-xs font-bold hover:text-amber-800"
-                                                  >
-                                                View
-                                            </a>
+                                                    <a href={getDocumentUrl(doc.filePath)}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-amber-600 text-xs font-bold hover:text-amber-800"
+                                                    >
+                                                        View
+                                                    </a>
                                                 )}
                                                 <button
                                                     onClick={() => handleDocEdit(doc)}

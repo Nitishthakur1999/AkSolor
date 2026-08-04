@@ -189,7 +189,7 @@ export const CONTACT = {
   email: 'akssolarsystems@gmail.com',
   hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
   whatsapp: 'https://wa.me/919805763000',
-  whatsappPrefilled: "https://wa.me/919805763000?text=Hi%2C%20I'd%20like%20to%20know%20more%20about%20your%20solar%20services.",
+  whatsappPrefilled: "https://wa.me/918091476300?text=Hi%2C%20I'd%20like%20to%20know%20more%20about%20your%20solar%20services.",
   facebook: 'https://www.facebook.com/akssolarsystemsprivatelimited',
   youtube: 'https://youtube.com/@AKSSOLARSYSTEMSPRIVATELIMITED',
   mapEmbed: 'https://maps.google.com/maps?q=HOUSE%20NO.%2067-A%2F4%2C%20NH-21%2C%20NEAR%20IDBI%20BANK%20BHOJPUR%20SUNDER%20NAGAR%20DISTT.%20MANDI%20HIMACHAL%20PRADESH%20PIN-175002&t=m&z=13&output=embed&iwloc=near',

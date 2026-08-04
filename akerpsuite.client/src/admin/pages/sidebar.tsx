@@ -165,9 +165,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               <p className="font-display text-base sm:text-lg font-bold text-white leading-tight truncate">
                AKS SOLAR
               </p>
-              <p className="text-[9px] sm:text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase mt-0.5">
-                Admin Panel
-              </p>
+             
             </div>
           </div>
 

@@ -81,7 +81,7 @@ namespace AkerpSuite.Server.Services
         Task<bool> RegActionAsync(int requestId, string status, int approvedBy);
         Task<int> GenerateSummaryAsync(int empId, int month, int year);
         Task<IEnumerable<AttendanceSummaryResponseDto>> GetSummaryAsync(int? empId, int? month, int? year);
-
+        Task<AttendanceDashboardStatsDto> GetAttendanceDashboardStatsAsync();
         #endregion
 
         #region Leave Management

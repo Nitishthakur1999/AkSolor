@@ -16,8 +16,6 @@ const apiCall = async (url: string, method: string = "GET", body: any = null): P
     if (body) options.body = JSON.stringify(body);
 
     const res = await fetch(url, options);
-
-    // Response body khaali ho sakta hai (jaise 403/401/204) — pehle text nikal ke check karo
     const text = await res.text();
     const data = text ? JSON.parse(text) : null;
 
@@ -46,6 +44,7 @@ const buildQuery = (filters: Record<string, any> = {}): string => {
 };
 
 export const adminService = {
+
     // 1. Dashboard
     getDashboard: () => apiCall(`${API_BASE}/dashboard`),
 
@@ -322,12 +321,11 @@ export const adminService = {
     updateBankDetail: (data?: any) => apiCall(`${SALES_API_BASE}/bank/update`, "PUT", data),
     deleteBankDetail: (bankId?: any) => apiCall(`${SALES_API_BASE}/bank/delete/${bankId}`, "DELETE"),
 
-    // password 
+    // ── Password ──
     revealEmployeeCredentials: (empId?: any, secretKey?: any) =>
         apiCall(`/api/admin/employees/${empId}/reveal-credentials`, "POST", { secretKey }),
     
-
-   // ── 28. Public Site (Banners / Gallery / Team / Projects / Highlights / Career / Contact Queries) ──
+   // ── 28. Public Site  ──
 
     // Banners 
     getBanners: () => apiCall(`${SITE_API_BASE}/banner`),

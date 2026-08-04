@@ -170,6 +170,13 @@
         public decimal OvertimeHours { get; set; }
         public DateTime? GeneratedAt { get; set; }
     }
+    public class AttendanceDashboardStatsDto
+    {
+        public int TotalEmployees { get; set; }
+        public int PresentToday { get; set; }
+        public int AbsentToday { get; set; }
+        public int LateArrivals { get; set; }
+    }
     public class MarkAttendanceResultDto
     {
         public int AttId { get; set; }

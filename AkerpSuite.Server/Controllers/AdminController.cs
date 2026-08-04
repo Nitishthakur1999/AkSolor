@@ -467,7 +467,7 @@ namespace AkerpSuite.Server.Controllers
         }
         #endregion
 
-        #region Attendance – Marking, History, Regularization & Summary
+        #region Attendance dashbord,Marking, History, Regularization & Summary 
 
         [HttpPost("mark")]
         [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
@@ -565,6 +565,15 @@ namespace AkerpSuite.Server.Controllers
             var data = await _service.GetSummaryAsync(empId, month, year);
             return Ok(new { Success = true, Data = data });
         }
+
+        [HttpGet("dashboard-stats")]
+        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        public async Task<IActionResult> GetDashboardStats()
+        {
+            var data = await _service.GetAttendanceDashboardStatsAsync();
+            return Ok(new { Success = true, Data = data });
+        }
+
         #endregion
 
         #region Leave – Types, Balance & Requests
