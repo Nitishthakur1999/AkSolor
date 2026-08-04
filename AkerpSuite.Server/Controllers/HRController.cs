@@ -27,20 +27,20 @@ namespace AkerpSuite.Server.Controllers
 
 
         // ── Sales Pipeline (segments, leads, followups, surveys, proposals, dispatch, sales docs/reminders) ──
-        private const string SalesWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
-        private const string SalesViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
+        private const string SalesWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string SalesViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
         // Payment step: keep tighter — Accounts handles verification, Sales shouldn't record payments.
-        private const string PaymentWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.Accounts + "," + Roles.Sales;
-        private const string PaymentViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
+        private const string PaymentWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.Accounts + "," + Roles.Sales + "," + Roles.Manager;
+        private const string PaymentViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
         // BOM: Sales creates the request, stock/booking action belongs to Inventory.
-        private const string BomWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory;
-        private const string BomViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory;
+        private const string BomWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
+        private const string BomViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
 
         // ── Inventory Module (item master, stock in/out/adjustment, transactions, reports) ──
-        private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
-        private const string InventoryViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales;
+        private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string InventoryViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
         public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
         {

@@ -11,4 +11,9 @@
   <ItemGroup>
     <Folder Include="src\Css\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\appilogics\Downloads\LogoAk.png.png">
+      <Link>src\assets\LogoAk.png.png</Link>
+    </None>
+  </ItemGroup>
 </Project>

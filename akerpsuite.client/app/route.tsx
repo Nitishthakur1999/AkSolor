@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
+import FoundersMessage from "@/pages/FounderPage";
+import CmdMessage from "@/pages/CmdmassagePage";
+import DirectorMessage from "@/pages/DirectormassagePage";
 
 import HomeLayout from "@/layout/HomeLayout";
 import HomePage from "@/pages/HomePage";
@@ -141,6 +144,9 @@ function Router() {
                     <Route path="/gallery" element={<GalleryPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/careers" element={<Careers />} />
+                    <Route path="/messages/founder" element={<FoundersMessage />} />
+                    <Route path="/messages/cmd" element={<CmdMessage />} />
+                    <Route path="/messages/director" element={<DirectorMessage />} />
                 </Route>
 
                 <Route path="/login" element={<Login />} />

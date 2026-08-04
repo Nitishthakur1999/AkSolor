@@ -28,6 +28,13 @@ export default function Attendance() {
     const isCMD = userRole === "CMD";
     // HR / Admin / CMD ko "admin-level" access — poori employee list, sab tabs
     const isAdminLevel = ["CMD", "ADMIN", "HR"].includes(userRole);
+    // Manager — Employee jaisa hi base access (apni attendance khud punch karta hai),
+    // lekin iske saath-saath apni team (direct reports) ki attendance/records bhi
+    // dekh sakta hai. Poori employee list ya HR-level actions (approve/reject,
+    // summary generate) manager ko nahi milte — sirf apni + team ki visibility.
+    const isManager = userRole === "MANAGER";
+    // isTeamLevel = "employee se zyada dikh sakta hai" (admin ko sabka, manager ko apni team ka)
+    const isTeamLevel = isAdminLevel || isManager;
     const loggedInEmpId = (() => {
         try {
             const token = localStorage.getItem("token");
@@ -54,12 +61,10 @@ export default function Attendance() {
     const ITEMS_PER_PAGE = 10;
 
     const [showMarkModal, setShowMarkModal] = useState(false);
-    // Searchable employee dropdown state — sirf Mark Attendance modal ke Employee
-    // select ke liye (admin-level users ko type-to-search karne dene ke liye)
     const [empSearchOpen, setEmpSearchOpen] = useState(false);
     const [empSearchText, setEmpSearchText] = useState("");
     const [showSummaryModal, setShowSummaryModal] = useState(false);
-    const [showRegModal, setShowRegModal] = useState(false); // Regularization request modal
+    const [showRegModal, setShowRegModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
     // Helper: today's date as yyyy-mm-dd (for <input type="date"> value + payload)
@@ -78,9 +83,15 @@ export default function Attendance() {
     };
 
     // Client-specified rule: Punch In by 9:05 AM = auto Present, no approval needed.
-    // Punch In after 9:05 AM = attendance still marked Present, but a regularization
-    // request is auto-created so HR can review/approve the late arrival.
     const LATE_CUTOFF = "09:05";
+
+    // Helper: kya diya gaya date Sunday hai? (getDay() === 0 → Sunday)
+
+    const isSunday = (dateStr) => {
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        return !isNaN(d.getTime()) && d.getDay() === 0;
+    };
 
     const [markForm, setMarkForm] = useState({
         empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: ""
@@ -94,10 +105,19 @@ export default function Attendance() {
     });
 
     // Employee role ko sirf apna naam dikhna chahiye dropdown mein;
-    // HR/Admin/CMD ko poori list.
+    // HR/Admin/CMD ko poori list; Manager ko apni team (direct reports) + khud.
+    // Team match kai possible field names try karta hai kyunki backend ka exact
+    // naming pata nahi (managerId / ManagerId / reportingManagerId / ReportingManagerId).
     const selectableEmployees = isAdminLevel
         ? employees
-        : employees.filter((emp) => emp.empId === loggedInEmpId);
+        : isManager
+            ? employees.filter((emp) => {
+                const mgrId = Number(
+                    emp.managerId ?? emp.ManagerId ?? emp.reportingManagerId ?? emp.ReportingManagerId ?? emp.reportsTo ?? emp.ReportsTo
+                );
+                return mgrId === loggedInEmpId || emp.empId === loggedInEmpId;
+            })
+            : employees.filter((emp) => emp.empId === loggedInEmpId);
 
     useEffect(() => {
         loadAttendanceData();
@@ -127,11 +147,16 @@ export default function Attendance() {
     // to unhe turant "logs" tab pe wapas bhej do — sirf render-level check
     // kaafi nahi tha, kyunki loadAttendanceData() us tab ka data fetch bhi
     // kar deta tha. Ye effect data-fetch hone se pehle hi tab ko reset kar deta hai.
+    // "sundayWorking" admin + manager dono dekh sakte hain, isliye uska guard
+    // sirf un logon ke liye jo team-level bhi nahi hain.
     useEffect(() => {
         if (!isAdminLevel && activeTab === "summaries") {
             setActiveTab("logs");
         }
-    }, [activeTab, isAdminLevel]);
+        if (!isTeamLevel && activeTab === "sundayWorking") {
+            setActiveTab("logs");
+        }
+    }, [activeTab, isAdminLevel, isTeamLevel]);
 
     const loadAttendanceData = async () => {
         // Non-admin users ke liye summaries data load hi mat karo —
@@ -141,12 +166,18 @@ export default function Attendance() {
             setLoading(false);
             return;
         }
+        if (!isTeamLevel && activeTab === "sundayWorking") {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             if (activeTab === "dashboard") {
                 const res = await adminService.getDashboardStats();
                 if (res.Success || res.success) setDashboardStats(res.Data || res.data || {});
-            } else if (activeTab === "logs") {
+            } else if (activeTab === "logs" || activeTab === "sundayWorking") {
+                // "sundayWorking" tab isi attendanceLogs data se derive hota hai
+                // (Date.getDay() === 0 wale records) — alag endpoint ki zaroorat nahi.
                 const res = await adminService.getAttendanceAll();
                 if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
             } else if (activeTab === "requests") {
@@ -216,6 +247,8 @@ export default function Attendance() {
             return;
         }
         // Fresh state har baar modal khulne par — date aaj ki, punch times/location clear
+        // Mark Attendance sirf khud ke liye — Manager ho ya Employee, dono apni hi
+        // attendance punch karte hain (team ke liye punch karna admin-level ka kaam hai).
         setMarkForm({
             empId: isAdminLevel ? "" : loggedInEmpId.toString(),
             attDate: getTodayDateStr(),
@@ -443,9 +476,7 @@ export default function Attendance() {
                 setPunchMode(null);
                 setTodaysRecord(null);
                 loadAttendanceData();
-                if (isLatePunchIn) {
-                    alert("Attendance marked. Aapka Punch In 9:05 AM ke baad hua hai, isliye HR approval ke liye bhej diya gaya hai.");
-                }
+
             } else {
                 alert(res.Message || "Failed to mark attendance.");
             }
@@ -561,11 +592,14 @@ export default function Attendance() {
         }
     };
 
-    // Monthly Summary tab sirf HR/Admin/CMD ko dikhta hai — Employee role ko nahi
+    // Monthly Summary tab sirf HR/Admin/CMD ko dikhta hai — Employee/Manager role ko nahi.
+    // Sunday Working — HR/Admin/CMD + Manager, dono ko dikhta hai (manager apni team
+    // ki Sunday working dekh sakta hai, poori company ki nahi).
     const tabsList = [
         ...(isCMD ? [{ key: "dashboard", label: "Executive Dashboard" }] : []),
         { key: "logs", label: "Attendance Logs" },
         { key: "requests", label: "Regularization Requests" },
+        ...(isTeamLevel ? [{ key: "sundayWorking", label: "Sunday Working" }] : []),
         ...(isAdminLevel ? [{ key: "summaries", label: "Monthly Summary" }] : [])
     ];
 
@@ -585,22 +619,36 @@ export default function Attendance() {
         return list.slice(start, start + ITEMS_PER_PAGE);
     };
 
-    // Employee role ko sirf apna hi data dikhna chahiye — HR/Admin/CMD ko sabka.
-    // Note: backend abhi bhi poora list bhejta hai Employee ko bhi (endpoint access
-    // khula hai), isliye ye sirf UI-level filter hai. Asli fix backend service-layer
-    // mein empId-scoping hai — wo bina iske bhi network response mein poora data
-    // expose karta rahega.
-    const scopeToEmployee = (list) =>
-        isAdminLevel ? list : list.filter((row) => Number(row.empId) === loggedInEmpId);
+    // Employee role ko sirf apna hi data dikhna chahiye — HR/Admin/CMD ko sabka,
+    // Manager ko apni + apni team (direct reports) ka.
+    // Note: backend abhi bhi poora list bhejta hai Employee/Manager ko bhi (endpoint
+    // access khula hai), isliye ye sirf UI-level filter hai. Asli fix backend
+    // service-layer mein empId/team-scoping hai — wo bina iske bhi network response
+    // mein poora data expose karta rahega.
+    const scopeToEmployee = (list) => {
+        if (isAdminLevel) return list;
+        if (isManager) {
+            const teamIds = new Set(selectableEmployees.map((e) => Number(e.empId)));
+            return list.filter((row) => teamIds.has(Number(row.empId)));
+        }
+        return list.filter((row) => Number(row.empId) === loggedInEmpId);
+    };
 
     // Field lists to search against, per tab
     const filteredLogs = filterBySearch(scopeToEmployee(attendanceLogs), ["fullName", "status", "source"]);
     const filteredRequests = filterBySearch(scopeToEmployee(regRequests), ["fullName", "reason", "status"]);
     const filteredSummaries = filterBySearch(scopeToEmployee(summaries), ["fullName"]);
 
+    // Sunday Working — attendanceLogs me se sirf wo records jinka attDate Sunday
+    // hai AUR jisme actually punch (checkIn) hua hai — sirf date Sunday hone se
+    // record nahi bante, kaam karna zaroori hai.
+    const sundayWorkingRaw = attendanceLogs.filter((log) => isSunday(log.attDate) && log.checkIn);
+    const filteredSundayWorking = filterBySearch(scopeToEmployee(sundayWorkingRaw), ["fullName", "status", "source"]);
+
     const pagedLogs = paginate(filteredLogs);
     const pagedRequests = paginate(filteredRequests);
     const pagedSummaries = paginate(filteredSummaries);
+    const pagedSundayWorking = paginate(filteredSundayWorking);
 
     // Total count + total pages for whichever tab is active — drives the
     // search placeholder and the pagination controls below the table.
@@ -608,6 +656,7 @@ export default function Attendance() {
         logs: { total: filteredLogs.length, placeholder: "Search by employee, status, or source..." },
         requests: { total: filteredRequests.length, placeholder: "Search by employee, reason, or status..." },
         summaries: { total: filteredSummaries.length, placeholder: "Search by employee name..." },
+        sundayWorking: { total: filteredSundayWorking.length, placeholder: "Search by employee name..." },
     }[activeTab];
 
     const totalPages = activeListMeta ? Math.max(1, Math.ceil(activeListMeta.total / ITEMS_PER_PAGE)) : 1;
@@ -679,7 +728,7 @@ export default function Attendance() {
                         <button onClick={openRegModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all">
                             Request Regularization
                         </button>
-                        {/* Generate Summary button sirf HR/Admin ko dikhta hai — Employee role ko nahi */}
+                        {/* Generate Summary button sirf HR/Admin ko dikhta hai — Employee/Manager role ko nahi */}
                         {isAdminLevel && (
                             <button onClick={openSummaryModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all">
                                 Generate Summary
@@ -764,7 +813,19 @@ export default function Attendance() {
                                         <td className="px-6 py-4 font-semibold text-slate-900">
                                             {log.fullName || `EMP-${log.empId}`}
                                         </td>
-                                        <td className="px-6 py-4 text-slate-500">{new Date(log.attDate).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 text-slate-500">
+                                            <div className="flex items-center gap-1.5">
+                                                <span>{new Date(log.attDate).toLocaleDateString()}</span>
+                                                {/* Sunday ko punch kiya gaya record — employee ko khud apne
+                                                    log me dikhega ki aaj usne Sunday working ki hai, aur yehi
+                                                    record HR/Manager ke "Sunday Working" tab me bhi alag se aayega. */}
+                                                {isSunday(log.attDate) && log.checkIn && (
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200 whitespace-nowrap">
+                                                        Sunday Working
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 font-mono text-xs">{log.checkIn || "--:--"}</td>
                                         <td className="px-6 py-4 font-mono text-xs">{log.checkOut || "--:--"}</td>
                                         <td className="px-6 py-4 text-xs text-slate-500 max-w-[220px] truncate" title={log.locationAddress || ""}>
@@ -783,7 +844,7 @@ export default function Attendance() {
                                             (backend se aane wala approvalStatus: "Pending Approval" |
                                             "Approved" | "Rejected" | null).
                                             HR/Admin/CMD ko Pending state me seedha Approve/Reject buttons
-                                            dikhte hain; Employee ko sirf read-only badge. */}
+                                            dikhte hain; Employee/Manager ko sirf read-only badge. */}
                                         <td className="px-6 py-4">
                                             {log.approvalStatus === "Pending Approval" ? (
                                                 isAdminLevel ? (
@@ -857,7 +918,7 @@ export default function Attendance() {
                                             </span>
                                         </td>
                                         {/* Approve/Reject sirf HR/Admin/CMD ko dikhte hain.
-                                            Employee ko apni khud ki request pe status ke alawa kuch
+                                            Employee/Manager ko apni team ki request pe status ke alawa kuch
                                             control nahi milna chahiye */}
                                         <td className="px-6 py-4 text-center space-x-2">
                                             {req.status === "Pending" && isAdminLevel ? (
@@ -877,9 +938,65 @@ export default function Attendance() {
                         </table>
                         <PaginationBar />
                     </div>
+                ) : activeTab === "sundayWorking" && isTeamLevel ? (
+                    // Sunday Working — HR/Admin/CMD ko poori company ki, Manager ko sirf apni
+                    // team ki (scopeToEmployee upar hi is filtering ko handle kar chuka hai).
+                    // Yahan sirf wo attendance records aate hain jo Sunday (off-day) ko punch hue hain.
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
+                                    <th className="px-6 py-4">Employee</th>
+                                    <th className="px-6 py-4">Date</th>
+                                    <th className="px-6 py-4">Check In</th>
+                                    <th className="px-6 py-4">Check Out</th>
+                                    <th className="px-6 py-4">Location</th>
+                                    <th className="px-6 py-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                {filteredSundayWorking.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 text-sm">
+                                            {searchTerm ? "No matching Sunday working records found" : "No one has worked on a Sunday yet"}
+                                        </td>
+                                    </tr>
+                                ) : pagedSundayWorking.map((log) => (
+                                    <tr key={log.attId} className="hover:bg-slate-50/50">
+                                        <td className="px-6 py-4 font-semibold text-slate-900">
+                                            {log.fullName || `EMP-${log.empId}`}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-500">
+                                            <div className="flex items-center gap-1.5">
+                                                <span>{new Date(log.attDate).toLocaleDateString()}</span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200 whitespace-nowrap">
+                                                    Sunday
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 font-mono text-xs">{log.checkIn || "--:--"}</td>
+                                        <td className="px-6 py-4 font-mono text-xs">{log.checkOut || "--:--"}</td>
+                                        <td className="px-6 py-4 text-xs text-slate-500 max-w-[220px] truncate" title={log.locationAddress || ""}>
+                                            {log.locationAddress
+                                                ? log.locationAddress
+                                                : log.latitude && log.longitude
+                                                    ? `${Number(log.latitude).toFixed(5)}, ${Number(log.longitude).toFixed(5)}`
+                                                    : <span className="text-slate-300">—</span>}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${log.status === "Present" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                                {log.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <PaginationBar />
+                    </div>
                 ) : activeTab === "summaries" && isAdminLevel ? (
                     // Monthly Summary — sirf isAdminLevel true hone par render hota hai
-                    // (tab list se bhi hidden hai Employee role ke liye, ye double-safety hai)
+                    // (tab list se bhi hidden hai Employee/Manager role ke liye, ye double-safety hai)
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -916,7 +1033,7 @@ export default function Attendance() {
                         <PaginationBar />
                     </div>
                 ) : (
-                    // Fallback — agar Employee role ka user kisi tarah "summaries"
+                    // Fallback — agar Employee/Manager role ka user kisi tarah "summaries"
                     // tab pe pahunch jaye (e.g. stale state), to unhe access-denied dikhao empty
                     // table ki jagah
                     <div className="p-12 text-center text-slate-400 text-sm">
@@ -988,13 +1105,18 @@ export default function Attendance() {
                                     )}
                                 </div>
                             ) : (
-                                // Employee role — dropdown ki jagah apna khud ka naam read-only dikhado
+                                // Employee/Manager role — dropdown ki jagah apna khud ka naam read-only
+                                // dikhado. Manager bhi sirf apni hi attendance punch karta hai; team
+                                // members ki attendance sirf "view" ke liye hai, punch karne ke liye nahi.
                                 <input
                                     type="text"
                                     disabled
                                     value={
-                                        selectableEmployees[0]
-                                            ? `${selectableEmployees[0].firstName} ${selectableEmployees[0].lastName} (${selectableEmployees[0].empCode})`
+                                        employees.find((emp) => emp.empId === loggedInEmpId)
+                                            ? (() => {
+                                                const self = employees.find((emp) => emp.empId === loggedInEmpId);
+                                                return `${self.firstName} ${self.lastName} (${self.empCode})`;
+                                            })()
                                             : "You"
                                     }
                                     className="w-full px-3 py-2 border rounded-xl text-sm bg-slate-50 text-slate-500"
@@ -1023,6 +1145,13 @@ export default function Attendance() {
                             </div>
                         ) : (
                             <form onSubmit={handleMarkAttendance} className="space-y-4">
+                                {/* Aaj Sunday hai — user ko batado ki ye off-day working ke tor
+                                    par record hoga aur HR/Manager ko "Sunday Working" tab me dikhega. */}
+                                {isSunday(markForm.attDate) && (
+                                    <div className="px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-xs text-violet-700 font-semibold">
+                                        📅 Aaj Sunday hai — ye attendance "Sunday Working" ke tor par HR ko alag se dikhayi jayegi.
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
                                     {/* Date ab manual pick nahi hoti — hamesha aaj ki date auto-fill
@@ -1153,8 +1282,11 @@ export default function Attendance() {
                                         type="text"
                                         disabled
                                         value={
-                                            selectableEmployees[0]
-                                                ? `${selectableEmployees[0].firstName} ${selectableEmployees[0].lastName} (${selectableEmployees[0].empCode})`
+                                            employees.find((emp) => emp.empId === loggedInEmpId)
+                                                ? (() => {
+                                                    const self = employees.find((emp) => emp.empId === loggedInEmpId);
+                                                    return `${self.firstName} ${self.lastName} (${self.empCode})`;
+                                                })()
                                                 : "You"
                                         }
                                         className="w-full px-3 py-2 border rounded-xl text-sm bg-slate-50 text-slate-500"
@@ -1230,7 +1362,7 @@ export default function Attendance() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Year *</label>
-                                    
+
                                     <input type="number" required min="2020" max={new Date().getFullYear()} value={summaryForm.year}
                                         onChange={e => setSummaryForm({ ...summaryForm, year: e.target.value })}
                                         className="w-full px-3 py-2 rounded-xl border text-sm" />

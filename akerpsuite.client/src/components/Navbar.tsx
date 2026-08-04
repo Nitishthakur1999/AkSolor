@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback, type CSSProperties } from "re
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Menu, X, ChevronDown, ArrowUpRight } from "lucide-react";
 import logo from "../assets/logo.png";
-import { companyDropdown } from "../data/siteData";
+import { companyDropdown, messagesDropdown } from "../data/siteData";
 import ThemeToggle from "./ThemeToggle";
 
 const MAX_TILT_DEG = 4;
@@ -150,6 +150,7 @@ export default function Navbar() {
 
     const megaGroups = [
         { key: "company", label: "Company", items: companyDropdown },
+        { key: "messages", label: "Messages", items: messagesDropdown },
     ];
 
     return (
@@ -278,6 +279,7 @@ export default function Navbar() {
                                     <span className={underlineCls(isActive)} />
                                 </>
                             )}
+                  
                         </NavLink>
                     </li>
                 </ul>
