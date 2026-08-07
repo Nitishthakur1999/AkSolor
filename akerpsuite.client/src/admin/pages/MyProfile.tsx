@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { adminService } from "@/services/adminService"; // Apna correct path check kar lein
+import { adminService, getDocumentUrl } from "@/services/adminService"; // Apna correct path check kar lein
 
 export default function MyProfile() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState(null);
     const [noEmployeeRecord, setNoEmployeeRecord] = useState(false);
+    const [photoLoadFailed, setPhotoLoadFailed] = useState(false); // 🆕
 
     useEffect(() => {
         fetchProfile();
@@ -15,6 +16,7 @@ export default function MyProfile() {
         setLoading(true);
         setErrorMessage(null);
         setNoEmployeeRecord(false);
+        setPhotoLoadFailed(false); // 🆕
         try {
             const res = await adminService.getMyProfile();
             if (res.success || res.Success) {
@@ -121,9 +123,14 @@ export default function MyProfile() {
 
             {/* ── Header Card ── */}
             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-6">
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-amber-100 border-4 border-white shadow-lg flex items-center justify-center text-amber-600 text-3xl font-bold shrink-0">
-                    {profile.photoPath ? (
-                        <img src={profile.photoPath} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-amber-100 border-4 border-white shadow-lg flex items-center justify-center text-amber-600 text-3xl font-bold shrink-0 overflow-hidden">
+                    {profile.photoPath && !photoLoadFailed ? (
+                        <img
+                            src={getDocumentUrl(profile.photoPath)}
+                            alt="Profile"
+                            className="w-full h-full rounded-full object-cover"
+                            onError={() => setPhotoLoadFailed(true)} 
+                        />
                     ) : (
                         getInitials(profile.fullName)
                     )}

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-//import { adminService } from "@/services/adminService";
 import { adminService, getDocumentUrl } from "@/services/adminService";
 
 // Helper to get logged in user's ID
@@ -24,6 +23,43 @@ function Badge({ status }) {
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${cls}`}>
             {status}
         </span>
+    );
+}
+
+// ─── tiny sub-badge shown under "Offer" status so HR doesn't have to
+// open the menu just to see whether an offer is pending/approved/rejected ──
+function OfferSubBadge({ offerStatus }) {
+    const map = {
+        Pending: "text-amber-600",
+        Approved: "text-emerald-600",
+        Rejected: "text-red-500",
+    };
+    return (
+        <span className={`text-[10px] font-medium ${map[offerStatus] || "text-slate-400"}`}>
+            {offerStatus === "Pending" ? "Awaiting approval" : offerStatus}
+        </span>
+    );
+}
+
+// ─── visual pipeline tracker. Lets HR see where a candidate stands and
+// what's next at a glance, instead of decoding a single status word. ────────
+const PIPELINE_STAGES = ["Applied", "Shortlisted", "Interview", "Selected", "Offer", "Joined"];
+
+function PipelineTracker({ status }) {
+    if (status === "Rejected") {
+        return <span className="text-[11px] font-semibold text-red-500">Not moving forward</span>;
+    }
+    const currentIdx = PIPELINE_STAGES.indexOf(status);
+    return (
+        <div className="flex items-center gap-1" title={`Stage: ${status}`}>
+            {PIPELINE_STAGES.map((stage, i) => (
+                <div
+                    key={stage}
+                    className={`h-1.5 rounded-full transition-colors ${i <= currentIdx ? "bg-amber-500" : "bg-slate-200"
+                        } ${i === currentIdx ? "w-5" : "w-2.5"}`}
+                />
+            ))}
+        </div>
     );
 }
 
@@ -65,75 +101,126 @@ function TextArea(props) {
     );
 }
 
-// ─── NEW: single dropdown menu instead of scattered inline text-buttons ─────
-// Each row now shows ONE "Actions ▾" trigger. Clicking it reveals only the
-// actions valid for that candidate's current stage, as a clean list.
-function ActionsMenu({ actions }) {
+// ─── one clear primary action button (the obvious next step) plus a
+// small "More" menu for everything else. HR no longer has to open a dropdown
+// just to find out what they're supposed to do next. ───────────────────────
+function RowActions({ primary, secondary, busy }) {
     const [open, setOpen] = useState(false);
 
-    if (!actions || actions.length === 0) {
-        return <span className="text-xs text-slate-400">—</span>;
-    }
-
     return (
-        <div className="relative inline-block text-left">
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 flex items-center gap-1"
-            >
-                Actions <span className="text-[9px] mt-px">▾</span>
-            </button>
-
-            {open && (
-                <>
-                    {/* click-away layer */}
-                    <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-                    <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden py-1">
-                        {actions.map((a, i) => (
-                            <button
-                                key={i}
-                                onClick={() => { setOpen(false); a.onClick(); }}
-                                className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 ${a.danger ? "text-red-500" : "text-slate-700"
-                                    }`}
-                            >
-                                {a.label}
-                            </button>
-                        ))}
-                    </div>
-                </>
+        <div className="flex items-center gap-2 justify-end">
+            {primary && (
+                <button
+                    onClick={primary.onClick}
+                    disabled={busy}
+                    className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${primary.danger
+                        ? "bg-red-50 text-red-600 hover:bg-red-100"
+                        : "bg-amber-600 text-white hover:bg-amber-700"
+                        }`}
+                >
+                    {busy ? primary.busyLabel || "Working…" : primary.label}
+                </button>
             )}
+
+            {secondary && secondary.length > 0 && (
+                <div className="relative">
+                    <button
+                        onClick={() => setOpen(o => !o)}
+                        disabled={busy}
+                        className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg w-8 h-8 flex items-center justify-center text-sm disabled:opacity-40"
+                        title="More actions"
+                    >
+                        ⋯
+                    </button>
+                    {open && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+                            <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden py-1">
+                                {secondary.map((a, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => { setOpen(false); a.onClick(); }}
+                                        className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 ${a.danger ? "text-red-500" : "text-slate-700"
+                                            }`}
+                                    >
+                                        {a.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {!primary && (!secondary || secondary.length === 0) && (
+                <span className="text-xs text-slate-400">No action pending</span>
+            )}
+        </div>
+    );
+}
+
+// ─── lightweight in-app confirm dialog — replaces window.confirm() so
+// it matches the app's own look instead of the browser's native popup. ─────
+function ConfirmDialog({ state, onCancel, onConfirm }) {
+    if (!state) return null;
+    return (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-[60]">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+                <h3 className="text-base font-bold text-slate-900 mb-1">{state.title}</h3>
+                <p className="text-sm text-slate-500 mb-5">{state.message}</p>
+                <div className="flex justify-end gap-2">
+                    <button onClick={onCancel}
+                        className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100">
+                        Cancel
+                    </button>
+                    <button onClick={onConfirm}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold text-white ${state.danger ? "bg-red-600 hover:bg-red-700" : "bg-amber-600 hover:bg-amber-700"
+                            }`}>
+                        {state.confirmLabel || "Confirm"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── toast notifications — replaces alert() with a less jarring,
+// self-dismissing message in the corner of the screen. ─────────────────────
+function ToastStack({ toasts, onDismiss }) {
+    if (toasts.length === 0) return null;
+    return (
+        <div className="fixed bottom-5 right-5 z-[70] flex flex-col gap-2 w-80">
+            {toasts.map(t => (
+                <div key={t.id}
+                    onClick={() => onDismiss(t.id)}
+                    className={`cursor-pointer rounded-xl shadow-lg border px-4 py-3 text-sm font-medium ${t.type === "error"
+                        ? "bg-red-50 border-red-200 text-red-700"
+                        : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        }`}>
+                    {t.message}
+                </div>
+            ))}
         </div>
     );
 }
 
 // Config: which fields each modal type needs, and the label/button text
 const MODAL_CONFIG = {
-    interview: {
-        title: "Schedule Interview",
-        submitLabel: "Schedule",
-    },
-    feedback: {
-        title: "Submit Interview Feedback",
-        submitLabel: "Submit Feedback",
-    },
-    selection: {
-        title: "Selection Approval",
-        submitLabel: "Confirm Decision",
-    },
-    offer: {
-        title: "Create Offer",
-        submitLabel: "Create Offer",
-    },
-    joining: {
-        title: "Confirm Joining",
-        submitLabel: "Confirm Joining",
-    },
+    interview: { title: "Schedule Interview", submitLabel: "Schedule" },
+    feedback: { title: "Submit Interview Feedback", submitLabel: "Submit Feedback" },
+    selection: { title: "Selection Approval", submitLabel: "Confirm Decision" },
+    offer: { title: "Create Offer", submitLabel: "Create Offer" },
+    joining: { title: "Confirm Joining", submitLabel: "Confirm Joining" },
 };
 
 export default function CandidateManagement() {
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+
+    // tracks which single row is mid-action, so only that row's button
+    // shows a busy state instead of the whole page feeling frozen.
+    const [busyCandidateId, setBusyCandidateId] = useState(null);
 
     const [statusFilter, setStatusFilter] = useState("");
     const [searchName, setSearchName] = useState("");
@@ -143,14 +230,42 @@ export default function CandidateManagement() {
     const [selectedCandidate, setSelectedCandidate] = useState(null);
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [dependentData, setDependentData] = useState(null);
-    const [jobPostingFilter, setJobPostingFilter] = useState("");   // 👈 naya
-    const [fromDate, setFromDate] = useState("");                    // 👈 naya
-    const [toDate, setToDate] = useState("");                        // 👈 naya
-    const [jobPostings, setJobPostings] = useState([]);  
+    const [jobPostingFilter, setJobPostingFilter] = useState("");
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+    const [jobPostings, setJobPostings] = useState([]);
 
     // tracks each "Offer" stage candidate's actual offer.status (Pending/Approved/Rejected)
     // separately from candidate.status, since candidate.status stays "Offer" throughout.
     const [offerStatusMap, setOfferStatusMap] = useState<Record<string, any>>({});
+
+    // confirm dialog + toast state
+    type ConfirmState = {
+        title: string;
+        message: string;
+        danger?: boolean;
+        confirmLabel?: string;
+        onConfirm: () => void;
+    } | null;
+    const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+    const [toasts, setToasts] = useState<Array<{ id: number; type: "success" | "error"; message: string }>>([]);
+
+    const notify = (type, message) => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, type, message }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    };
+    const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+    const askConfirm = (
+        title: string,
+        message: string,
+        onConfirm: () => void,
+        options: { danger?: boolean; confirmLabel?: string } = {}
+    ) => {
+        const { danger = false, confirmLabel } = options;
+        setConfirmState({ title, message, danger, confirmLabel, onConfirm });
+    };
 
     useEffect(() => {
         adminService.getAllJobPostings()
@@ -170,9 +285,9 @@ export default function CandidateManagement() {
             const filter: Record<string, any> = {};
             if (statusFilter) filter.status = statusFilter;
             if (searchName) filter.name = searchName;
-            if (jobPostingFilter) filter.jobPostingId = jobPostingFilter;   // 👈 naya
-            if (fromDate) filter.fromDate = fromDate;                        // 👈 naya
-            if (toDate) filter.toDate = toDate;                              // 👈 naya
+            if (jobPostingFilter) filter.jobPostingId = jobPostingFilter;
+            if (fromDate) filter.fromDate = fromDate;
+            if (toDate) filter.toDate = toDate;
 
             const res = await adminService.searchCandidates(filter);
             if (res.Success || res.success) {
@@ -182,6 +297,7 @@ export default function CandidateManagement() {
             }
         } catch (err) {
             console.error(err);
+            notify("error", "Couldn't load candidates. Check your connection and try again.");
         } finally {
             setLoading(false);
         }
@@ -215,58 +331,101 @@ export default function CandidateManagement() {
         setOfferStatusMap(prev => ({ ...prev, ...Object.fromEntries(results) }));
     };
 
-    const handleSimpleStatusUpdate = async (candidateId, status) => {
-        if (!window.confirm(`Mark this candidate as ${status}?`)) return;
-        setActionLoading(true);
-        try {
-            const res = await adminService.updateCandidateStatus({
-                candidateId,
-                status,
-                updatedBy: getUserId(),
-                remarks: `Status updated to ${status}`
-            });
-            if (res.Success || res.success) {
-                loadCandidates();
-            } else {
-                alert(res.Message || "Action failed.");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Network error.");
-        } finally {
-            setActionLoading(false);
-        }
+    const handleSimpleStatusUpdate = (candidateId, status) => {
+        askConfirm(
+            `Mark as ${status}?`,
+            `This candidate will move to the "${status}" stage.`,
+            async () => {
+                setConfirmState(null);
+                setBusyCandidateId(candidateId);
+                try {
+                    const res = await adminService.updateCandidateStatus({
+                        candidateId,
+                        status,
+                        updatedBy: getUserId(),
+                        remarks: `Status updated to ${status}`
+                    });
+                    if (res.Success || res.success) {
+                        notify("success", `Candidate marked as ${status}.`);
+                        loadCandidates();
+                    } else {
+                        notify("error", res.Message || "That action didn't go through.");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    notify("error", "Network error — please try again.");
+                } finally {
+                    setBusyCandidateId(null);
+                }
+            },
+            { danger: status === "Rejected", confirmLabel: `Mark as ${status}` }
+        );
     };
 
     // Approve / Reject an offer
-    const handleOfferAction = async (candidate, status) => {
-        if (!window.confirm(`${status === "Approved" ? "Approve" : "Reject"} this offer?`)) return;
-        setActionLoading(true);
+    const handleOfferAction = (candidate, status) => {
+        askConfirm(
+            status === "Approved" ? "Approve this offer?" : "Reject this offer?",
+            status === "Approved"
+                ? "The candidate can move to joining confirmation once approved."
+                : "This candidate's offer will be marked as rejected.",
+            async () => {
+                setConfirmState(null);
+                setBusyCandidateId(candidate.candidateId);
+                try {
+                    const offerRes = await adminService.getOfferByCandidate(candidate.candidateId);
+                    const offer = offerRes.Data || offerRes.data;
+                    if (!offer?.offerId) {
+                        notify("error", "No offer found for this candidate.");
+                        return;
+                    }
+                    const res = await adminService.actionOffer({
+                        offerId: offer.offerId,
+                        status,
+                        approvedBy: getUserId(),
+                        remarks: `Offer ${status} via Candidate Tracking`
+                    });
+                    if (res.Success || res.success) {
+                        notify("success", `Offer ${status.toLowerCase()} successfully.`);
+                        setOfferStatusMap(prev => ({ ...prev, [candidate.candidateId]: status }));
+                        loadCandidates();
+                    } else {
+                        notify("error", res.Message || "That action didn't go through.");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    notify("error", "Network error — please try again.");
+                } finally {
+                    setBusyCandidateId(null);
+                }
+            },
+            { danger: status === "Rejected", confirmLabel: status === "Approved" ? "Approve" : "Reject" }
+        );
+    };
+
+    // download handlers with per-row busy state + toast on failure,
+    // instead of a silent fetch that gives no feedback while it's working.
+    const handleDownloadOfferLetter = async (candidate) => {
+        setBusyCandidateId(candidate.candidateId);
         try {
-            const offerRes = await adminService.getOfferByCandidate(candidate.candidateId);
-            const offer = offerRes.Data || offerRes.data;
-            if (!offer?.offerId) {
-                alert("No offer found for this candidate.");
-                return;
-            }
-            const res = await adminService.actionOffer({
-                offerId: offer.offerId,
-                status,
-                approvedBy: getUserId(),
-                remarks: `Offer ${status} via Candidate Tracking`
-            });
-            if (res.Success || res.success) {
-                alert(res.Message || `Offer ${status.toLowerCase()} successfully.`);
-                setOfferStatusMap(prev => ({ ...prev, [candidate.candidateId]: status }));
-                loadCandidates();
-            } else {
-                alert(res.Message || "Action failed.");
-            }
+            await adminService.downloadOfferLetter(candidate.candidateId);
         } catch (err) {
             console.error(err);
-            alert("Network error.");
+            notify("error", "Couldn't generate the offer letter. Please try again.");
         } finally {
-            setActionLoading(false);
+            setBusyCandidateId(null);
+        }
+    };
+
+    const handleDownloadAppointmentLetter = async (candidate) => {
+        setBusyCandidateId(candidate.candidateId);
+        try {
+            await adminService.downloadAppointmentLetter(candidate.candidateId);
+        } catch (err) {
+            console.error(err);
+            notify("error", "Couldn't generate the appointment letter. Please try again.");
+        } finally {
+            setBusyCandidateId(null);
         }
     };
 
@@ -286,7 +445,7 @@ export default function CandidateManagement() {
                         setDependentData({ interviewId: last.interviewId });
                         setFormData(f => ({ ...f, roundNo: last.roundNo || 1 }));
                     } else {
-                        alert("No interview records found.");
+                        notify("error", "No interview records found for this candidate yet.");
                         setActiveModal(null);
                     }
                 }
@@ -296,19 +455,20 @@ export default function CandidateManagement() {
                     const offer = res.Data || res.data;
                     if (offer && offer.offerId) {
                         if (offer.status !== "Approved") {
-                            alert(`Offer must be Approved first. Current status: ${offer.status}`);
+                            notify("error", `Offer must be approved first. Current status: ${offer.status}`);
                             setActiveModal(null);
                             return;
                         }
                         setDependentData({ offerId: offer.offerId });
                     } else {
-                        alert("No valid offer found.");
+                        notify("error", "No valid offer found for this candidate.");
                         setActiveModal(null);
                     }
                 }
             }
         } catch (err) {
             console.error("Failed to load dependent data:", err);
+            notify("error", "Couldn't load the details needed for this step.");
             setActiveModal(null);
         }
     };
@@ -345,6 +505,50 @@ export default function CandidateManagement() {
                     roundNo: formData.roundNo ? parseInt(formData.roundNo) : 1,
                     approvedBy: currentUserId
                 });
+
+                // ── Auto-advance the candidate based on the feedback result,
+                // so HR doesn't have to open a second action (Selection Approval /
+                // Reject Candidate) just to move the candidate off this round.
+                //   Pass -> auto "Selected"
+                //   Fail -> auto "Rejected"
+                //   Hold -> stays on "Interview" so the next round can be scheduled
+                if (res.Success || res.success) {
+                    if (formData.result === "Pass") {
+                        const selRes = await adminService.approveSelection({
+                            candidateId: selectedCandidate.candidateId,
+                            status: "Selected",
+                            remarks: "Auto-selected after positive interview feedback",
+                            approvedBy: currentUserId
+                        });
+                        if (!(selRes.Success || selRes.success)) {
+                            notify("error", selRes.Message || "Feedback saved, but selection update failed.");
+                        }
+                    } else if (formData.result === "Fail") {
+                        const rejRes = await adminService.updateCandidateStatus({
+                            candidateId: selectedCandidate.candidateId,
+                            status: "Rejected",
+                            updatedBy: currentUserId,
+                            remarks: "Auto-rejected after interview feedback"
+                        });
+                        if (!(rejRes.Success || rejRes.success)) {
+                            notify("error", rejRes.Message || "Feedback saved, but rejection update failed.");
+                        }
+                    }
+                    // "Hold" -> candidate remains at "Interview"; nothing extra to do.
+
+                    notify(
+                        "success",
+                        formData.result === "Pass"
+                            ? "Feedback submitted — candidate moved to Selected."
+                            : formData.result === "Fail"
+                                ? "Feedback submitted — candidate marked Rejected."
+                                : "Feedback submitted — ready to schedule the next round."
+                    );
+                    closeModal();
+                    loadCandidates();
+                    setActionLoading(false);
+                    return; // skip the generic success handling below
+                }
             } else if (activeModal === "selection") {
                 res = await adminService.approveSelection({
                     candidateId: selectedCandidate.candidateId,
@@ -371,61 +575,67 @@ export default function CandidateManagement() {
             }
 
             if (res.Success || res.success) {
-                alert(res.Message || "Action completed successfully!");
+                notify("success", res.Message || "Done!");
                 closeModal();
                 loadCandidates();
             } else {
-                alert(res.Message || "Action failed.");
+                notify("error", res.Message || "That action didn't go through.");
             }
         } catch (err) {
             console.error(err);
-            alert("Network error.");
+            notify("error", "Network error — please try again.");
         } finally {
             setActionLoading(false);
         }
     };
 
-    // ─── Builds the list of valid actions for a candidate's current stage ────
-    // Same business logic as before — just returns data now instead of JSX,
-    // so ActionsMenu can render it as ONE clean dropdown per row.
+    // ─── Builds { primary, secondary } for a candidate's current stage ──────
+    // primary = the one obvious next step, shown as a real button on the row.
+    // secondary = everything else, tucked into the "⋯" menu.
     const getActionsFor = (c) => {
-        const actions = [];
+        let primary = null;
+        const secondary = [];
 
         if (c.status === "Applied") {
-            actions.push({ label: "Shortlist", onClick: () => handleSimpleStatusUpdate(c.candidateId, "Shortlisted") });
+            primary = { label: "Shortlist", onClick: () => handleSimpleStatusUpdate(c.candidateId, "Shortlisted") };
         }
 
         if (c.status === "Shortlisted") {
-            actions.push({ label: "Schedule Interview", onClick: () => openModal("interview", c) });
+            primary = { label: "Schedule Interview", onClick: () => openModal("interview", c) };
         }
 
         if (c.status === "Interview") {
-            actions.push({ label: "Add Feedback", onClick: () => openModal("feedback", c) });
-            actions.push({ label: "Selection Approval", onClick: () => openModal("selection", c) });
+            primary = { label: "Add Feedback", onClick: () => openModal("feedback", c) };
+            secondary.push({ label: "Selection Approval", onClick: () => openModal("selection", c) });
         }
 
         if (c.status === "Selected") {
-            actions.push({ label: "Create Offer", onClick: () => openModal("offer", c) });
+            primary = { label: "Create Offer", onClick: () => openModal("offer", c) };
         }
 
         if (c.status === "Offer") {
             const offerStatus = offerStatusMap[c.candidateId] || "Pending";
+            secondary.push({ label: "Download Offer Letter", onClick: () => handleDownloadOfferLetter(c) });
 
             if (offerStatus === "Approved") {
-                actions.push({ label: "Confirm Joining", onClick: () => openModal("joining", c) });
+                primary = { label: "Confirm Joining", onClick: () => openModal("joining", c) };
             } else if (offerStatus === "Rejected") {
-                // no actionable next step — ActionsMenu will show "—"
+                // no forward action — table shows "Not moving forward" via sub-badge
             } else {
-                actions.push({ label: "Approve Offer", onClick: () => handleOfferAction(c, "Approved") });
-                actions.push({ label: "Reject Offer", onClick: () => handleOfferAction(c, "Rejected"), danger: true });
+                primary = { label: "Approve Offer", onClick: () => handleOfferAction(c, "Approved") };
+                secondary.push({ label: "Reject Offer", onClick: () => handleOfferAction(c, "Rejected"), danger: true });
             }
         }
 
-        if (!["Rejected", "Joined", "Offer"].includes(c.status)) {
-            actions.push({ label: "Reject Candidate", onClick: () => handleSimpleStatusUpdate(c.candidateId, "Rejected"), danger: true });
+        if (c.status === "Joined") {
+            primary = { label: "Download Appointment Letter", onClick: () => handleDownloadAppointmentLetter(c), busyLabel: "Preparing…" };
         }
 
-        return actions;
+        if (!["Rejected", "Joined", "Offer"].includes(c.status)) {
+            secondary.push({ label: "Reject Candidate", onClick: () => handleSimpleStatusUpdate(c.candidateId, "Rejected"), danger: true });
+        }
+
+        return { primary, secondary };
     };
 
     return (
@@ -520,46 +730,59 @@ export default function CandidateManagement() {
                             <th className="px-4 py-3 text-left">Phone</th>
                             <th className="px-4 py-3 text-left">Experience</th>
                             <th className="px-4 py-3 text-left">Resume</th>
-                            <th className="px-4 py-3 text-left">Status</th>
-                            <th className="px-4 py-3 text-left">Actions</th>
+                            <th className="px-4 py-3 text-left">Pipeline Stage</th>
+                            <th className="px-4 py-3 text-right">Next Step</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                    {loading ? (
-                        <tr><td colSpan={7} className="text-center py-8 text-slate-400">Loading...</td></tr>
-                    ) : candidates.length === 0 ? (
-                        <tr><td colSpan={7} className="text-center py-8 text-slate-400">No candidates found</td></tr>
-                    ) : (
-                        candidates.map(c => (
-                            <tr key={c.candidateId} className="hover:bg-slate-50/60">
-                                <td className="px-4 py-3 font-medium text-slate-800">
-                                    {c.firstName} {c.lastName}
-                                </td>
-                <td className="px-4 py-3 text-slate-500">{c.email}</td>
-                <td className="px-4 py-3 text-slate-500">{c.phone}</td>
-                <td className="px-4 py-3 text-slate-500">{c.experience || "-"}</td>
-                <td className="px-4 py-3">
-                    {c.resumeUrl ? (
-        
-                           <a href={getDocumentUrl(c.resumeUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-amber-600 hover:underline text-xs font-semibold"
-                        >
-                            View CV
-                        </a>
-                    ) : (
-                        <span className="text-slate-300 text-xs">-</span>
-                    )}
-                </td>
-                <td className="px-4 py-3"><Badge status={c.status} /></td>
-                <td className="px-4 py-3">
-                    <ActionsMenu actions={getActionsFor(c)} />
-                </td>
-            </tr>
-        ))
-    )}
-</tbody>
+                        {loading ? (
+                            <tr><td colSpan={7} className="text-center py-8 text-slate-400">Loading...</td></tr>
+                        ) : candidates.length === 0 ? (
+                            <tr><td colSpan={7} className="text-center py-8 text-slate-400">No candidates found</td></tr>
+                        ) : (
+                            candidates.map(c => {
+                                const { primary, secondary } = getActionsFor(c);
+                                const isBusy = busyCandidateId === c.candidateId;
+                                return (
+                                    <tr key={c.candidateId} className="hover:bg-slate-50/60">
+                                        <td className="px-4 py-3 font-medium text-slate-800">
+                                            {c.firstName} {c.lastName}
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-500">{c.email}</td>
+                                        <td className="px-4 py-3 text-slate-500">{c.phone}</td>
+                                        <td className="px-4 py-3 text-slate-500">{c.experience || "-"}</td>
+                                        <td className="px-4 py-3">
+                                            {c.resumeUrl ? (
+                                                <a href={getDocumentUrl(c.resumeUrl)}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-amber-600 hover:underline text-xs font-semibold"
+                                                >
+                                                    View CV
+                                                </a>
+                                            ) : (
+                                                <span className="text-slate-300 text-xs">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge status={c.status} />
+                                                    {c.status === "Offer" && (
+                                                        <OfferSubBadge offerStatus={offerStatusMap[c.candidateId] || "Pending"} />
+                                                    )}
+                                                </div>
+                                                <PipelineTracker status={c.status} />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <RowActions primary={primary} secondary={secondary} busy={isBusy} />
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        )}
+                    </tbody>
                 </table>
             </div>
 
@@ -571,7 +794,9 @@ export default function CandidateManagement() {
                             className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl">✕</button>
 
                         <h2 className="text-xl font-bold text-slate-900 mb-1">{MODAL_CONFIG[activeModal].title}</h2>
-                        <p className="text-sm text-slate-500 mb-6">{selectedCandidate?.name}</p>
+                        <p className="text-sm text-slate-500 mb-6">
+                            {selectedCandidate ? `${selectedCandidate.firstName ?? ""} ${selectedCandidate.lastName ?? ""}`.trim() : ""}
+                        </p>
 
                         <form onSubmit={submitModal} className="space-y-4">
 
@@ -630,9 +855,9 @@ export default function CandidateManagement() {
                                         <Select required value={formData.result || ""}
                                             onChange={e => setFormData({ ...formData, result: e.target.value })}>
                                             <option value="">Select...</option>
-                                            <option value="Selected">Recommend for Selection</option>
-                                            <option value="NextRound">Move to Next Round</option>
-                                            <option value="Rejected">Reject</option>
+                                            <option value="Pass">Recommend for Selection</option>
+                                            <option value="Hold">Move to Next Round</option>
+                                            <option value="Fail">Reject</option>
                                         </Select>
                                     </Field>
                                     <Field label="Feedback Notes *">
@@ -640,6 +865,13 @@ export default function CandidateManagement() {
                                             value={formData.feedback || ""}
                                             onChange={e => setFormData({ ...formData, feedback: e.target.value })} />
                                     </Field>
+                                    {formData.result && (
+                                        <p className="text-xs text-slate-400 -mt-1">
+                                            {formData.result === "Pass" && "This candidate will be automatically moved to \"Selected\"."}
+                                            {formData.result === "Fail" && "This candidate will be automatically marked \"Rejected\"."}
+                                            {formData.result === "Hold" && "This candidate will stay on \"Interview\" so you can schedule the next round."}
+                                        </p>
+                                    )}
                                 </>
                             )}
 
@@ -706,6 +938,14 @@ export default function CandidateManagement() {
                     </div>
                 </div>
             )}
+
+            {/* in-app confirm dialog + toasts, replacing window.confirm()/alert() */}
+            <ConfirmDialog
+                state={confirmState}
+                onCancel={() => setConfirmState(null)}
+                onConfirm={() => confirmState?.onConfirm()}
+            />
+            <ToastStack toasts={toasts} onDismiss={dismissToast} />
         </div>
     );
 }

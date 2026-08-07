@@ -43,7 +43,7 @@ function PayslipCard({ data, month, year }) {
     return (
         <div id="payslip-print-area">
             {/* Print button — hidden in actual print */}
-            <div className="flex justify-end mb-4 print:hidden">
+            <div className="flex justify-end gap-2 mb-4 print:hidden">
                 <button
                     onClick={handlePrint}
                     className="px-5 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
@@ -58,7 +58,7 @@ function PayslipCard({ data, month, year }) {
                 <div className="bg-amber-600 text-white px-8 py-6 print:bg-amber-600">
                     <div className="flex justify-between items-start flex-wrap gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">Akerp Suite</h1>
+                            <h1 className="text-2xl font-bold tracking-tight">AKS Solar</h1>
                             <p className="text-amber-200 text-xs mt-0.5">Payslip for {MONTHS[month - 1]} {year}</p>
                         </div>
                         <div className="text-right">
@@ -167,8 +167,6 @@ function StatusBadge({ ps }) {
         );
     }
 
-    // Fallback to "Draft" if status string is empty/null but payslip exists
-    // (DB enum has no "Generated" status — sp_payroll_generate sets status = 'Draft')
     const status = ps.status || "Draft";
 
     const cls =
@@ -194,14 +192,12 @@ export default function PayslipViewer() {
     const [empSearch, setEmpSearch] = useState("");
     const [loadingEmployees, setLoadingEmployees] = useState(false);
 
-    // payslip status/data per emp for the selected month-year: { [empId]: payslipDataOrNull }
     const [payslipMap, setPayslipMap] = useState<Record<string, any>>({});
     const [loadingPayslips, setLoadingPayslips] = useState(false);
 
-    const [activePayslip, setActivePayslip] = useState(null); // currently viewed payslip
+    const [activePayslip, setActivePayslip] = useState(null);
     const [viewLoadingEmpId, setViewLoadingEmpId] = useState(null);
 
-    // ─── Pagination ─────────────────────────────────────────────────────
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
@@ -223,7 +219,6 @@ export default function PayslipViewer() {
         }
     };
 
-    // Calculate Pagination variables
     const filteredEmployees = empSearch.trim()
         ? employees.filter(emp => {
             const q = empSearch.toLowerCase();
@@ -243,29 +238,25 @@ export default function PayslipViewer() {
     const endIdx = Math.min(startIdx + pageSize, totalItems);
     const paginatedEmployees = filteredEmployees.slice(startIdx, endIdx);
 
-    // Month / Year Change -> Clear old payslip status map and reset page
     useEffect(() => {
         setPayslipMap({});
         setCurrentPage(1);
         setActivePayslip(null);
     }, [month, year]);
 
-    // Search / Page size change -> Reset page to 1
     useEffect(() => {
         setCurrentPage(1);
     }, [empSearch, pageSize]);
 
-    // ─── OPTIMIZED: Fetch statuses ONLY for the employees visible on current page ───
     useEffect(() => {
         if (paginatedEmployees.length === 0) return;
 
         let isMounted = true;
 
         const loadStatusesForCurrentPage = async () => {
-            // Find which employees from the current page are NOT yet loaded in our map
             const needsFetch = paginatedEmployees.filter(emp => payslipMap[emp.empId] === undefined);
 
-            if (needsFetch.length === 0) return; // All visible employees are already loaded
+            if (needsFetch.length === 0) return;
 
             setLoadingPayslips(true);
             try {
@@ -286,7 +277,6 @@ export default function PayslipViewer() {
                 if (isMounted) {
                     setPayslipMap(prev => {
                         const newMap = { ...prev };
-                        // Add newly fetched statuses to our map without removing others
                         results.forEach(([empId, data]) => { newMap[empId] = data; });
                         return newMap;
                     });
@@ -306,14 +296,12 @@ export default function PayslipViewer() {
         const existing = payslipMap[emp.empId];
         if (existing) {
             setActivePayslip(existing);
-            // Scroll to payslip
             setTimeout(() => {
                 document.getElementById("payslip-result-area")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 50);
             return;
         }
 
-        // Re-fetch just in case bulk load missed/failed for this specific employee
         setViewLoadingEmpId(emp.empId);
         try {
             const res = await adminService.getPayslip(emp.empId, month, year);
@@ -339,7 +327,6 @@ export default function PayslipViewer() {
         setCurrentPage(Math.min(Math.max(1, p), totalPages));
     };
 
-    // Builds a compact page-number list with ellipses, e.g. 1 ... 4 5 6 ... 20
     const getPageNumbers = () => {
         const pages = [];
         const delta = 1;
@@ -366,7 +353,6 @@ export default function PayslipViewer() {
             {/* Filters card */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
                 <div className="flex flex-wrap gap-4 items-end">
-                    {/* Search */}
                     <div className="flex flex-col gap-1" style={{ minWidth: 260 }}>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Search employee</label>
                         <input
@@ -378,7 +364,6 @@ export default function PayslipViewer() {
                         />
                     </div>
 
-                    {/* Month */}
                     <div className="flex flex-col gap-1">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Month *</label>
                         <select
@@ -392,7 +377,6 @@ export default function PayslipViewer() {
                         </select>
                     </div>
 
-                    {/* Year */}
                     <div className="flex flex-col gap-1">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Year *</label>
                         <input
@@ -413,13 +397,15 @@ export default function PayslipViewer() {
 
             {/* Employee list table */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <p className="text-sm font-bold text-slate-700">
-                        Employees · {MONTHS[month - 1]} {year}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                        {totalItems === 0 ? "0 employees" : `Showing ${startIdx + 1}–${endIdx} of ${totalItems}`}
-                    </p>
+                <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                        <p className="text-sm font-bold text-slate-700">
+                            Employees · {MONTHS[month - 1]} {year}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                            {totalItems === 0 ? "0 employees" : `Showing ${startIdx + 1}–${endIdx} of ${totalItems}`}
+                        </p>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -483,10 +469,8 @@ export default function PayslipViewer() {
                     </table>
                 </div>
 
-                {/* Pagination controls */}
                 {!loadingEmployees && totalItems > 0 && (
                     <div className="flex flex-wrap gap-3 justify-between items-center px-6 py-4 border-t border-slate-100">
-                        {/* Page size selector */}
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-slate-500">Rows per page</span>
                             <select
@@ -500,7 +484,6 @@ export default function PayslipViewer() {
                             </select>
                         </div>
 
-                        {/* Page navigation */}
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={() => goToPage(1)}
@@ -543,7 +526,6 @@ export default function PayslipViewer() {
                 )}
             </div>
 
-            {/* Payslip result — shown at the end of the table */}
             <div id="payslip-result-area">
                 {activePayslip && (
                     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">

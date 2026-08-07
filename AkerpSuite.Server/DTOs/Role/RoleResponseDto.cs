@@ -52,6 +52,9 @@
         // ✅ Missing tha — SP mein CONCAT se aa raha hai
         public string? FullName { get; set; }
 
+        // ✅ NEW — client sheet: "FATHER NAME/ HUSBAND NAME"
+        public string? FatherHusbandName { get; set; }
+
         public string Gender { get; set; } = string.Empty;
         public DateTime DateOfBirth { get; set; }
         public string? BloodGroup { get; set; }
@@ -89,6 +92,9 @@
         public string? EmploymentType { get; set; }
         public string? EmploymentStatus { get; set; }
 
+        // ✅ NEW — client sheet: "CATEGORY" (High Skilled/Skilled/Semi Skilled/Unskilled)
+        public string? Category { get; set; }
+
         // Lifecycle Tracking
         public DateTime? ProbationEndDate { get; set; }
         public DateTime? ConfirmationDate { get; set; }
@@ -116,6 +122,7 @@
         public string? GeneratedUsername { get; set; }
         public string? GeneratedPassword { get; set; }
     }
+
     public class AttendanceResponseDto
     {
         public int AttId { get; set; }
@@ -232,7 +239,6 @@
         public decimal UsedLeaves { get; set; }
         public decimal BalanceLeaves { get; set; }
     }
-
     public class LeaveRequestResponseDto
     {
         public int LeaveId { get; set; }
@@ -263,6 +269,7 @@
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? StructureName { get; set; }
+        public decimal EpfBasic { get; set; }
         public decimal Basic { get; set; }
         public decimal Hra { get; set; }
         public decimal Ta { get; set; }
@@ -279,6 +286,7 @@
         public DateTime EffectiveFrom { get; set; }
         public DateTime? EffectiveTo { get; set; }
     }
+
     public class PayrollMonthResponseDto
     {
         public int PayrollId { get; set; }
@@ -298,20 +306,26 @@
         public string EmpCode { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? FatherHusbandName { get; set; }   // ✅ NEW — maps to father_husband_name
+        public string? Category { get; set; }              // ✅ NEW — maps to category
+        public string? EsicNo { get; set; }                 // ✅ NEW — maps to esic_no
+        public string? UanNo { get; set; }                  // ✅ NEW — maps to uan_no
         public string? DeptName { get; set; }
         public string? DesigName { get; set; }
         public int Month { get; set; }
         public int Year { get; set; }
         public string PayrollStatus { get; set; } = string.Empty;
-        public int WorkingDays { get; set; }
-        public int PresentDays { get; set; }
-        public int AbsentDays { get; set; }
-        public int HalfDays { get; set; }
+        public decimal WorkingDays { get; set; }
+        public decimal PresentDays { get; set; }
+        public decimal AbsentDays { get; set; }
+        public decimal HalfDays { get; set; }
         public int LateMarks { get; set; }
         public decimal OvertimeHours { get; set; }
+        public decimal EpfBasic { get; set; }
         public decimal Basic { get; set; }
         public decimal Hra { get; set; }
         public decimal Ta { get; set; }
+        public decimal Da { get; set; }
         public decimal SpecialAllow { get; set; }
         public decimal OvertimeAmount { get; set; }
         public decimal GrossEarning { get; set; }
@@ -327,6 +341,7 @@
         public decimal NetSalary { get; set; }
         public string Status { get; set; } = string.Empty;
     }
+
     public class PayslipResponseDto : PayrollDetailResponseDto
     {
         public string? OfficialEmail { get; set; }
@@ -499,16 +514,6 @@
         public int? ReportingManager { get; set; }
         public decimal? OfferedCtc { get; set; }
     }
-    //public class CandidateApplicationRequestDto
-    //{
-    //    public int JobPostingId { get; set; }
-    //    public string Name { get; set; } = string.Empty;
-    //    public string Email { get; set; } = string.Empty;
-    //    public string Phone { get; set; } = string.Empty;
-    //    public string? Experience { get; set; }
-    //    public string? Skills { get; set; }
-    //    public string? CvPath { get; set; }
-    //}
     public class CandidateApplicationRequestDto
     {
         public int JobPostingId { get; set; }
@@ -544,4 +549,67 @@
         public string? Remarks { get; set; }
     }
 
+        public class SundayCellDto
+        {
+            public DateTime Date { get; set; }
+            public string Status { get; set; } = "OFF"; 
+        }
+
+        public class SundayHolidayStatusRowDto
+        {
+            public int SrNo { get; set; }
+            public int EmpId { get; set; }
+            public string EmployeeName { get; set; } = string.Empty;
+
+            public List<SundayCellDto> Cells { get; set; } = new();
+
+            public decimal MonthDutyCount { get; set; }
+            public decimal MonthCompOff { get; set; }
+            public decimal PreviousBalance { get; set; }
+            public decimal FinalDues { get; set; }
+        }
+
+        public class SundayHolidayStatusReportDto
+        {
+            public string CompanyName { get; set; } = "AKS SOLAR SYSTEMS PRIVATE LIMITED";
+            public int Month { get; set; }
+            public int Year { get; set; }
+            public string MonthName { get; set; } = string.Empty;
+
+            public List<DateTime> SundayDates { get; set; } = new();
+            public List<SundayHolidayStatusRowDto> Rows { get; set; } = new();
+
+            public string PreparedByName { get; set; } = "Asha Thakur";
+            public string PreparedByDesignation { get; set; } = "Sr. Manager (HR & Social Media)";
+
+            public string VerifiedByName { get; set; } = "Vivek Grover";
+            public string VerifiedByDesignation { get; set; } = "Director-Operations, Sales & Marketing";
+
+            public string FinalVerifiedByName { get; set; } = "Kapil Sharma";
+            public string FinalVerifiedByDesignation { get; set; } = "Chairman Cum Managing Director";
+        }
+
+        public class SundayDutyRecord
+        {
+            public int EmpId { get; set; }
+            public DateTime DutyDate { get; set; }
+            public string Status { get; set; } = "OFF";
+            public string? Location { get; set; }
+        }
+
+        public class SundayLedgerRecord
+        {
+            public int EmpId { get; set; }
+            public decimal OpeningBalance { get; set; }
+            public decimal DutyCount { get; set; }
+            public decimal CompOffUsed { get; set; }
+        }
+
+        public class EmployeeBasicDto
+        {
+            public int EmpId { get; set; }
+            public string FullName { get; set; } = string.Empty;
+            public DateTime? JoiningDate { get; set; }
+        }
+    
 }

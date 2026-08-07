@@ -76,8 +76,8 @@ namespace AkerpSuite.Server.Services
         Task<IEnumerable<AttendanceResponseDto>> GetAttendanceByEmpAsync(int empId, DateTime? fromDate, DateTime? toDate);
         Task<IEnumerable<AttendanceResponseDto>> GetAllAttendanceAsync(int? empId, DateTime? attDate, string? status, DateTime? fromDate, DateTime? toDate);
         Task<int> CreateRegRequestAsync(AttendanceRegRequestDto request);
-      //  Task<IEnumerable<AttendanceRegResponseDto>> GetAllRegRequestsAsync(int? empId, string? status);
-        Task<IEnumerable<AttendanceRegResponseDto>> GetAllRegRequestsAsync( int? empId, string? status, string? requestType);
+        //  Task<IEnumerable<AttendanceRegResponseDto>> GetAllRegRequestsAsync(int? empId, string? status);
+        Task<IEnumerable<AttendanceRegResponseDto>> GetAllRegRequestsAsync(int? empId, string? status, string? requestType);
         Task<bool> RegActionAsync(int requestId, string status, int approvedBy);
         Task<int> GenerateSummaryAsync(int empId, int month, int year);
         Task<IEnumerable<AttendanceSummaryResponseDto>> GetSummaryAsync(int? empId, int? month, int? year);
@@ -210,5 +210,16 @@ namespace AkerpSuite.Server.Services
         #region Password
         Task<(string Username, string NewPassword)> RevealEmployeeCredentialsAsync(int empId, string secretKey);
         #endregion
+
+        #region Issue offer latter and appointemt latter
+        Task<byte[]?> GenerateOfferLetterAsync(int candidateId);
+        Task<byte[]?> GenerateAppointmentLetterAsync(int candidateId);
+
+        #endregion
+
+        Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year);
+
+        Task<byte[]> GetSundayHolidayStatusPdfAsync(int month, int year);
+        Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
     }
 }

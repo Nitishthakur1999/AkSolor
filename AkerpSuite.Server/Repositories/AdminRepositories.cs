@@ -1,7 +1,11 @@
 ﻿using AkerpSuite.Server.Data;
 using AkerpSuite.Server.Dtos.Auth;
 using AkerpSuite.Server.DTOs.Role;
+using AkerpSuite.Server.Services;
 using Dapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MySqlConnector;
 using System.Data;
 
 namespace AkerpSuite.Server.Repositories
@@ -247,6 +251,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_emp_code", request.EmpCode);
             parameters.Add("p_first_name", request.FirstName);
             parameters.Add("p_last_name", request.LastName);
+            parameters.Add("p_father_husband_name", request.FatherHusbandName);   // ✅ NEW
             parameters.Add("p_gender", request.Gender);
             parameters.Add("p_date_of_birth", request.DateOfBirth);
             parameters.Add("p_blood_group", request.BloodGroup);
@@ -266,7 +271,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_pincode", request.Pincode);
             parameters.Add("p_country", request.Country);
 
-            // ✅ Missing tha — Identity Documents
+            // Identity Documents
             parameters.Add("p_aadhar_no", request.AadharNo);
             parameters.Add("p_pan_no", request.PanNo);
             parameters.Add("p_passport_no", request.PassportNo);
@@ -280,12 +285,13 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_date_of_joining", request.DateOfJoining);
             parameters.Add("p_employment_type", request.EmploymentType);
             parameters.Add("p_employment_status", request.EmploymentStatus);
+            parameters.Add("p_category", request.Category);   // ✅ NEW
             parameters.Add("p_current_ctc", request.CurrentCtc);
 
-            // ✅ Missing tha — Photo
+            // Photo
             parameters.Add("p_photo_path", photoPath);
 
-            // ✅ Missing tha — Lifecycle
+            // Lifecycle
             parameters.Add("p_probation_end_date", request.ProbationEndDate);
             parameters.Add("p_confirmation_date", request.ConfirmationDate);
             parameters.Add("p_resignation_date", request.ResignationDate);
@@ -311,6 +317,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_emp_id", employeeId);
             parameters.Add("p_first_name", request.FirstName);
             parameters.Add("p_last_name", request.LastName);
+            parameters.Add("p_father_husband_name", request.FatherHusbandName);   // ✅ NEW
             parameters.Add("p_gender", request.Gender);
             parameters.Add("p_date_of_birth", request.DateOfBirth);
             parameters.Add("p_blood_group", request.BloodGroup);
@@ -326,7 +333,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_pincode", request.Pincode);
             parameters.Add("p_country", request.Country);
 
-            // Documents Mapping parameters execution 
+            // Documents Mapping parameters execution
             parameters.Add("p_aadhar_no", request.AadharNo);
             parameters.Add("p_pan_no", request.PanNo);
             parameters.Add("p_passport_no", request.PassportNo);
@@ -339,6 +346,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_date_of_joining", request.DateOfJoining);
             parameters.Add("p_employment_type", request.EmploymentType);
             parameters.Add("p_employment_status", request.EmploymentStatus);
+            parameters.Add("p_category", request.Category);   // ✅ NEW
             parameters.Add("p_current_ctc", request.CurrentCtc);
             parameters.Add("p_photo_path", photoPath);
             parameters.Add("p_role_id", request.RoleId);
@@ -384,9 +392,9 @@ namespace AkerpSuite.Server.Repositories
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-        SELECT COALESCE(MAX(CAST(SUBSTRING(emp_code, 5) AS UNSIGNED)), 0) + 1 
-        FROM employees 
-        WHERE emp_code LIKE 'AKS-%'";
+SELECT COALESCE(MAX(CAST(SUBSTRING(emp_code, 5) AS UNSIGNED)), 0) + 1 
+FROM employees 
+WHERE emp_code LIKE 'AKS-%'";
             return await connection.ExecuteScalarAsync<int>(sql);
         }
 
@@ -413,10 +421,10 @@ namespace AkerpSuite.Server.Repositories
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-        INSERT INTO leave_balances (emp_id, leave_type_id, year, total_leaves, used_leaves, balance_leaves)
-        SELECT @EmpId, leave_type_id, @Year, max_per_year, 0, max_per_year
-        FROM leave_types
-        WHERE is_active = 1";
+INSERT INTO leave_balances (emp_id, leave_type_id, year, total_leaves, used_leaves, balance_leaves)
+SELECT @EmpId, leave_type_id, @Year, max_per_year, 0, max_per_year
+FROM leave_types
+WHERE is_active = 1";
 
             await connection.ExecuteAsync(sql, new { EmpId = empId, Year = year });
         }
@@ -726,7 +734,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_longitude", request.Longitude);
             parameters.Add("p_location_address", request.LocationAddress);
 
-            return await connection.QuerySingleAsync<MarkAttendanceResultDto>(  
+            return await connection.QuerySingleAsync<MarkAttendanceResultDto>(
                 "sp_attendance_mark", parameters,
                 commandType: CommandType.StoredProcedure);
         }
@@ -781,7 +789,7 @@ namespace AkerpSuite.Server.Repositories
             var parameters = new DynamicParameters();
             parameters.Add("p_emp_id", empId);
             parameters.Add("p_status", status);
-            parameters.Add("p_request_type", requestType);  
+            parameters.Add("p_request_type", requestType);
 
             return await connection.QueryAsync<AttendanceRegResponseDto>(
                 "sp_attendance_reg_get_all", parameters,
@@ -1016,6 +1024,7 @@ namespace AkerpSuite.Server.Repositories
             var parameters = new DynamicParameters();
             parameters.Add("p_emp_id", request.EmpId);
             parameters.Add("p_structure_id", request.StructureId);
+            parameters.Add("p_epf_basic", request.EpfBasic);   // ✅ NEW
             parameters.Add("p_basic", request.Basic);
             parameters.Add("p_hra", request.Hra);
             parameters.Add("p_ta", request.Ta);
@@ -1034,6 +1043,7 @@ namespace AkerpSuite.Server.Repositories
                 "sp_employee_salary_set", parameters,
                 commandType: CommandType.StoredProcedure);
         }
+
 
         public async Task<EmployeeSalaryResponseDto?> GetEmployeeSalaryAsync(int empId)
         {
@@ -1442,7 +1452,7 @@ namespace AkerpSuite.Server.Repositories
                 {
                     p_PostingId = request.PostingId,
                     p_Title = request.Title,
-                    p_Description = request.Description,   
+                    p_Description = request.Description,
                     p_Location = request.Location,
                     p_EmploymentType = request.EmploymentType,
                     p_SalaryRange = request.SalaryRange,
@@ -1569,7 +1579,6 @@ namespace AkerpSuite.Server.Repositories
         #endregion
 
         #region Interview Management 
-
         public async Task<int> ScheduleInterviewAsync(InterviewScheduleRequestDto request)
         {
             using var conn = _context.CreateConnection();
@@ -1590,19 +1599,24 @@ namespace AkerpSuite.Server.Repositories
         public async Task<bool> SubmitInterviewFeedbackAsync(InterviewFeedbackRequestDto request)
         {
             using var conn = _context.CreateConnection();
-            var rows = await conn.ExecuteAsync(
+            var exists = await conn.QueryFirstOrDefaultAsync<int>(
+                "SELECT COUNT(*) FROM interviews WHERE interview_id = @InterviewId",
+                new { InterviewId = request.InterviewId });
+
+            if (exists == 0) return false;
+            await conn.ExecuteAsync(
                 "sp_SubmitInterviewFeedback",
                 new
                 {
                     p_InterviewId = request.InterviewId,
-                    p_FeedbackNotes = request.Feedback,
+                    p_Feedback = request.Feedback,
                     p_Rating = request.Rating,
-                    p_Recommendation = request.Result,
-                    p_SubmittedBy = request.ApprovedBy,
-                    p_RoundNo = request.RoundNo
+                    p_Result = request.Result,
+                    p_ApprovedBy = request.ApprovedBy
                 },
                 commandType: CommandType.StoredProcedure);
-            return rows > 0;
+
+            return true;
         }
 
         public async Task<IEnumerable<dynamic>> GetInterviewsByCandidateAsync(int candidateId)
@@ -1773,5 +1787,86 @@ namespace AkerpSuite.Server.Repositories
         }
 
         #endregion
+
+        #region Issue offer latter and appointemt latter
+        public async Task<dynamic?> GetCandidateLetterDataAsync(int candidateId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync(
+                "sp_GetCandidateLetterData",
+                new { p_CandidateId = candidateId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<dynamic?> GetEmployeeLetterDataByCandidateAsync(int candidateId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync(
+                "sp_GetEmployeeLetterDataByCandidate",
+                new { p_CandidateId = candidateId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        #endregion       
+
+        public async Task<List<EmployeeBasicDto>> GetActiveEmployeesBasicAsync()
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QueryAsync<EmployeeBasicDto>(
+                "sp_GetActiveEmployeesBasic",
+                commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+
+        public async Task<List<SundayDutyRecord>> GetSundayDutyRecordsAsync(DateTime monthStart, DateTime monthEnd)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QueryAsync<SundayDutyRecord>(
+                "sp_GetSundayDutyRecords",
+                new { p_MonthStart = monthStart.Date, p_MonthEnd = monthEnd.Date },
+                commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+
+        public async Task<List<SundayLedgerRecord>> GetSundayLedgerAsync(int month, int year)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QueryAsync<SundayLedgerRecord>(
+                "sp_GetSundayLedger",
+                new { p_Month = month, p_Year = year },
+                commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+
+      
+        public async Task UpsertSundayDutyAsync(SundayDutyRequestDto request, int createdBy)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_UpsertSundayDuty",
+                new
+                {
+                    p_EmpId = request.EmpId,
+                    p_DutyDate = request.DutyDate.Date,
+                    p_Status = request.Status,
+                    p_Location = request.Location,
+                    p_CountsAsDuty = request.CountsAsDuty ? (byte)1 : (byte)0,
+                    p_CreatedBy = createdBy
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+ 
+        public async Task RecalculateLedgerAsync(int empId, int month, int year)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_RecalculateSundayLedger",
+                new { p_EmpId = empId, p_Month = month, p_Year = year },
+                commandType: CommandType.StoredProcedure);
+        }
+
+
+
     }
 }

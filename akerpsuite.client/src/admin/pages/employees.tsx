@@ -89,10 +89,28 @@ export default function Employees() {
     const [salaryHistory, setSalaryHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    // ── 🆕 Photo Upload (Create Employee) ────────────────────────────────
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const [photoBase64, setPhotoBase64] = useState(null);
+    const [photoExtension, setPhotoExtension] = useState(null);
+    const [photoError, setPhotoError] = useState("");
+
+    // ── 🆕 Photo Upload (Edit Employee) — separate state so Create/Edit modals never clash ──
+    // 🆕 Set your API base URL here (where photo_path files are served from), e.g. "https://yourapi.com"
+    const PHOTO_BASE_URL = "";
+    const [editPhotoPreview, setEditPhotoPreview] = useState(null); // shown in <img>, either existing photo URL or new base64 preview
+    const [editPhotoBase64, setEditPhotoBase64] = useState(null);   // only set when a NEW file is chosen — sent to backend
+    const [editPhotoExtension, setEditPhotoExtension] = useState(null);
+    const [editPhotoError, setEditPhotoError] = useState("");
+
+    // 🆕 Category options — must match backend ENUM('Unskilled','Semi Skilled','Skilled','High Skilled')
+    const CATEGORY_OPTIONS = ["Unskilled", "Semi Skilled", "Skilled", "High Skilled"];
+
     // ✅ Cleaned Form State
     const initialFormState = {
         firstName: "",
         lastName: "",
+        fatherHusbandName: "", // 🆕 maps to employees.father_husband_name
         gender: "Male",
         dateOfBirth: "",
         bloodGroup: "",
@@ -118,6 +136,7 @@ export default function Employees() {
         dateOfJoining: "",
         employmentType: "Permanent",
         employmentStatus: "Active",
+        category: "", // 🆕 maps to employees.category
         currentCtc: "",
         roleId: "",
         probationEndDate: "",
@@ -165,6 +184,84 @@ export default function Employees() {
                 ? { type: "error", text: `${fieldLabels[fieldName]} is already registered with another employee!` }
                 : { type: "success", text: "Available ✓" }
         }));
+    };
+
+    // 🆕 Handles file selection → validates → converts to base64 for the Create payload
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setPhotoError("");
+
+        // Validation: type
+        const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+        if (!allowedTypes.includes(file.type)) {
+            setPhotoError("Only JPG, JPEG, or PNG files are allowed.");
+            return;
+        }
+
+        // Validation: size (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            setPhotoError("Photo size must be under 2MB.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result; // "data:image/png;base64,...."
+            setPhotoPreview(result);
+            setPhotoBase64(result);
+            setPhotoExtension(file.name.split(".").pop().toLowerCase());
+        };
+        reader.onerror = () => setPhotoError("Failed to read the file.");
+        reader.readAsDataURL(file);
+    };
+
+    // 🆕 Resets photo selection (used on modal open/close/success)
+    const clearPhoto = () => {
+        setPhotoPreview(null);
+        setPhotoBase64(null);
+        setPhotoExtension(null);
+        setPhotoError("");
+    };
+
+    // 🆕 Handles file selection in the Edit modal → validates → converts to base64 for the Update payload
+    const handleEditPhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setEditPhotoError("");
+
+        // Validation: type
+        const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+        if (!allowedTypes.includes(file.type)) {
+            setEditPhotoError("Only JPG, JPEG, or PNG files are allowed.");
+            return;
+        }
+
+        // Validation: size (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            setEditPhotoError("Photo size must be under 2MB.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result; // "data:image/png;base64,...."
+            setEditPhotoPreview(result);
+            setEditPhotoBase64(result);
+            setEditPhotoExtension(file.name.split(".").pop().toLowerCase());
+        };
+        reader.onerror = () => setEditPhotoError("Failed to read the file.");
+        reader.readAsDataURL(file);
+    };
+
+    // 🆕 Resets edit-modal photo selection (used on modal open/close/success)
+    const clearEditPhoto = () => {
+        setEditPhotoPreview(null);
+        setEditPhotoBase64(null);
+        setEditPhotoExtension(null);
+        setEditPhotoError("");
     };
 
     useEffect(() => {
@@ -255,6 +352,7 @@ export default function Employees() {
             const payload = {
                 firstName: createForm.firstName ? createForm.firstName.trim() : "",
                 lastName: createForm.lastName ? createForm.lastName.trim() : "",
+                fatherHusbandName: createForm.fatherHusbandName ? createForm.fatherHusbandName.trim() : null, // 🆕
                 gender: createForm.gender,
                 bloodGroup: createForm.bloodGroup || null,
                 maritalStatus: createForm.maritalStatus,
@@ -282,11 +380,16 @@ export default function Employees() {
 
                 employmentType: createForm.employmentType,
                 employmentStatus: "Active",
+                category: createForm.category || null, // 🆕
 
                 dateOfBirth: createForm.dateOfBirth ? new Date(createForm.dateOfBirth).toISOString() : null,
                 dateOfJoining: createForm.dateOfJoining ? new Date(createForm.dateOfJoining).toISOString() : null,
                 probationEndDate: createForm.probationEndDate ? new Date(createForm.probationEndDate).toISOString() : null,
-                confirmationDate: createForm.confirmationDate ? new Date(createForm.confirmationDate).toISOString() : null
+                confirmationDate: createForm.confirmationDate ? new Date(createForm.confirmationDate).toISOString() : null,
+
+                // 🆕 Photo fields — sent only if the user selected a photo
+                photoBase64: photoBase64 || null,
+                photoExtension: photoExtension || null
             };
 
             const res = await adminService.createEmployee(payload);
@@ -295,6 +398,7 @@ export default function Employees() {
                 setCreateForm(initialFormState);
                 setActiveTab("personal");
                 setFieldCheckMessages(emptyFieldCheckMessages);
+                clearPhoto(); // 🆕 reset photo state after successful create
 
                 if (res.data && res.data.generatedPassword) {
                     setCreatedCredentials({
@@ -321,6 +425,7 @@ export default function Employees() {
             empId: emp.empId,
             firstName: emp.firstName || "",
             lastName: emp.lastName || "",
+            fatherHusbandName: emp.fatherHusbandName || "", // 🆕
             gender: emp.gender || "Male",
             dateOfBirth: emp.dateOfBirth ? emp.dateOfBirth.split("T")[0] : "",
             bloodGroup: emp.bloodGroup || "",
@@ -349,6 +454,7 @@ export default function Employees() {
             dateOfJoining: emp.dateOfJoining ? emp.dateOfJoining.split("T")[0] : "",
             employmentType: emp.employmentType || "Permanent",
             employmentStatus: emp.employmentStatus || "Active",
+            category: emp.category || "", // 🆕
             currentCtc: emp.currentCtc ? emp.currentCtc.toString() : "",
 
             probationEndDate: emp.probationEndDate ? emp.probationEndDate.split("T")[0] : "",
@@ -357,6 +463,12 @@ export default function Employees() {
 
         // ✅ Reset field check messages before opening edit modal
         setFieldCheckMessages(emptyFieldCheckMessages);
+
+        // 🆕 Show existing employee photo (if any) as the preview; clear any pending new-upload state
+        setEditPhotoBase64(null);
+        setEditPhotoExtension(null);
+        setEditPhotoError("");
+        setEditPhotoPreview(emp.photoPath ? `${PHOTO_BASE_URL}${emp.photoPath}` : null);
 
         setActiveTab("personal");
         setShowEditModal(true);
@@ -386,6 +498,7 @@ export default function Employees() {
             const payload = {
                 firstName: editForm.firstName ? editForm.firstName.trim() : "",
                 lastName: editForm.lastName ? editForm.lastName.trim() : "",
+                fatherHusbandName: editForm.fatherHusbandName ? editForm.fatherHusbandName.trim() : null, // 🆕
                 gender: editForm.gender,
                 bloodGroup: editForm.bloodGroup || null,
                 maritalStatus: editForm.maritalStatus,
@@ -413,17 +526,24 @@ export default function Employees() {
 
                 employmentType: editForm.employmentType || "Permanent",
                 employmentStatus: editForm.employmentStatus || "Active",
+                category: editForm.category || null, // 🆕
 
                 dateOfBirth: editForm.dateOfBirth ? new Date(editForm.dateOfBirth).toISOString() : null,
                 dateOfJoining: editForm.dateOfJoining ? new Date(editForm.dateOfJoining).toISOString() : null,
                 probationEndDate: editForm.probationEndDate ? new Date(editForm.probationEndDate).toISOString() : null,
-                confirmationDate: editForm.confirmationDate ? new Date(editForm.confirmationDate).toISOString() : null
+                confirmationDate: editForm.confirmationDate ? new Date(editForm.confirmationDate).toISOString() : null,
+
+                // 🆕 Only sent when the user picked a NEW photo in the Edit modal;
+                // if null, backend keeps the employee's existing photo untouched.
+                photoBase64: editPhotoBase64 || null,
+                photoExtension: editPhotoExtension || null
             };
 
             const res = await adminService.updateEmployee(parseInt(editForm.empId, 10), payload);
 
             if (res && res.success) {
                 setShowEditModal(false);
+                clearEditPhoto(); // 🆕
                 loadInitialData();
             } else {
                 alert(res?.message || "Failed to update corporate profile mappings.");
@@ -639,12 +759,16 @@ export default function Employees() {
     };
 
     // 🔄 Toggle Employee Status (Active/Resigned Status Handler)
+    // 🆕 FIXED: uses the dedicated toggle-status endpoint — only flips employment_status,
+    // never touches the rest of the employee row (previously used updateEmployee with a
+    // partial payload, which risked wiping out other fields since the backend SP updates
+    // every column unconditionally).
     const handleToggleStatus = async (empId, currentStatus) => {
         const nextStatus = currentStatus === "Active" ? "Resigned" : "Active";
         if (!window.confirm(`Are you sure you want to change employee status to ${nextStatus}?`)) return;
 
         try {
-            const res = await adminService.updateEmployee(empId, { employmentStatus: nextStatus });
+            const res = await adminService.toggleEmployeeStatus(empId, nextStatus);
             if (res.success) {
                 loadInitialData();
             } else {
@@ -695,6 +819,7 @@ export default function Employees() {
                         setCreateForm(initialFormState);
                         setActiveTab("personal");
                         setFieldCheckMessages(emptyFieldCheckMessages);
+                        clearPhoto(); {/* 🆕 reset photo selection when opening a fresh Create modal */ }
                     }}
                     className="w-full sm:w-auto shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm"
                 >
@@ -950,8 +1075,34 @@ export default function Employees() {
                         <form onSubmit={handleCreate} className="space-y-4 pt-2">
                             {activeTab === "personal" && (
                                 <div className="grid gap-4 sm:grid-cols-2">
+                                    {/* 🆕 Employee Photo Upload */}
+                                    <div className="sm:col-span-2 flex items-center gap-4">
+                                        <div className="w-20 h-20 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center shrink-0">
+                                            {photoPreview ? (
+                                                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-slate-300 text-2xl">👤</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Employee Photo</label>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png"
+                                                onChange={handlePhotoChange}
+                                                className="w-full text-xs file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-700 file:text-xs file:font-bold hover:file:bg-amber-100"
+                                            />
+                                            {photoError && <p className="text-xs text-rose-600 font-semibold mt-1">{photoError}</p>}
+                                            {photoPreview && !photoError && (
+                                                <button type="button" onClick={clearPhoto} className="text-xs text-slate-400 hover:text-rose-500 mt-1">Remove photo</button>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">First Name *</label><input type="text" required value={createForm.firstName} onChange={e => setCreateForm({ ...createForm, firstName: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Last Name *</label><input type="text" required value={createForm.lastName} onChange={e => setCreateForm({ ...createForm, lastName: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
+                                    {/* 🆕 Father/Husband Name */}
+                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Father/Husband Name</label><input type="text" value={createForm.fatherHusbandName} onChange={e => setCreateForm({ ...createForm, fatherHusbandName: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Gender *</label><select value={createForm.gender} onChange={e => setCreateForm({ ...createForm, gender: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white"><option>Male</option><option>Female</option><option>Other</option></select></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date of Birth *</label><input type="date" required value={createForm.dateOfBirth} onChange={e => setCreateForm({ ...createForm, dateOfBirth: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Blood Group</label><input type="text" placeholder="e.g., O+" value={createForm.bloodGroup} onChange={e => setCreateForm({ ...createForm, bloodGroup: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
@@ -1117,6 +1268,18 @@ export default function Employees() {
                                         </select>
                                     </div>
 
+                                    {/* 🆕 Category (Unskilled / Semi Skilled / Skilled / High Skilled) */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
+                                        <select
+                                            value={createForm.category}
+                                            onChange={e => setCreateForm({ ...createForm, category: e.target.value })}
+                                            className="w-full px-3 py-2 rounded-xl border text-sm bg-white"
+                                        >
+                                            <option value="">-- Select Category --</option>
+                                            {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
 
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">System Security Role *</label>
@@ -1222,8 +1385,34 @@ export default function Employees() {
                         <form onSubmit={handleUpdate} className="space-y-4 pt-2">
                             {activeTab === "personal" && (
                                 <div className="grid gap-4 sm:grid-cols-2">
+                                    {/* 🆕 Employee Photo Upload — shows existing photo, allows replacing it */}
+                                    <div className="sm:col-span-2 flex items-center gap-4">
+                                        <div className="w-20 h-20 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center shrink-0">
+                                            {editPhotoPreview ? (
+                                                <img src={editPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-slate-300 text-2xl">👤</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Employee Photo</label>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png"
+                                                onChange={handleEditPhotoChange}
+                                                className="w-full text-xs file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-700 file:text-xs file:font-bold hover:file:bg-amber-100"
+                                            />
+                                            {editPhotoError && <p className="text-xs text-rose-600 font-semibold mt-1">{editPhotoError}</p>}
+                                            {editPhotoBase64 && !editPhotoError && (
+                                                <p className="text-xs text-emerald-600 font-semibold mt-1">New photo selected — will replace the current one on save.</p>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">First Name *</label><input type="text" required value={editForm.firstName} onChange={e => setEditForm({ ...editForm, firstName: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Last Name *</label><input type="text" required value={editForm.lastName} onChange={e => setEditForm({ ...editForm, lastName: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
+                                    {/* 🆕 Father/Husband Name */}
+                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Father/Husband Name</label><input type="text" value={editForm.fatherHusbandName} onChange={e => setEditForm({ ...editForm, fatherHusbandName: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Gender *</label><select value={editForm.gender} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white"><option>Male</option><option>Female</option><option>Other</option></select></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date of Birth *</label><input type="date" required value={editForm.dateOfBirth} onChange={e => setEditForm({ ...editForm, dateOfBirth: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">Marital Status</label><select value={editForm.maritalStatus} onChange={e => setEditForm({ ...editForm, maritalStatus: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white"><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
@@ -1391,6 +1580,19 @@ export default function Employees() {
                                         </select>
                                     </div>
 
+                                    {/* 🆕 Category (Unskilled / Semi Skilled / Skilled / High Skilled) */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
+                                        <select
+                                            value={editForm.category}
+                                            onChange={e => setEditForm({ ...editForm, category: e.target.value })}
+                                            className="w-full px-3 py-2 rounded-xl border text-sm bg-white"
+                                        >
+                                            <option value="">-- Select Category --</option>
+                                            {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">System Security Role *</label>
                                         <select required value={editForm.roleId} onChange={e => setEditForm({ ...editForm, roleId: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
@@ -1423,7 +1625,7 @@ export default function Employees() {
                             )}
 
                             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl">Cancel</button>
+                                <button type="button" onClick={() => { setShowEditModal(false); clearEditPhoto(); }} className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl">Cancel</button>
                                 <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md">{actionLoading ? "Updating..." : "Save Changes"}</button>
                             </div>
                         </form>

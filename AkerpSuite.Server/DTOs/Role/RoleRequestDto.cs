@@ -36,6 +36,10 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("lastName")]
         public string LastName { get; set; } = string.Empty;
 
+        // ✅ NEW — client sheet: "FATHER NAME/ HUSBAND NAME"
+        [JsonPropertyName("fatherHusbandName")]
+        public string? FatherHusbandName { get; set; }
+
         [JsonPropertyName("gender")]
         public string Gender { get; set; } = string.Empty;
 
@@ -80,7 +84,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("country")]
         public string? Country { get; set; }
 
-        // ✅ Document Identities - Strict Sync with MySQL snake_case inputs
         [JsonPropertyName("aadharNo")]
         public string? AadharNo { get; set; }
 
@@ -106,7 +109,7 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("reportingManager")]
         public int? ReportingManager { get; set; }
 
-        [JsonPropertyName("roleId")] // 👈 CRITICAL FIX: Direct bind for Postman mapping layer
+        [JsonPropertyName("roleId")]
         public int RoleId { get; set; }
 
         // Corporate Life-cycle Triggers
@@ -118,6 +121,9 @@ namespace AkerpSuite.Server.DTOs.Role
 
         [JsonPropertyName("employmentStatus")]
         public string EmploymentStatus { get; set; } = string.Empty;
+
+        [JsonPropertyName("category")]
+        public string? Category { get; set; }
 
         [JsonPropertyName("currentCtc")]
         public decimal? CurrentCtc { get; set; }
@@ -145,7 +151,7 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("photoExtension")]
         public string? PhotoExtension { get; set; }
     }
- 
+
     public class AttendanceRequestDto
     {
         public int EmpId { get; set; }
@@ -239,6 +245,7 @@ namespace AkerpSuite.Server.DTOs.Role
     {
         public int EmpId { get; set; }
         public int? StructureId { get; set; }
+        public decimal EpfBasic { get; set; }
         public decimal Basic { get; set; }
         public decimal Hra { get; set; }
         public decimal Ta { get; set; }
@@ -253,6 +260,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public DateTime EffectiveFrom { get; set; }
         public int CreatedBy { get; set; }
     }
+
     public class PayrollGenerateRequestDto
     {
         public int Month { get; set; }
@@ -367,7 +375,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public int ApprovedBy { get; set; }
         public string? Remarks { get; set; }
     }
-    
+
     public class OfferRequestDto
     {
         public int CandidateId { get; set; }
@@ -396,29 +404,29 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? SalaryRange { get; set; }
         public DateTime? ClosingDate { get; set; }
         public bool IsPublished { get; set; }
-        public int CreatedBy { get; set; }   
+        public int CreatedBy { get; set; }
     }
     public class RecruitmentStatusReportDto
     {
-            public int RequisitionId { get; set; }
-            public string? RequisitionTitle { get; set; }
-            public string? DepartmentName { get; set; }
-            public string? DesignationName { get; set; }
-            public int Vacancies { get; set; }
-            public string? RequisitionStatus { get; set; }
-            public string? RequisitionStage { get; set; }
-            public DateTime RequisitionDate { get; set; }
-            public int? PostingId { get; set; }
-            public string? PostingStatus { get; set; }
-            public bool? IsPublished { get; set; }
-            public string? ShareableLink { get; set; }
-            public DateTime? PostingDate { get; set; }
-            public int TotalApplied { get; set; }
-            public int TotalShortlisted { get; set; }
-            public int TotalInterview { get; set; }
-            public int TotalSelected { get; set; }
+        public int RequisitionId { get; set; }
+        public string? RequisitionTitle { get; set; }
+        public string? DepartmentName { get; set; }
+        public string? DesignationName { get; set; }
+        public int Vacancies { get; set; }
+        public string? RequisitionStatus { get; set; }
+        public string? RequisitionStage { get; set; }
+        public DateTime RequisitionDate { get; set; }
+        public int? PostingId { get; set; }
+        public string? PostingStatus { get; set; }
+        public bool? IsPublished { get; set; }
+        public string? ShareableLink { get; set; }
+        public DateTime? PostingDate { get; set; }
+        public int TotalApplied { get; set; }
+        public int TotalShortlisted { get; set; }
+        public int TotalInterview { get; set; }
+        public int TotalSelected { get; set; }
         public int TotalRejected { get; set; }
-        public int TotalOffer { get; set; }      
+        public int TotalOffer { get; set; }
         public int TotalJoined { get; set; }
     }
 
@@ -468,4 +476,15 @@ namespace AkerpSuite.Server.DTOs.Role
         public int CandidateId { get; set; }
         public DateTime JoiningDate { get; set; }
     }
+
+    public class SundayDutyRequestDto
+    {
+            public int EmpId { get; set; }
+            public DateTime DutyDate { get; set; }
+            public string Status { get; set; } = "OFF"; 
+            public string? Location { get; set; }
+            public bool CountsAsDuty { get; set; } = true;
+    }
+    
+
 }

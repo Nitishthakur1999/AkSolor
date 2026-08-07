@@ -2,14 +2,10 @@ import { useEffect, useState } from "react";
 import { adminService } from "@/services/adminService";
 
 export default function Attendance() {
-    // ✅ Role check (Case insensitive)
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userRole = (() => {
-        // 1) Try localStorage "user" object first (fast path, no decoding needed)
         const fromUserObj = user?.role || user?.Role || user?.userRole || user?.UserRole;
         if (fromUserObj) return String(fromUserObj).toUpperCase();
-
-        // 2) Fall back to decoding the JWT token itself
         try {
             const token = localStorage.getItem("token");
             if (!token) return "";
@@ -26,14 +22,8 @@ export default function Attendance() {
     })();
 
     const isCMD = userRole === "CMD";
-    // HR / Admin / CMD ko "admin-level" access — poori employee list, sab tabs
     const isAdminLevel = ["CMD", "ADMIN", "HR"].includes(userRole);
-    // Manager — Employee jaisa hi base access (apni attendance khud punch karta hai),
-    // lekin iske saath-saath apni team (direct reports) ki attendance/records bhi
-    // dekh sakta hai. Poori employee list ya HR-level actions (approve/reject,
-    // summary generate) manager ko nahi milte — sirf apni + team ki visibility.
     const isManager = userRole === "MANAGER";
-    // isTeamLevel = "employee se zyada dikh sakta hai" (admin ko sabka, manager ko apni team ka)
     const isTeamLevel = isAdminLevel || isManager;
     const loggedInEmpId = (() => {
         try {
@@ -52,22 +42,26 @@ export default function Attendance() {
     const [dashboardStats, setDashboardStats] = useState(null);
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
-
+    const [sundayHolidayData, setSundayHolidayData] = useState([]); 
+    const [sundayHolidayPeriod, setSundayHolidayPeriod] = useState({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear()
+    });
+    const [sundayHolidayMeta, setSundayHolidayMeta] = useState(null);
+    const [pdfDownloading, setPdfDownloading] = useState(false);
     const [activeTab, setActiveTab] = useState(isCMD ? "dashboard" : "logs");
-
-    // Search + Pagination state
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
-
     const [showMarkModal, setShowMarkModal] = useState(false);
     const [empSearchOpen, setEmpSearchOpen] = useState(false);
     const [empSearchText, setEmpSearchText] = useState("");
     const [showSummaryModal, setShowSummaryModal] = useState(false);
     const [showRegModal, setShowRegModal] = useState(false);
+    const [showDutyModal, setShowDutyModal] = useState(false); 
     const [actionLoading, setActionLoading] = useState(false);
-
-    // Helper: today's date as yyyy-mm-dd (for <input type="date"> value + payload)
+    const [dutyLocationStatus, setDutyLocationStatus] = useState("idle"); 
+    const [dutyCapturedLocation, setDutyCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
     const getTodayDateStr = () => {
         const now = new Date();
         const yyyy = now.getFullYear();
@@ -75,17 +69,12 @@ export default function Attendance() {
         const dd = String(now.getDate()).padStart(2, "0");
         return `${yyyy}-${mm}-${dd}`;
     };
-
-    // Helper: current time as HH:mm (24hr) — used for punch in/out capture
     const getCurrentTimeStr = () => {
         const now = new Date();
         return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     };
 
-    // Client-specified rule: Punch In by 9:05 AM = auto Present, no approval needed.
     const LATE_CUTOFF = "09:05";
-
-    // Helper: kya diya gaya date Sunday hai? (getDay() === 0 → Sunday)
 
     const isSunday = (dateStr) => {
         if (!dateStr) return false;
@@ -99,15 +88,14 @@ export default function Attendance() {
     const [summaryForm, setSummaryForm] = useState<{ empId: string; month: string | number; year: string | number }>({
         empId: "", month: new Date().getMonth() + 1, year: new Date().getFullYear()
     });
-    // Regularization request form
     const [regForm, setRegForm] = useState({
         empId: "", attDate: "", requestedCheckIn: "", requestedCheckOut: "", reason: ""
     });
+    const [dutyForm, setDutyForm] = useState<{ empId: string; attDate: string; status: string; location: string; countsAsDuty: boolean; remarks: string }>({
+        empId: "", attDate: getTodayDateStr(), status: "Present", location: "", countsAsDuty: true, remarks: ""
+    });
 
-    // Employee role ko sirf apna naam dikhna chahiye dropdown mein;
-    // HR/Admin/CMD ko poori list; Manager ko apni team (direct reports) + khud.
-    // Team match kai possible field names try karta hai kyunki backend ka exact
-    // naming pata nahi (managerId / ManagerId / reportingManagerId / ReportingManagerId).
+   
     const selectableEmployees = isAdminLevel
         ? employees
         : isManager
@@ -123,15 +111,11 @@ export default function Attendance() {
         loadAttendanceData();
     }, [activeTab]);
 
-    // Reset search + page whenever the tab changes, so a search typed on
-    // one tab doesn't silently filter (or hide all rows on) another tab.
     useEffect(() => {
         setSearchTerm("");
         setCurrentPage(1);
     }, [activeTab]);
 
-    // Reset to page 1 whenever the search term changes, otherwise you can
-    // get stuck on page 4 of a search that now only has 1 page of results.
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm]);
@@ -142,13 +126,6 @@ export default function Attendance() {
         });
     }, []);
 
-    // Guard: agar Employee role ka user kisi tarah (stale state / direct
-    // state manipulation) "summaries" tab pe pahunch jaaye,
-    // to unhe turant "logs" tab pe wapas bhej do — sirf render-level check
-    // kaafi nahi tha, kyunki loadAttendanceData() us tab ka data fetch bhi
-    // kar deta tha. Ye effect data-fetch hone se pehle hi tab ko reset kar deta hai.
-    // "sundayWorking" admin + manager dono dekh sakte hain, isliye uska guard
-    // sirf un logon ke liye jo team-level bhi nahi hain.
     useEffect(() => {
         if (!isAdminLevel && activeTab === "summaries") {
             setActiveTab("logs");
@@ -159,9 +136,7 @@ export default function Attendance() {
     }, [activeTab, isAdminLevel, isTeamLevel]);
 
     const loadAttendanceData = async () => {
-        // Non-admin users ke liye summaries data load hi mat karo —
-        // upar wala guard tab ko turant reset kar dega, lekin ye extra safety hai
-        // taaki galti se bhi ek network call na jaaye jiska access nahi hai.
+
         if (!isAdminLevel && activeTab === "summaries") {
             setLoading(false);
             return;
@@ -175,11 +150,21 @@ export default function Attendance() {
             if (activeTab === "dashboard") {
                 const res = await adminService.getDashboardStats();
                 if (res.Success || res.success) setDashboardStats(res.Data || res.data || {});
-            } else if (activeTab === "logs" || activeTab === "sundayWorking") {
-                // "sundayWorking" tab isi attendanceLogs data se derive hota hai
-                // (Date.getDay() === 0 wale records) — alag endpoint ki zaroorat nahi.
+            } else if (activeTab === "logs") {
                 const res = await adminService.getAttendanceAll();
                 if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
+            } else if (activeTab === "sundayWorking") {
+          
+                const res = await adminService.getSundayHolidayStatus(
+                    sundayHolidayPeriod.month,
+                    sundayHolidayPeriod.year
+                );
+                if (res.Success || res.success) {
+                    const data = res.Data || res.data || {};
+                    const rows = data.rows || data.Rows || [];
+                    setSundayHolidayData(Array.isArray(rows) ? rows : []);
+                    setSundayHolidayMeta(data);
+                }
             } else if (activeTab === "requests") {
                 const res = await adminService.getRegRequests();
                 if (res.Success || res.success) setRegRequests(res.Data || res.data || []);
@@ -194,11 +179,7 @@ export default function Attendance() {
         }
     };
 
-    // Aaj (attDate === today) ke liye is empId ka attendance record already
-    // maujood hai ya nahi — isi se decide hota hai ki modal me Punch In dikhana
-    // hai ya Punch Out. getAttendanceAll() poori list deta hai, usme se aaj +
-    // empId match karke dhoondte hain (koi alag "today's status" endpoint
-    // nahi hai, isliye existing data hi reuse kar rahe hain).
+ 
     const determinePunchMode = async (empId) => {
         if (!empId) {
             setPunchMode(null);
@@ -302,6 +283,21 @@ export default function Attendance() {
         setShowRegModal(true);
     };
 
+    // 🆕 Mark Sunday/Holiday Duty modal opener — sirf isAdminLevel (HrManageRoles se match)
+    const openDutyModal = () => {
+        setDutyForm({
+            empId: "",
+            attDate: getTodayDateStr(),
+            status: "Present",
+            location: "",
+            countsAsDuty: true,
+            remarks: ""
+        });
+        setDutyLocationStatus("idle"); // 🆕
+        setDutyCapturedLocation({ latitude: null, longitude: null, address: null }); // 🆕
+        setShowDutyModal(true);
+    };
+
     // Lat/long se readable address nikalta hai (OpenStreetMap Nominatim — free, no key)
     const reverseGeocode = async (latitude, longitude) => {
         try {
@@ -316,9 +312,29 @@ export default function Attendance() {
         }
     };
 
-    // Browser se current GPS location capture karta hai + address resolve karta hai.
-    // Agar permission deny ho jaaye ya browser support na kare, toh null return karta hai —
-    // attendance marking block nahi hoti, location bas save nahi hoti.
+    // Duty modal ke liye alag location capture — Mark Attendance wale locationStatus se independent
+    const handleGetDutyLocation = async () => {
+        setDutyLocationStatus("fetching");
+        if (!navigator.geolocation) {
+            setDutyLocationStatus("denied");
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                const address = await reverseGeocode(latitude, longitude);
+                setDutyCapturedLocation({ latitude, longitude, address });
+                setDutyLocationStatus("captured");
+              
+                setDutyForm(prev => ({ ...prev, location: address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` }));
+            },
+            (err) => {
+                console.warn("Duty location access denied or failed:", err);
+                setDutyLocationStatus("denied");
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+        );
+    };
     const getCurrentLocation = (): Promise<{ latitude: number | null; longitude: number | null; address: string | null }> => {
         setLocationStatus("fetching");
         return new Promise((resolve) => {
@@ -592,6 +608,56 @@ export default function Attendance() {
         }
     };
 
+    // 🆕 Mark Sunday/Holiday Duty submit — HrManageRoles only (matches backend [Authorize])
+    const handleMarkSundayDuty = async (e) => {
+        e.preventDefault();
+        if (!dutyForm.empId) {
+            alert("Please select an employee.");
+            return;
+        }
+        setActionLoading(true);
+        try {
+            const payload = {
+                empId: parseInt(dutyForm.empId, 10),
+                attDate: dutyForm.attDate ? `${dutyForm.attDate}T00:00:00` : null,
+                status: dutyForm.status,
+                location: dutyForm.location || null,
+                countsAsDuty: dutyForm.countsAsDuty,
+                remarks: dutyForm.remarks,
+            };
+            const res = await adminService.markSundayDuty(payload);
+            if (res.Success || res.success) {
+                setShowDutyModal(false);
+                setDutyForm({ empId: "", attDate: getTodayDateStr(), status: "Present", location: "", countsAsDuty: true, remarks: "" });
+                // Refresh the Sunday/Holiday list for the currently viewed period
+                loadAttendanceData();
+            } else {
+                alert(res.Message || "Failed to save Sunday/Holiday duty status.");
+            }
+        } catch (err) {
+            console.error("Mark Sunday duty error:", err);
+            alert(err?.message || "Something went wrong while saving duty status.");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // 🆕 PDF download for the Sunday/Holiday Working Status of the currently selected period
+    const handleDownloadSundayHolidayPdf = async () => {
+        setPdfDownloading(true);
+        try {
+            await adminService.downloadSundayHolidayStatusPdf(
+                sundayHolidayPeriod.month,
+                sundayHolidayPeriod.year
+            );
+        } catch (err) {
+            console.error("Download Sunday/Holiday PDF error:", err);
+            alert(err?.message || "Failed to download PDF.");
+        } finally {
+            setPdfDownloading(false);
+        }
+    };
+
     // Monthly Summary tab sirf HR/Admin/CMD ko dikhta hai — Employee/Manager role ko nahi.
     // Sunday Working — HR/Admin/CMD + Manager, dono ko dikhta hai (manager apni team
     // ki Sunday working dekh sakta hai, poori company ki nahi).
@@ -638,17 +704,24 @@ export default function Attendance() {
     const filteredLogs = filterBySearch(scopeToEmployee(attendanceLogs), ["fullName", "status", "source"]);
     const filteredRequests = filterBySearch(scopeToEmployee(regRequests), ["fullName", "reason", "status"]);
     const filteredSummaries = filterBySearch(scopeToEmployee(summaries), ["fullName"]);
-
-    // Sunday Working — attendanceLogs me se sirf wo records jinka attDate Sunday
-    // hai AUR jisme actually punch (checkIn) hua hai — sirf date Sunday hone se
-    // record nahi bante, kaam karna zaroori hai.
-    const sundayWorkingRaw = attendanceLogs.filter((log) => isSunday(log.attDate) && log.checkIn);
-    const filteredSundayWorking = filterBySearch(scopeToEmployee(sundayWorkingRaw), ["fullName", "status", "source"]);
-
+    const sundayDateColumns = (
+        sundayHolidayMeta?.sundayDates ||
+        sundayHolidayMeta?.SundayDates ||
+        []
+    ).map(d => new Date(d));
+  
+    const filteredSundayHolidayData = filterBySearch(
+        scopeToEmployee((sundayHolidayData || []).map(r => ({
+            ...r,
+            fullName: r.employeeName || r.EmployeeName || `EMP-${r.empId || r.EmpId}`,
+            empId: r.empId ?? r.EmpId,
+        }))),
+        ["fullName"]
+    );
     const pagedLogs = paginate(filteredLogs);
     const pagedRequests = paginate(filteredRequests);
     const pagedSummaries = paginate(filteredSummaries);
-    const pagedSundayWorking = paginate(filteredSundayWorking);
+    const pagedSundayHoliday = paginate(filteredSundayHolidayData);
 
     // Total count + total pages for whichever tab is active — drives the
     // search placeholder and the pagination controls below the table.
@@ -656,7 +729,7 @@ export default function Attendance() {
         logs: { total: filteredLogs.length, placeholder: "Search by employee, status, or source..." },
         requests: { total: filteredRequests.length, placeholder: "Search by employee, reason, or status..." },
         summaries: { total: filteredSummaries.length, placeholder: "Search by employee name..." },
-        sundayWorking: { total: filteredSundayWorking.length, placeholder: "Search by employee name..." },
+        sundayWorking: { total: filteredSundayHolidayData.length, placeholder: "Search by employee name..." },
     }[activeTab];
 
     const totalPages = activeListMeta ? Math.max(1, Math.ceil(activeListMeta.total / ITEMS_PER_PAGE)) : 1;
@@ -721,18 +794,40 @@ export default function Attendance() {
                 </div>
                 {!isCMD && (
                     <div className="flex flex-wrap gap-2">
-                        <button onClick={openMarkModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition-all">
-                            Mark Attendance
-                        </button>
-                        {/* Request Regularization — sab roles ko dikhta hai (Employee apni date ke liye, admin kisi ke liye) */}
-                        <button onClick={openRegModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all">
-                            Request Regularization
-                        </button>
-                        {/* Generate Summary button sirf HR/Admin ko dikhta hai — Employee/Manager role ko nahi */}
-                        {isAdminLevel && (
-                            <button onClick={openSummaryModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all">
-                                Generate Summary
-                            </button>
+                        {/* Sunday/Holiday tab ke liye alag action buttons — PDF download + mark duty.
+                            Baaki tabs pe purane Mark Attendance / Request Regularization / Generate Summary buttons dikhte hain. */}
+                        {activeTab === "sundayWorking" && isAdminLevel ? (
+                            <>
+                                <button
+                                    onClick={openDutyModal}
+                                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition-all"
+                                >
+                                    Mark Sunday/Holiday Duty
+                                </button>
+                                <button
+                                    onClick={handleDownloadSundayHolidayPdf}
+                                    disabled={pdfDownloading}
+                                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all disabled:opacity-60"
+                                >
+                                    {pdfDownloading ? "Downloading..." : "Download PDF"}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={openMarkModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition-all">
+                                    Mark Attendance
+                                </button>
+                                {/* Request Regularization — sab roles ko dikhta hai (Employee apni date ke liye, admin kisi ke liye) */}
+                                <button onClick={openRegModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all">
+                                    Request Regularization
+                                </button>
+                                {/* Generate Summary button sirf HR/Admin ko dikhta hai — Employee/Manager role ko nahi */}
+                                {isAdminLevel && (
+                                    <button onClick={openSummaryModal} className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border transition-all">
+                                        Generate Summary
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
@@ -755,6 +850,36 @@ export default function Attendance() {
 
             {/* Table Area */}
             <div className="bg-white border border-slate-200 border-t-0 rounded-b-2xl overflow-hidden shadow-sm min-h-[300px]">
+                {/* 🆕 Month/Year picker — sirf Sunday/Holiday tab pe, list + PDF isi period ke liye hai */}
+                {!loading && activeTab === "sundayWorking" && (
+                    <div className="px-6 pt-5 flex items-center gap-3">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Period:</label>
+                        <select
+                            value={sundayHolidayPeriod.month}
+                            onChange={(e) => setSundayHolidayPeriod(prev => ({ ...prev, month: Number(e.target.value) }))}
+                            className="px-2 py-1.5 rounded-lg border text-xs bg-white"
+                        >
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                                <option key={m} value={m}>{new Date(2000, m - 1, 1).toLocaleString("default", { month: "long" })}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={sundayHolidayPeriod.year}
+                            onChange={(e) => setSundayHolidayPeriod(prev => ({ ...prev, year: Number(e.target.value) }))}
+                            className="px-2 py-1.5 rounded-lg border text-xs bg-white"
+                        >
+                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={loadAttendanceData}
+                            className="px-3 py-1.5 rounded-lg border text-xs font-bold text-slate-600 hover:bg-slate-50"
+                        >
+                            Apply
+                        </button>
+                    </div>
+                )}
                 {/* Search bar (hidden on dashboard tab, and while loading) */}
                 {!loading && <SearchBar />}
                 {loading ? (
@@ -939,61 +1064,69 @@ export default function Attendance() {
                         <PaginationBar />
                     </div>
                 ) : activeTab === "sundayWorking" && isTeamLevel ? (
-                    // Sunday Working — HR/Admin/CMD ko poori company ki, Manager ko sirf apni
-                    // team ki (scopeToEmployee upar hi is filtering ko handle kar chuka hai).
-                    // Yahan sirf wo attendance records aate hain jo Sunday (off-day) ko punch hue hain.
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse min-w-[800px]">
-                            <thead>
-                                <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
-                                    <th className="px-6 py-4">Employee</th>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4">Check In</th>
-                                    <th className="px-6 py-4">Check Out</th>
-                                    <th className="px-6 py-4">Location</th>
-                                    <th className="px-6 py-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                                {filteredSundayWorking.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 text-sm">
-                                            {searchTerm ? "No matching Sunday working records found" : "No one has worked on a Sunday yet"}
-                                        </td>
-                                    </tr>
-                                ) : pagedSundayWorking.map((log) => (
-                                    <tr key={log.attId} className="hover:bg-slate-50/50">
-                                        <td className="px-6 py-4 font-semibold text-slate-900">
-                                            {log.fullName || `EMP-${log.empId}`}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-500">
-                                            <div className="flex items-center gap-1.5">
-                                                <span>{new Date(log.attDate).toLocaleDateString()}</span>
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200 whitespace-nowrap">
-                                                    Sunday
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 font-mono text-xs">{log.checkIn || "--:--"}</td>
-                                        <td className="px-6 py-4 font-mono text-xs">{log.checkOut || "--:--"}</td>
-                                        <td className="px-6 py-4 text-xs text-slate-500 max-w-[220px] truncate" title={log.locationAddress || ""}>
-                                            {log.locationAddress
-                                                ? log.locationAddress
-                                                : log.latitude && log.longitude
-                                                    ? `${Number(log.latitude).toFixed(5)}, ${Number(log.longitude).toFixed(5)}`
-                                                    : <span className="text-slate-300">—</span>}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${log.status === "Present" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                                                {log.status}
-                                            </span>
-                                        </td>
-                                    </tr>
+               
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
+                                <th className="px-4 py-4 sticky left-0 bg-slate-50">Employee</th>
+                                {sundayDateColumns.map((d, i) => (
+                                    <th key={i} className="px-3 py-4 text-center whitespace-nowrap">
+                                        {d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                                    </th>
                                 ))}
-                            </tbody>
-                        </table>
-                        <PaginationBar />
-                    </div>
+                                <th className="px-4 py-4 text-center">Duty</th>
+                                <th className="px-4 py-4 text-center">Comp-Off</th>
+                                <th className="px-4 py-4 text-center">Prev Bal</th>
+                                <th className="px-4 py-4 text-center">Final Dues</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                            {filteredSundayHolidayData.length === 0 ? (
+                                <tr>
+                                    <td colSpan={sundayDateColumns.length + 5} className="px-6 py-12 text-center text-slate-400 text-sm">
+                                        {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
+                                    </td>
+                                </tr>
+                            ) : paginate(filteredSundayHolidayData).map((row, idx) => {
+                                const cells = row.cells || row.Cells || [];
+                                const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
+                                return (
+                                    <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/50">
+                                        <td className="px-4 py-3 font-semibold text-slate-900 sticky left-0 bg-white whitespace-nowrap">
+                                            {empName}
+                                        </td>
+                                        {sundayDateColumns.map((d, i) => {
+                                            const cell = cells.find(c => {
+                                                const cd = new Date(c.date || c.Date);
+                                                return cd.toDateString() === d.toDateString();
+                                            });
+                                            const status = cell?.status || cell?.Status || "OFF";
+                                            const isPresent = status === "Present";
+                                            return (
+                                                <td key={i} className="px-3 py-3 text-center">
+                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${isPresent
+                                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                                            : status === "Absent"
+                                                                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                                                : "bg-slate-50 text-slate-400 border border-slate-200"
+                                                        }`}>
+                                                        {status === "Present" ? "P" : status === "Absent" ? "A" : status === "Half-Day" ? "HD" : "OFF"}
+                                                    </span>
+                                                </td>
+                                            );
+                                        })}
+                                        <td className="px-4 py-3 text-center font-mono font-bold">{row.monthDutyCount ?? row.MonthDutyCount ?? 0}</td>
+                                        <td className="px-4 py-3 text-center font-mono font-bold text-amber-600">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
+                                        <td className="px-4 py-3 text-center font-mono">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
+                                        <td className="px-4 py-3 text-center font-mono font-bold text-emerald-700">{row.finalDues ?? row.FinalDues ?? 0}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                    <PaginationBar />
+                </div>
                 ) : activeTab === "summaries" && isAdminLevel ? (
                     // Monthly Summary — sirf isAdminLevel true hone par render hota hai
                     // (tab list se bhi hidden hai Employee/Manager role ke liye, ye double-safety hai)
@@ -1372,6 +1505,108 @@ export default function Attendance() {
                                 className="w-full py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60">
                                 {actionLoading ? "Generating..." : "Generate Summary"}
                             </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 🆕 Modal: Mark Sunday/Holiday Duty — sirf HR/Admin/CMD ke liye (button khud hi non-admin ko nahi dikhta) */}
+            {showDutyModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-slate-900">Mark Sunday/Holiday Duty</h3>
+                            <button
+                                onClick={() => setShowDutyModal(false)}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 text-xl font-bold transition-colors"
+                                aria-label="Close modal"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <form onSubmit={handleMarkSundayDuty} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Employee *</label>
+                                <select
+                                    required
+                                    value={dutyForm.empId}
+                                    onChange={(e) => setDutyForm({ ...dutyForm, empId: e.target.value })}
+                                    className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+                                >
+                                    <option value="" disabled>-- Select Employee --</option>
+                                    {employees.map((emp) => (
+                                        <option key={emp.empId} value={emp.empId}>
+                                            {emp.firstName} {emp.lastName} ({emp.empCode})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date *</label>
+                                <input type="date" required value={dutyForm.attDate}
+                                    onChange={e => setDutyForm({ ...dutyForm, attDate: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-xl border text-sm" />
+                                {isSunday(dutyForm.attDate) && (
+                                    <p className="text-[11px] text-violet-600 mt-1 font-semibold">📅 Selected date is a Sunday.</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status *</label>
+                                <select value={dutyForm.status}
+                                    onChange={e => setDutyForm({ ...dutyForm, status: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
+                                    <option>Present</option>
+                                    <option>Absent</option>
+                                    <option>Half-Day</option>
+                                </select>
+                            </div>
+
+                            {/* 🆕 Location — manual type + live GPS capture, backend SundayDutyRequestDto.Location field ke liye */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="e.g. Site Office, Head Office"
+                                        value={dutyForm.location}
+                                        onChange={e => setDutyForm({ ...dutyForm, location: e.target.value })}
+                                        className="flex-1 px-3 py-2 rounded-xl border text-sm" />
+                                    <button
+                                        type="button"
+                                        onClick={handleGetDutyLocation}
+                                        disabled={dutyLocationStatus === "fetching"}
+                                        className="px-3 py-2 rounded-xl border text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 disabled:opacity-60 whitespace-nowrap"
+                                    >
+                                        {dutyLocationStatus === "fetching" ? "..." : "📍 Live"}
+                                    </button>
+                                </div>
+                                {dutyLocationStatus === "fetching" && (
+                                    <p className="text-[11px] text-amber-500 mt-1 animate-pulse">Getting your location...</p>
+                                )}
+                                {dutyLocationStatus === "captured" && (
+                                    <p className="text-[11px] text-emerald-600 mt-1 font-medium">✅ Location captured</p>
+                                )}
+                                    {dutyLocationStatus === "denied" && (
+                                    <p className="text-[11px] text-amber-600 mt-1">Location unavailable — you can type it manually</p>
+                                )}
+                            </div>
+
+                            {/* 🆕 Save / Cancel buttons — form me pehle sirf inputs the, submit/close ka koi button hi nahi tha */}
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDutyModal(false)}
+                                    className="flex-1 py-2.5 rounded-xl border text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="flex-1 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md disabled:opacity-60 transition-opacity"
+                                >
+                                    {actionLoading ? "Saving..." : "Save"}
+                                </button>
+                         
+                            </div>
                         </form>
                     </div>
                 </div>

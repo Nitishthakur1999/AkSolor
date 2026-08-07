@@ -3,9 +3,11 @@ using AkerpSuite.Server.Dtos.Auth;
 using AkerpSuite.Server.DTOs.Role;
 using AkerpSuite.Server.Helpers;
 using AkerpSuite.Server.Services;
+using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -477,12 +479,12 @@ namespace AkerpSuite.Server.Controllers
             {
                 request.EmpId = User.GetEmpId();
             }
-            var result = await _service.MarkAttendanceAsync(request);  
+            var result = await _service.MarkAttendanceAsync(request);
             var isLate = result.LateMinutes > 0;
             var message = isLate
                 ? $"Attendance marked as Late by {result.LateMinutes} minute(s). " +
-                $"Sent for HR approval.": "Attendance marked successfully";
-            
+                $"Sent for HR approval." : "Attendance marked successfully";
+
             return Ok(new
             {
                 Success = true,
@@ -531,7 +533,7 @@ namespace AkerpSuite.Server.Controllers
         public async Task<IActionResult> GetRegRequests(
             [FromQuery] int? empId,
             [FromQuery] string? status,
-            [FromQuery] string? requestType)  
+            [FromQuery] string? requestType)
         {
             var data = await _service.GetAllRegRequestsAsync(empId, status, requestType);
             return Ok(new { Success = true, Data = data });
@@ -540,7 +542,7 @@ namespace AkerpSuite.Server.Controllers
         // PATCH /api/attendance/regularization/{requestId}/action?status=Approved&approvedBy=5
         [HttpPatch("regularization/{requestId}/action")]
         [Authorize(Roles = HrManageRoles)]
-        public async Task<IActionResult> RegAction(int requestId,[FromQuery] string status,[FromQuery] int approvedBy)
+        public async Task<IActionResult> RegAction(int requestId, [FromQuery] string status, [FromQuery] int approvedBy)
         {
             var result = await _service.RegActionAsync(requestId, status, approvedBy);
             return Ok(new { Success = result, Message = $"Request {status} successfully" });
@@ -573,6 +575,37 @@ namespace AkerpSuite.Server.Controllers
             var data = await _service.GetAttendanceDashboardStatsAsync();
             return Ok(new { Success = true, Data = data });
         }
+
+
+        [HttpGet("sunday-holiday-status")]
+        [Authorize(Roles = HrManageRoles + "," + Roles.Manager)]
+        public async Task<IActionResult> GetSundayHolidayStatus([FromQuery] int month, [FromQuery] int year)
+        {
+            var data = await _service.GetSundayHolidayStatusAsync(month, year);
+            return Ok(new { Success = true, Data = data });
+        }
+
+     
+        [HttpGet("sunday-holiday-status/pdf")]
+        [Authorize(Roles = HrManageRoles)]
+        public async Task<IActionResult> DownloadSundayHolidayStatusPdf([FromQuery] int month, [FromQuery] int year)
+        {
+            var bytes = await _service.GetSundayHolidayStatusPdfAsync(month, year);
+            var fileName = $"Sunday_Holiday_Working_Status_{month:D2}_{year}.pdf";
+            return File(bytes, "application/pdf", fileName);
+        }
+
+        [HttpPost("sunday-holiday-status/mark")]
+        [Authorize(Roles = HrManageRoles)]
+        public async Task<IActionResult> MarkSundayDuty([FromBody] SundayDutyRequestDto request)
+        {
+            var empIdClaim = User.FindFirst("emp_id")?.Value;
+            int.TryParse(empIdClaim, out int createdBy);
+
+            await _service.MarkSundayDutyAsync(request, createdBy);
+            return Ok(new { Success = true, Message = "Sunday/Holiday duty status saved" });
+        }
+
 
         #endregion
 
@@ -1179,8 +1212,7 @@ namespace AkerpSuite.Server.Controllers
         public async Task<IActionResult> SubmitInterviewFeedback([FromBody] InterviewFeedbackRequestDto request)
         {
             var updated = await _service.SubmitInterviewFeedbackAsync(request);
-            if (!updated)
-                return NotFound(new { Success = false, Message = "Interview not found" });
+
             return Ok(new { Success = true, Message = "Feedback submitted successfully" });
         }
 
@@ -1276,5 +1308,40 @@ namespace AkerpSuite.Server.Controllers
             }
         }
         #endregion
+
+        #region Issue offer latter and appointemt latter
+
+        // GET api/admin/candidates/5/offer-letter
+        [HttpGet("candidates/{candidateId}/offer-letter")]
+        [Authorize(Roles = HrManageRoles)]
+        public async Task<IActionResult> GetOfferLetter(int candidateId)
+        {
+            var bytes = await _service.GenerateOfferLetterAsync(candidateId);
+            if (bytes == null)
+                return NotFound(new { Success = false, Message = "Offer not found for this candidate" });
+
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                $"Offer_Letter_{candidateId}.docx");
+        }
+
+        // GET api/admin/candidates/5/appointment-letter
+        [HttpGet("candidates/{candidateId}/appointment-letter")]
+        [Authorize(Roles = HrManageRoles)]
+        public async Task<IActionResult> GetAppointmentLetter(int candidateId)
+        {
+            var bytes = await _service.GenerateAppointmentLetterAsync(candidateId);
+            if (bytes == null)
+                return NotFound(new { Success = false, Message = "Offer not found for this candidate" });
+
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                $"Appointment_Letter_{candidateId}.docx");
+        }
+
+        #endregion
+
+      
+
     }
 }

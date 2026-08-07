@@ -39,6 +39,7 @@ import Leads from "@/admin/pages/Leads";
 import LeadDetail from "@/admin/pages/LeadDetail";
 import Inventory from "@/admin/pages/Inventory";
 import PublicSitePage from "@/admin/pages/Publicsitepage";
+import SalarySheet from "@/admin/pages/SalarySheet";
  
 
 function ComingSoon({ title = "Page", icon = "fa-solid fa-circle" }) {
@@ -76,6 +77,7 @@ const COMPONENT_MAP = {
     "/payroll/salary": <PayrollManagement />,
     "/payroll/deductions": <PayrollManagement />,
     "/payroll/payslip": <PayslipViewer />,
+    "/payroll/salary-sheet": <SalarySheet />,
 
     // ── Recruitment (🆕 Updated) ─────────────────────────────────────────
     "/recruitment/requisitions": <JobRequisitions />,

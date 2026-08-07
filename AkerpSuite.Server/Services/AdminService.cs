@@ -3,8 +3,10 @@ using AkerpSuite.Server.Dtos.Auth;
 using AkerpSuite.Server.DTOs.Hr;
 using AkerpSuite.Server.DTOs.Role;
 using AkerpSuite.Server.Helpers;
+using AkerpSuite.Server.Reports;
 using AkerpSuite.Server.Repositories;
 using MySqlConnector;
+using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 
@@ -16,20 +18,24 @@ namespace AkerpSuite.Server.Services
         private readonly FileUploadHelper _fileUploadHelper;
         private readonly IConfiguration _configuration;
         private readonly IHRService _hrService;
-        private readonly IEmailService _emailService;   // ← naya
+        private readonly IEmailService _emailService;
+        private readonly DocxTemplateMergeService _letterMerge = new();
+        private const string OfferTemplatePath = "Templates/Offer_Letter_Template.docx";
+        private const string AppointmentTemplatePath = "Templates/Appointment_Letter_Template.docx";
+
 
         public AdminService(
             IAdminRepositories repository,
             FileUploadHelper fileUploadHelper,
             IConfiguration configuration,
             IHRService hrService,
-            IEmailService emailService)   // ← naya parameter
+            IEmailService emailService)
         {
             _repository = repository;
             _fileUploadHelper = fileUploadHelper;
             _configuration = configuration;
             _hrService = hrService;
-            _emailService = emailService;   // ← naya
+            _emailService = emailService;
         }
 
 
@@ -156,100 +162,7 @@ namespace AkerpSuite.Server.Services
 
         #endregion
 
-        #region Employee Management       
-        //public async Task<EmployeeResponseDto> CreateEmployeeAsync(EmployeeRequestDto request, string creatorRole)
-        //{
-        //    if (string.IsNullOrWhiteSpace(creatorRole))
-        //        throw new UnauthorizedAccessException("Role claim is missing in the generated security token.");
-
-        //    creatorRole = creatorRole.Trim();
-
-        //    // ✅ NAYA ADD: Employment status default — form pe field nahi hai, khaali na rahe
-        //    if (string.IsNullOrWhiteSpace(request.EmploymentStatus))
-        //        request.EmploymentStatus = "Active";
-
-        //    // ✅ Target role ka naam DB se nikalo
-        //    var targetRole = await _repository.GetRoleByIdAsync(request.RoleId);
-        //    if (targetRole == null)
-        //        throw new InvalidOperationException($"Invalid Role Id: {request.RoleId}.");
-
-        //    // ✅ Rule 1: CMD kisi ko bhi assign nahi ho sakta
-        //    if (string.Equals(targetRole.RoleName, Roles.CMD, StringComparison.OrdinalIgnoreCase))
-        //        throw new UnauthorizedAccessException("CMD role cannot be assigned to any employee.");
-
-        //    // ✅ Rule 2: Apna level ya usse neeche hi allowed
-        //    if (!Roles.CanView(creatorRole, targetRole.RoleName))
-        //        throw new UnauthorizedAccessException(
-        //            $"Logged in role '{creatorRole}' is not allowed to create a user with role '{targetRole.RoleName}'.");
-
-        //    // ✅ Fix 3: Targeted check, poora table fetch nahi
-        //    if (await _repository.EmailExistsAsync(request.OfficialEmail))
-        //        throw new InvalidOperationException($"Email '{request.OfficialEmail}' is already registered.");
-
-        //    // ✅ Fix 1: Atomic-ish next number DB se
-        //    int nextNumber = await _repository.GetNextEmpCodeNumberAsync();
-        //    request.EmpCode = $"AKS-{nextNumber:D3}";
-
-        //    // Username generation (isko bhi DB check se optimize kar sakte ho, filhaal simple rakha)
-        //    string baseUsername = $"{request.FirstName.ToLower().Trim()}.{request.LastName.ToLower().Trim()}".Replace(" ", "");
-        //    request.Username = await _repository.GenerateUniqueUsernameAsync(baseUsername);
-
-        //    // ✅ Fix 2: Secure random password
-        //    string plainPassword = GenerateSecureTempPassword();
-        //    string passwordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword);
-
-        //    string savedPhotoPath = string.Empty;
-        //    if (!string.IsNullOrWhiteSpace(request.PhotoBase64))
-        //    {
-        //        string ext = !string.IsNullOrWhiteSpace(request.PhotoExtension) ? request.PhotoExtension : ".jpg";
-        //        var resultPath = await _fileUploadHelper.SaveBase64FileAsync(request.PhotoBase64, ext, "employee-profile");
-        //        savedPhotoPath = resultPath != null ? $"/{resultPath}" : string.Empty;
-        //    }
-
-        //    int empId;
-        //    int attempt = 0;
-        //    const int maxAttempts = 5;
-
-        //    while (true)
-        //    {
-        //        try
-        //        {
-        //            empId = await _repository.CreateEmployeeAsync(request, passwordHash, savedPhotoPath);
-        //            break;
-        //        }
-        //        catch (MySqlException ex) when (ex.Number == 1062)
-        //        {
-        //            attempt++;
-        //            if (attempt >= maxAttempts)
-        //                throw new InvalidOperationException("Failed to generate a unique employee code after multiple attempts.");
-
-        //            nextNumber++;
-        //            request.EmpCode = $"EMP{nextNumber:D3}";
-        //        }
-        //    }
-
-        //    // ✅ NEW: Leave balances auto-initialize
-        //    await _repository.InitializeLeaveBalancesAsync(empId, request.DateOfJoining.Year);
-
-        //    // ✅ NAYA ADD: Company hierarchy sync — reporting manager set hai to org-chart me turant reflect ho
-        //    if (request.ReportingManager.HasValue)
-        //    {
-        //        await _hrService.SetHierarchyAsync(new SetHierarchyRequestDto
-        //        {
-        //            EmpId = empId,
-        //            ParentEmpId = request.ReportingManager.Value
-        //        });
-        //    }
-
-        //    var created = await _repository.GetEmployeeByIdAsync(empId);
-        //    if (created == null)
-        //        throw new InvalidOperationException("Failed to load freshly registered record configuration pipelines.");
-
-        //    created.GeneratedUsername = request.Username;
-        //    created.GeneratedPassword = plainPassword;
-
-        //    return created;
-        //}
+        #region Employee Management            
         public async Task<EmployeeResponseDto> CreateEmployeeAsync(EmployeeRequestDto request, string creatorRole)
         {
             if (string.IsNullOrWhiteSpace(creatorRole))
@@ -322,9 +235,10 @@ namespace AkerpSuite.Server.Services
                         throw new InvalidOperationException("Failed to generate a unique employee code after multiple attempts.");
 
                     nextNumber++;
-                    request.EmpCode = $"EMP{nextNumber:D3}";
+                    request.EmpCode = $"AKS-{nextNumber:D3}";
                 }
             }
+
 
             // ✅ NEW: Leave balances auto-initialize
             await _repository.InitializeLeaveBalancesAsync(empId, request.DateOfJoining.Year);
@@ -406,8 +320,6 @@ namespace AkerpSuite.Server.Services
 
         public async Task<EmployeeResponseDto?> GetEmployeeByIdAsync(int employeeId)
             => await _repository.GetEmployeeByIdAsync(employeeId);
-
-
 
         public async Task<bool> DeleteEmployeeAsync(int employeeId)
         {
@@ -569,12 +481,13 @@ namespace AkerpSuite.Server.Services
 
             bool duplicateName = existing.Any(d =>
                 d.DesigId != desigId &&
+                d.DeptId == request.DeptId &&                      // ✅ department-scoped check
                 string.Equals(d.DesignationName, request.DesignationName,
                     StringComparison.OrdinalIgnoreCase));
 
             if (duplicateName)
                 throw new InvalidOperationException(
-                    $"Designation '{request.DesignationName}' already exists.");
+                    $"Designation '{request.DesignationName}' already exists in this department.");
 
             bool duplicateLevel = existing.Any(d =>
                 d.DesigId != desigId &&
@@ -1007,7 +920,7 @@ namespace AkerpSuite.Server.Services
         public async Task<IEnumerable<SalaryStructureResponseDto>> GetSalaryStructuresAsync()
             => await _repository.GetSalaryStructuresAsync();
         public async Task<IEnumerable<EmployeeSalaryListResponseDto>> GetAllEmployeeSalariesAsync()
-    => await _repository.GetAllEmployeeSalariesAsync();
+          => await _repository.GetAllEmployeeSalariesAsync();
 
         #endregion
 
@@ -1432,6 +1345,181 @@ namespace AkerpSuite.Server.Services
         }
 
         #endregion
+
+        #region Issue offer latter and appointemt latter
+        public async Task<byte[]?> GenerateOfferLetterAsync(int candidateId)
+        {
+            var offer = await _repository.GetOfferByCandidateAsync(candidateId);
+            if (offer == null) return null;
+
+            var candidate = await _repository.GetCandidateLetterDataAsync(candidateId);
+            if (candidate == null) return null;
+
+            decimal ctc = SafeDecimal(offer.OfferedCtc);
+
+            var fields = new Dictionary<string, string>
+            {
+                ["OfferNumber"] = $"AKS/HR/{FiscalYear()}/{offer.OfferId:D3}",
+                ["OfferDate"] = DateTime.Now.ToString("dd-MM-yyyy"),
+                ["CandidateName"] = $"{candidate.FirstName} {candidate.LastName}",
+                ["FatherName"] = candidate.FatherName ?? "",
+                ["AddressLine1"] = candidate.AddressLine1 ?? "",
+                ["AddressLine2"] = candidate.AddressLine2 ?? "",
+                ["Designation"] = candidate.DesignationName ?? "",
+                ["JoiningDate"] = SafeDate(offer.JoiningDate, "MMMM d, yyyy"),
+                ["SalaryNumeric"] = ctc.ToString("N0"),
+                ["SalaryWords"] = IndianCurrencyWords.Convert((long)ctc),
+                ["ReportingManagerName"] = candidate.ReportingManagerName ?? "",
+                ["ReportingManagerDesignation"] = candidate.ReportingManagerDesignation ?? "",
+                ["ReportingManagerContact"] = candidate.ReportingManagerContact ?? "",
+            };
+
+            return _letterMerge.Merge(OfferTemplatePath, fields);
+        }
+
+        public async Task<byte[]?> GenerateAppointmentLetterAsync(int candidateId)
+        {
+            var offer = await _repository.GetOfferByCandidateAsync(candidateId);
+            if (offer == null) return null;
+
+            var emp = await _repository.GetEmployeeLetterDataByCandidateAsync(candidateId);
+            if (emp == null) return null;
+
+            decimal ctc = SafeDecimal(offer.OfferedCtc);
+
+            var fields = new Dictionary<string, string>
+            {
+                ["AppointmentNumber"] = $"AKS/HR/{FiscalYear()}/{offer.OfferId:D3}",
+                ["AppointmentDate"] = DateTime.Now.ToString("dd-MM-yyyy"),
+                ["CandidateName"] = $"{emp.FirstName} {emp.LastName}",
+                ["FatherName"] = emp.FatherName ?? "",
+                ["AddressLine1"] = emp.AddressLine1 ?? "",
+                ["AddressLine2"] = emp.AddressLine2 ?? "",
+                ["Phone"] = emp.Phone ?? "",
+                ["DOB"] = SafeDate(emp.DateOfBirth, "dd-MM-yyyy"),
+                ["BloodGroup"] = emp.BloodGroup ?? "",
+                ["Designation"] = emp.DesignationName ?? "",
+                ["JoiningDate"] = SafeDate(offer.JoiningDate, "dd-MM-yyyy"),
+                ["ProbationMonths"] = "3",
+                ["SalaryNumeric"] = ctc.ToString("N0"),
+                ["SalaryWords"] = IndianCurrencyWords.Convert((long)ctc),
+                ["PlaceOfPosting"] = emp.PlaceOfPosting ?? "",
+            };
+
+            return _letterMerge.Merge(AppointmentTemplatePath, fields);
+        }
+
+        // 🆕 add alongside SafeDate
+        private static decimal SafeDecimal(dynamic value)
+        {
+            if (value == null) return 0;
+            if (value is decimal d) return d;
+            return Convert.ToDecimal(value);
+        }
+
+        private static string SafeDate(dynamic value, string format)
+        {
+            if (value == null) return "";
+            if (value is DateTime dt) return dt.ToString(format);
+            return value.ToString();
+        }
+
+        private string FiscalYear() =>
+            DateTime.Now.Month >= 4
+                ? $"{DateTime.Now.Year}-{(DateTime.Now.Year + 1) % 100}"
+                : $"{DateTime.Now.Year - 1}-{DateTime.Now.Year % 100}";
+        #endregion
+
+
+        public async Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year)
+        {
+            var sundayDates = GetSundaysInMonth(month, year);
+
+            var employees = await _repository.GetActiveEmployeesBasicAsync();
+
+            var monthStart = new DateTime(year, month, 1);
+            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+            var dutyRecords = await _repository.GetSundayDutyRecordsAsync(monthStart, monthEnd);
+            var ledgerRecords = await _repository.GetSundayLedgerAsync(month, year);
+
+            var report = new SundayHolidayStatusReportDto
+            {
+                Month = month,
+                Year = year,
+                MonthName = $"{CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(month).ToUpper()} {year}",
+                SundayDates = sundayDates
+            };
+
+            int sr = 1;
+            foreach (var emp in employees)
+            {
+                var ledger = ledgerRecords.FirstOrDefault(l => l.EmpId == emp.EmpId);
+
+                var row = new SundayHolidayStatusRowDto
+                {
+                    SrNo = sr++,
+                    EmpId = emp.EmpId,
+                    EmployeeName = emp.FullName.ToUpper(),
+                    PreviousBalance = ledger?.OpeningBalance ?? 0,
+                    MonthDutyCount = ledger?.DutyCount ?? 0,
+                    MonthCompOff = ledger?.CompOffUsed ?? 0,
+                };
+
+                foreach (var date in sundayDates)
+                {
+                    var record = dutyRecords.FirstOrDefault(d => d.EmpId == emp.EmpId && d.DutyDate.Date == date.Date);
+
+                    string cellStatus;
+                    if (record != null)
+                    {
+                        cellStatus = record.Status == "ON-DUTY" && !string.IsNullOrWhiteSpace(record.Location)
+                            ? $"ON-DUTY-{record.Location.ToUpper()}"
+                            : record.Status;
+                    }
+                    else
+                    {
+                        // No explicit record: OFF if employee had already joined, otherwise N/A
+                        cellStatus = (emp.JoiningDate == null || emp.JoiningDate <= date) ? "OFF" : "N/A";
+                    }
+
+                    row.Cells.Add(new SundayCellDto { Date = date, Status = cellStatus });
+                }
+
+                row.FinalDues = row.PreviousBalance + row.MonthDutyCount - row.MonthCompOff;
+                report.Rows.Add(row);
+            }
+
+            return report;
+        }
+
+        public async Task<byte[]> GetSundayHolidayStatusPdfAsync(int month, int year)
+        {
+            var report = await GetSundayHolidayStatusAsync(month, year);
+            return SundayHolidayStatusPdfBuilder.Build(report);
+        }
+
+        // Call this from the "mark Sunday duty" endpoint when HR sets a cell to ON-DUTY/OFF/N/A
+        public async Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy)
+        {
+            await _repository.UpsertSundayDutyAsync(request, createdBy);
+        }
+
+        private static List<DateTime> GetSundaysInMonth(int month, int year)
+        {
+            var result = new List<DateTime>();
+            var date = new DateTime(year, month, 1);
+            var lastDay = date.AddMonths(1).AddDays(-1);
+
+            while (date <= lastDay)
+            {
+                if (date.DayOfWeek == DayOfWeek.Sunday)
+                    result.Add(date);
+                date = date.AddDays(1);
+            }
+            return result;
+        }
+
 
     }
 }

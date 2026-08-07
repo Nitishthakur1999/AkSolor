@@ -42,7 +42,21 @@ const buildQuery = (filters: Record<string, any> = {}): string => {
     const queryString = params.toString();
     return queryString ? `?${queryString}` : '';
 };
-
+const downloadFile = async (url: string, filename: string): Promise<void> => {
+    const res = await fetch(url, { headers: getHeaders() });
+    if (!res.ok) {
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : null;
+        throw new Error(data?.Message || data?.message || `Request failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const objUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objUrl;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(objUrl);
+};
 export const adminService = {
 
     // 1. Dashboard
@@ -71,6 +85,7 @@ export const adminService = {
     getEmployees: (filters?: any) => apiCall(`${API_BASE}/getallemployees${buildQuery(filters)}`),
     createEmployee: (data?: any) => apiCall(`${API_BASE}/CreateEmployee`, "POST", data),
     updateEmployee: (id?: any, data?: any) => apiCall(`${API_BASE}/updateemployee/${id}`, "PUT", data),
+    toggleEmployeeStatus: (id?: any, status?: any) => apiCall(`${API_BASE}/employees/${id}/toggle-status`, "PATCH", { status }),
     deleteEmployee: (id?: any) => apiCall(`${API_BASE}/deleteemployee/${id}`, "DELETE"),
 
     // 6. Department
@@ -94,6 +109,10 @@ export const adminService = {
     generateSummary: (payload?: any) => apiCall(`${ATTENDANCE_API_BASE}/summary/generate`, "POST", payload),
     getSummary: (filters?: any) => apiCall(`${ATTENDANCE_API_BASE}/summary${buildQuery(filters)}`),
     createRegRequest: (payload?: any) => apiCall(`${ATTENDANCE_API_BASE}/regularization`, "POST", payload), // 🆕 FIXED
+    getSundayHolidayStatus: (month?: any, year?: any) => apiCall(`${ATTENDANCE_API_BASE}/sunday-holiday-status?month=${month}&year=${year}`),
+    downloadSundayHolidayStatusPdf: (month?: any, year?: any) =>downloadFile(`${ATTENDANCE_API_BASE}/sunday-holiday-status/pdf?month=${month}&year=${year}`,
+        `Sunday_Holiday_Working_Status_${String(month).padStart(2, "0")}_${year}.pdf`),
+    markSundayDuty: (payload?: any) =>apiCall(`${ATTENDANCE_API_BASE}/sunday-holiday-status/mark`, "POST", payload),
 
     // 9. Leave Management
     getLeaveTypes: () => apiCall(`${API_BASE}/types`),
@@ -178,6 +197,10 @@ export const adminService = {
     actionOffer: (data?: any) => apiCall(`${API_BASE}/offers/action`, "PATCH", data),
     getOfferByCandidate: (candidateId?: any) => apiCall(`${API_BASE}/offers/candidate/${candidateId}`),
     confirmJoining: (data?: any) => apiCall(`${API_BASE}/joining/confirm`, "POST", data),
+    downloadOfferLetter: (candidateId?: any) =>
+        downloadFile(`${API_BASE}/candidates/${candidateId}/offer-letter`, `Offer_Letter_${candidateId}.docx`),
+    downloadAppointmentLetter: (candidateId?: any) =>
+        downloadFile(`${API_BASE}/candidates/${candidateId}/appointment-letter`, `Appointment_Letter_${candidateId}.docx`),
 
     // 17. Self Service (Profile)
     getMyProfile: () => apiCall(`${BASE}/api/hr/profile`),
@@ -259,7 +282,7 @@ export const adminService = {
     // 22g. Reminders — create + mark done
     createReminder: (data?: any) => apiCall(`${SALES_API_BASE}/reminders`, "POST", data),
     getPendingReminders: (assignedTo?: any) => apiCall(`${SALES_API_BASE}/reminders/pending${assignedTo ? `?assignedTo=${assignedTo}` : ''}`),
-    markReminderDone: (id?: any) => apiCall(`${SALES_API_BASE}/reminders/${id}/done`, "PATCH"),  
+    markReminderDone: (id?: any) => apiCall(`${SALES_API_BASE}/reminders/${id}/done`, "PATCH"),
 
 
     // ── 23. Inventory Module (Exact Routes) ──────────────────────────────
@@ -323,9 +346,9 @@ export const adminService = {
 
     // ── Password ──
     revealEmployeeCredentials: (empId?: any, secretKey?: any) =>
-        apiCall(`/api/admin/employees/${empId}/reveal-credentials`, "POST", { secretKey }),
-    
-   // ── 28. Public Site  ──
+        apiCall(`${API_BASE}/employees/${empId}/reveal-credentials`, "POST", { secretKey }),
+
+    // ── 28. Public Site  ──
 
     // Banners 
     getBanners: () => apiCall(`${SITE_API_BASE}/banner`),
@@ -365,11 +388,9 @@ export const adminService = {
 
     // Contact Queries (read / mark-read / delete only — no create)
     getContactQueries: (isRead?: any) =>
-    apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
+        apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
     markQueryRead: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}/mark-read`, "PATCH"),
     deleteContactQuery: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}`, "DELETE"),
- 
+
 };
-
-
 

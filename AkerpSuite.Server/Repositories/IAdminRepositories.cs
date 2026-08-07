@@ -221,6 +221,30 @@ namespace AkerpSuite.Server.Repositories
         Task<(string Username, int UserId)?> GetUserCredsInfoByEmpIdAsync(int empId);
         Task UpdateUserPasswordAsync(int userId, string passwordHash);
         #endregion
+
+        #region Issue offer latter and appointemt latter
+        Task<dynamic?> GetCandidateLetterDataAsync(int candidateId);
+        Task<dynamic?> GetEmployeeLetterDataByCandidateAsync(int candidateId);
+
+        #endregion
+
+        Task<List<EmployeeBasicDto>> GetActiveEmployeesBasicAsync();
+        Task<List<SundayDutyRecord>> GetSundayDutyRecordsAsync(DateTime monthStart, DateTime monthEnd);
+        Task<List<SundayLedgerRecord>> GetSundayLedgerAsync(int month, int year);
+        Task UpsertSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
+        Task RecalculateLedgerAsync(int empId, int month, int year);
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }
 

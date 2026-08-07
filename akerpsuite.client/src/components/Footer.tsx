@@ -134,27 +134,16 @@ export default function Footer() {
 
                 <div className="flex flex-col items-center gap-4 border-t border-dashed border-line pt-7 text-center text-[0.78rem] text-slate sm:flex-row sm:justify-between sm:text-left">
                     <span>© {new Date().getFullYear()} AKS Solar Systems Private Limited. All rights reserved.</span>
-                    {/* <span className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-5"> */}
-
-                    <span>
-                        Designed and developed by{' '}
+                    <span className="flex items-center gap-5">
+                        <span>Designed in Himachal Pradesh, India · CIN U35105HP2023PTC010123</span>
                         <a
-                            href="https://www.appilogics.com/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-extrabold text-xl text-charcoal-soft underline-offset-2 transition-colors hover:text-gold-deep hover:underline"
+                            href="#top"
+                            aria-label="Back to top"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center border border-line-strong text-charcoal-soft transition-colors hover:border-gold hover:bg-gold hover:text-chalk"
                         >
-                            Appilogics
+                            <ArrowUp size={14} />
                         </a>
                     </span>
-                    <a
-                        href="#top"
-                        aria-label="Back to top"
-                        className="flex h-8 w-8 shrink-0 items-center justify-center border border-line-strong text-charcoal-soft transition-colors hover:border-gold hover:bg-gold hover:text-chalk"
-                    >
-                        <ArrowUp size={14} />
-                    </a>
-
                 </div>
             </div>
         </footer>

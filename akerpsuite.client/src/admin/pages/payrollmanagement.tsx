@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { adminService } from "@/services/adminService";
 import { Link, useSearchParams } from "react-router-dom";
+import * as XLSX from "xlsx";
 // ─── Constants ─────────────────────────────────────────────────────────────
 const MONTHS = [
     "January", "February", "March", "April", "May", "June",
@@ -180,7 +181,7 @@ function SalaryTab({ structures }) {
 
     const emptyForm = {
         empId: "", structureId: "1",
-        basic: "", hra: "", ta: "", da: "", specialAllow: "",
+        basic: "", epfBasic: "", hra: "", ta: "", da: "", specialAllow: "",
         pfEmployee: "", pfEmployer: "", esicEmployee: "0", esicEmployer: "0",
         tds: "0", professionalTax: "200",
         effectiveFrom: todayISO, createdBy: "1"
@@ -210,6 +211,9 @@ function SalaryTab({ structures }) {
                 empId: parseInt(form.empId),
                 structureId: parseInt(form.structureId) || 1,
                 basic: parseFloat(form.basic),
+                // EPF Basic can differ from Basic (e.g. capped at statutory wage ceiling),
+                // so it's tracked separately. Falls back to Basic if left blank.
+                epfBasic: form.epfBasic ? parseFloat(form.epfBasic) : parseFloat(form.basic),
                 hra: parseFloat(form.hra) || 0,
                 ta: parseFloat(form.ta) || 0,
                 da: parseFloat(form.da) || 0,
@@ -241,6 +245,7 @@ function SalaryTab({ structures }) {
 
     const fields = [
         { label: "Basic (₹) *", key: "basic", type: "number", ph: "80000" },
+        { label: "EPF Basic (₹)", key: "epfBasic", type: "number", ph: "15000" },
         { label: "HRA (₹)", key: "hra", type: "number", ph: "25000" },
         { label: "TA (₹)", key: "ta", type: "number", ph: "5000" },
         { label: "DA (₹)", key: "da", type: "number", ph: "3000" },
@@ -284,6 +289,9 @@ function SalaryTab({ structures }) {
                             <Input type="date" value={form.effectiveFrom} onChange={set("effectiveFrom")} required />
                         </Field>
                     </div>
+                    <p className="text-[11px] text-slate-400">
+                        Leave "EPF Basic" blank to use the same value as Basic. Set it separately only when EPF is calculated on a capped/different wage (e.g. statutory ceiling).
+                    </p>
                     <div className="flex justify-end">
                         <button
                             type="submit" disabled={saving}
@@ -297,14 +305,14 @@ function SalaryTab({ structures }) {
                 <table className="w-full text-sm border-collapse">
                     <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
                         <tr>
-                            {["Employee", "Structure", "Basic", "HRA", "TA", "DA", "Special Allow.", "Gross CTC", "Effective From"].map(h => (
+                            {["Employee", "Structure", "Basic", "EPF Basic", "HRA", "TA", "DA", "Special Allow.", "Gross CTC", "Effective From"].map(h => (
                                 <th key={h} className="px-5 py-3 text-left">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filtered.length === 0 ? (
-                            <tr><td colSpan={9} className="px-5 py-10 text-center text-slate-400">No salary records found.</td></tr>
+                            <tr><td colSpan={10} className="px-5 py-10 text-center text-slate-400">No salary records found.</td></tr>
                         ) : filtered.map((s, i) => {
                             const gross = (s.basic ?? 0) + (s.hra ?? 0) + (s.ta ?? 0) + (s.da ?? 0) + (s.specialAllow ?? 0);
                             return (
@@ -321,6 +329,7 @@ function SalaryTab({ structures }) {
                                         </span>
                                     </td>
                                     <td className="px-5 py-3">{fmtINR(s.basic)}</td>
+                                    <td className="px-5 py-3">{fmtINR(s.epfBasic ?? s.basic)}</td>
                                     <td className="px-5 py-3">{fmtINR(s.hra)}</td>
                                     <td className="px-5 py-3">{fmtINR(s.ta)}</td>
                                     <td className="px-5 py-3">{fmtINR(s.da)}</td>
@@ -388,7 +397,6 @@ function PayrollResultTable({ title, period, list, loading }) {
 function PayrollTab({ months, onRefresh }) {
     const [genForm, setGenForm] = useState({ month: currentMonth, year: currentYear, empId: "", createdBy: "1" });
     const [genForAll, setGenForAll] = useState(true);
-    //const [finForm, setFinForm] = useState({ month: currentMonth, year: currentYear, approvedBy: "" 
     const [finForm, setFinForm] = useState({ month: currentMonth, year: currentYear });
     const [paidForm, setPaidForm] = useState({ month: currentMonth, year: currentYear });
     const [showGen, setShowGen] = useState(false);
@@ -459,14 +467,6 @@ function PayrollTab({ months, onRefresh }) {
         }
     };
 
-    // const doFinalize = () => {
-    //     if (!finForm.approvedBy) { alert("Approved By (User ID) is required to finalize payroll."); return; }
-    //     act("Finalize", () => adminService.finalizePayroll({
-    //         month: finForm.month,
-    //         year: finForm.year,
-    //         approvedBy: parseInt(finForm.approvedBy),
-    //     }));
-    // 
     const doFinalize = () => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         act("Finalize", () => adminService.finalizePayroll({
@@ -853,11 +853,104 @@ function DeductionsTab({ deductions, onRefresh }) {
 }
 
 // ── 4. Payroll Details Tab ───────────────────────────────────────────────
+// Builds & downloads the exact client-format "Salary Sheet" xlsx from loaded payroll details.
+// Column layout matches the client's reference file (S NO. ... SIGNATURE).
+function exportSalarySheet(details, month, year, companyName) {
+    const title = `${(companyName || "COMPANY NAME").toUpperCase()}`;
+    const subtitle = `SALARY SHEET FOR THE MONTH ${MONTHS[(month ?? 1) - 1].toUpperCase()}, ${year}`;
+
+    const headers = [
+        "S NO.", "ESIC NO.", "UAN NO.", "NAME OF EMPLOYEES", "FATHER NAME/ HUSBAND NAME",
+        "CATEGORY", "DESIGNATION", "TOTAL DAYS", "NO OF PRESENT DAYS",
+        "EPF BASIC", "BASIC SALARY", "HRA", "OTHER ALLOWANCE", "TOTAL SALARY",
+        "EARNING EPF BASIC", "EARNING BASIC", "EARNING HRA", "EARNING OTHER ALLOWANCE",
+        "GROSS SALARY", "EPF 12%", "ESI @0.75%", "TOTAL DEDUCTION", "NET PAY", "SIGNATURE",
+    ];
+    const colCount = headers.length;
+
+    const rows = details.map((d, i) => {
+        const totalDays = Number(d.workingDays ?? 0);
+        const presentDays = Number(d.presentDays ?? 0);
+        // Ratio to back-calculate the full monthly structure amount from the earned (prorated) amount
+        // already stored per pay run. When present === total, ratio is 1 and both sets match.
+        const ratio = presentDays > 0 ? totalDays / presentDays : 1;
+
+        const earnEpfBasic = Number(d.epfBasic ?? 0);
+        const earnBasic = Number(d.basic ?? 0);
+        const earnHra = Number(d.hra ?? 0);
+        const earnOther = Number(d.ta ?? 0) + Number(d.da ?? 0) + Number(d.specialAllow ?? 0);
+        const grossSalary = d.grossEarning != null ? Number(d.grossEarning) : (earnEpfBasic ? earnBasic + earnHra + earnOther : earnBasic + earnHra + earnOther);
+
+        const epfBasic = earnEpfBasic * ratio;
+        const basicSalary = earnBasic * ratio;
+        const hra = earnHra * ratio;
+        const otherAllow = earnOther * ratio;
+        const totalSalary = basicSalary + hra + otherAllow;
+
+        const epf12 = Number(d.pfDeduction ?? 0);
+        const esi = Number(d.esicDeduction ?? 0);
+        const totalDeduction = Number(d.totalDeduction ?? 0);
+        const netPay = Number(d.netSalary ?? 0);
+
+        return [
+            i + 1,
+            d.esicNo || "",
+            d.uanNo || "",
+            d.empName ?? `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim(),
+            d.fatherHusbandName || "",
+            d.category || "",
+            d.desigName || "",
+            totalDays,
+            presentDays,
+            round2(epfBasic), round2(basicSalary), round2(hra), round2(otherAllow), round2(totalSalary),
+            round2(earnEpfBasic), round2(earnBasic), round2(earnHra), round2(earnOther),
+            round2(grossSalary), round2(epf12), round2(esi), round2(totalDeduction), round2(netPay),
+            "",
+        ];
+    });
+
+    const totalsRow = [
+        "", "", "", "", "", "", "TOTAL", "", "",
+        ...[9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(colIdx =>
+            round2(rows.reduce((s, r) => s + (Number(r[colIdx]) || 0), 0))
+        ),
+        "",
+    ];
+
+    const aoa = [
+        [title, ...Array(colCount - 1).fill("")],
+        [subtitle, ...Array(colCount - 1).fill("")],
+        headers,
+        ...rows,
+        totalsRow,
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } },
+    ];
+    ws["!cols"] = [
+        { wch: 5 }, { wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 20 },
+        { wch: 12 }, { wch: 26 }, { wch: 8 }, { wch: 10 },
+        { wch: 11 }, { wch: 12 }, { wch: 9 }, { wch: 13 }, { wch: 12 },
+        { wch: 14 }, { wch: 13 }, { wch: 11 }, { wch: 16 },
+        { wch: 12 }, { wch: 10 }, { wch: 11 }, { wch: 13 }, { wch: 12 }, { wch: 10 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Salary Sheet");
+    XLSX.writeFile(wb, `Salary_Sheet-${MONTHS[(month ?? 1) - 1]}_${year}.xlsx`);
+}
+
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
 function DetailsTab() {
     const [filter, setFilter] = useState({ month: currentMonth, year: currentYear, empId: "" });
     const [details, setDetails] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const [companyName, setCompanyName] = useState("");
 
     const totals = useMemo(() => ({
         gross: details.reduce((s, d) => s + (d.grossEarning ?? d.grossSalary ?? 0), 0),
@@ -902,6 +995,24 @@ function DetailsTab() {
                     {loading ? "Loading…" : "Load details"}
                 </button>
             </div>
+
+            {loaded && details.length > 0 && (
+                <div className="flex flex-wrap gap-3 items-end bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <Field label="Company name (for sheet header)">
+                        <Input
+                            type="text" placeholder="e.g. MS AKS SOLAR SYSTEMS PRIVATE LIMITED"
+                            value={companyName} onChange={e => setCompanyName(e.target.value)}
+                            style={{ width: 320 }}
+                        />
+                    </Field>
+                    <button
+                        onClick={() => exportSalarySheet(details, filter.month, filter.year, companyName)}
+                        className="px-6 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all self-end"
+                    >
+                        ⬇ Download salary sheet (.xlsx)
+                    </button>
+                </div>
+            )}
 
             {loaded && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
