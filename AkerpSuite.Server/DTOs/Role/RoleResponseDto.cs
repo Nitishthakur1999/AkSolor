@@ -1,4 +1,6 @@
-﻿namespace AkerpSuite.Server.DTOs.Role
+﻿using System.Text.Json.Serialization;
+
+namespace AkerpSuite.Server.DTOs.Role
 {
     public class DashboardCardDto
     {
@@ -590,11 +592,12 @@
         }
 
         public class SundayDutyRecord
-        {
-            public int EmpId { get; set; }
-            public DateTime DutyDate { get; set; }
-            public string Status { get; set; } = "OFF";
-            public string? Location { get; set; }
+       {
+        public int EmpId { get; set; }
+        [JsonPropertyName("attDate")]
+        public DateTime DutyDate { get; set; }
+        public string Status { get; set; } = "OFF";
+        public string? Location { get; set; }
         }
 
         public class SundayLedgerRecord

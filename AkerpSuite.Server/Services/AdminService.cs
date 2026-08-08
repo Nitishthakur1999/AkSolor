@@ -22,6 +22,7 @@ namespace AkerpSuite.Server.Services
         private readonly DocxTemplateMergeService _letterMerge = new();
         private const string OfferTemplatePath = "Templates/Offer_Letter_Template.docx";
         private const string AppointmentTemplatePath = "Templates/Appointment_Letter_Template.docx";
+        private const string RegularizationTemplatePath = "Templates/Regularization_of_Service_Template.docx";
 
 
         public AdminService(
@@ -1428,9 +1429,33 @@ namespace AkerpSuite.Server.Services
             DateTime.Now.Month >= 4
                 ? $"{DateTime.Now.Year}-{(DateTime.Now.Year + 1) % 100}"
                 : $"{DateTime.Now.Year - 1}-{DateTime.Now.Year % 100}";
+
+        public async Task<byte[]?> GenerateRegularizationLetterAsync(int candidateId, DateTime effectiveDate)
+        {
+            var offer = await _repository.GetOfferByCandidateAsync(candidateId);
+            if (offer == null) return null;
+
+            var emp = await _repository.GetEmployeeLetterDataByCandidateAsync(candidateId);
+            if (emp == null) return null;
+
+            var fields = new Dictionary<string, string>
+            {
+                ["RegularizationNumber"] = $"AKS/HR/{FiscalYear()}/{offer.OfferId:D3}",
+                ["RegularizationDate"] = DateTime.Now.ToString("dd-MM-yyyy"),
+                ["EmployeeName"] = $"{emp.FirstName} {emp.LastName}",
+                ["Address"] = $"{emp.AddressLine1} {emp.AddressLine2}".Trim(),
+                ["AppointmentLetterNumber"] = $"AKS/HR/{FiscalYear()}/{offer.OfferId:D3}",
+                ["AppointmentLetterDate"] = SafeDate(offer.JoiningDate, "dd-MM-yyyy"), // adjust if you store the actual appointment-letter issue date separately
+                ["JoiningDate"] = SafeDate(offer.JoiningDate, "dd-MM-yyyy"),
+                ["ProbationPeriod"] = "three (3) months",
+                ["EffectiveDate"] = effectiveDate.ToString("dd-MM-yyyy"),
+            };
+
+            return _letterMerge.Merge(RegularizationTemplatePath, fields);
+        }
         #endregion
 
-
+        #region Sunday work
         public async Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year)
         {
             var sundayDates = GetSundaysInMonth(month, year);
@@ -1479,7 +1504,6 @@ namespace AkerpSuite.Server.Services
                     }
                     else
                     {
-                        // No explicit record: OFF if employee had already joined, otherwise N/A
                         cellStatus = (emp.JoiningDate == null || emp.JoiningDate <= date) ? "OFF" : "N/A";
                     }
 
@@ -1499,11 +1523,8 @@ namespace AkerpSuite.Server.Services
             return SundayHolidayStatusPdfBuilder.Build(report);
         }
 
-        // Call this from the "mark Sunday duty" endpoint when HR sets a cell to ON-DUTY/OFF/N/A
         public async Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy)
-        {
-            await _repository.UpsertSundayDutyAsync(request, createdBy);
-        }
+            => await _repository.UpsertSundayDutyAsync(request, createdBy);
 
         private static List<DateTime> GetSundaysInMonth(int month, int year)
         {
@@ -1520,6 +1541,7 @@ namespace AkerpSuite.Server.Services
             return result;
         }
 
+        #endregion
 
     }
 }

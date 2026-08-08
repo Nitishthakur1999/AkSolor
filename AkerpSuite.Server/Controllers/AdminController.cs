@@ -576,7 +576,6 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
-
         [HttpGet("sunday-holiday-status")]
         [Authorize(Roles = HrManageRoles + "," + Roles.Manager)]
         public async Task<IActionResult> GetSundayHolidayStatus([FromQuery] int month, [FromQuery] int year)
@@ -1339,9 +1338,22 @@ namespace AkerpSuite.Server.Controllers
                 $"Appointment_Letter_{candidateId}.docx");
         }
 
+        // GET api/admin/candidates/5/regularization-letter?effectiveDate=2026-08-08
+        [HttpGet("candidates/{candidateId}/regularization-letter")]
+        [Authorize(Roles = HrManageRoles)]
+        public async Task<IActionResult> GetRegularizationLetter(int candidateId, [FromQuery] DateTime effectiveDate)
+        {
+            var bytes = await _service.GenerateRegularizationLetterAsync(candidateId, effectiveDate);
+            if (bytes == null)
+                return NotFound(new { Success = false, Message = "Employee not found for this candidate" });
+
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                $"Regularization_Letter_{candidateId}.docx");
+        }
         #endregion
 
-      
+
 
     }
 }

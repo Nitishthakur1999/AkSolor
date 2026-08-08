@@ -7,20 +7,84 @@ const getUserId = () => {
     return user?.userId ?? user?.UserId ?? user?.emp_id ?? 1;
 };
 
-// Matches DB enum: candidates.status
+/* ─────────────────────────────────────────────────────────────────────────
+   Tiny inline icon set — no extra dependency, just the handful this page
+   needs. Kept as simple stroke-based SVGs matching a 1.5px line weight.
+   ────────────────────────────────────────────────────────────────────── */
+const Icon = {
+    Download: (p) => (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" />
+        </svg>
+    ),
+    Check: (p) => (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
+    ),
+    Calendar: (p) => (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+    ),
+    Dots: (p) => (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" {...p}>
+            <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+        </svg>
+    ),
+    Search: (p) => (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+        </svg>
+    ),
+    Inbox: (p) => (
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" />
+        </svg>
+    ),
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Avatar — colored initials circle so a name-dense table has an anchor
+   for the eye on every row, instead of plain text starting each line.
+   ────────────────────────────────────────────────────────────────────── */
+const AVATAR_PALETTE = [
+    "bg-amber-100 text-amber-700", "bg-blue-100 text-blue-700", "bg-emerald-100 text-emerald-700",
+    "bg-violet-100 text-violet-700", "bg-rose-100 text-rose-700", "bg-cyan-100 text-cyan-700",
+];
+function Avatar({ firstName, lastName }) {
+    const initials = `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase() || "?";
+    const hash = `${firstName}${lastName}`.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    const palette = AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+    return (
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${palette}`}>
+            {initials}
+        </div>
+    );
+}
+
+// Matches DB enum: candidates.status — dot + label instead of a solid block,
+// reads lighter across a dense table.
 function Badge({ status }) {
     const map = {
-        Applied: "bg-slate-100 text-slate-600 border-slate-200",
-        Shortlisted: "bg-blue-50 text-blue-700 border-blue-200",
-        Interview: "bg-amber-50 text-amber-700 border-amber-200",
-        Selected: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        Offer: "bg-amber-50 text-amber-700 border-amber-200",
-        Joined: "bg-green-50 text-green-700 border-green-200",
-        Rejected: "bg-red-50 text-red-700 border-red-200",
+        Applied: { dot: "bg-slate-400", text: "text-slate-600" },
+        Shortlisted: { dot: "bg-blue-500", text: "text-blue-700" },
+        Interview: { dot: "bg-amber-500", text: "text-amber-700" },
+        Selected: { dot: "bg-emerald-500", text: "text-emerald-700" },
+        Offer: { dot: "bg-amber-500", text: "text-amber-700" },
+        Joined: { dot: "bg-green-500", text: "text-green-700" },
+        Rejected: { dot: "bg-red-500", text: "text-red-600" },
     };
-    const cls = map[status] ?? "bg-slate-100 text-slate-600 border-slate-200";
+    const cfg = map[status] ?? map.Applied;
     return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${cls}`}>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${cfg.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
             {status}
         </span>
     );
@@ -44,10 +108,9 @@ function OfferSubBadge({ offerStatus }) {
 // ─── visual pipeline tracker. Lets HR see where a candidate stands and
 // what's next at a glance, instead of decoding a single status word. ────────
 const PIPELINE_STAGES = ["Applied", "Shortlisted", "Interview", "Selected", "Offer", "Joined"];
-
 function PipelineTracker({ status }) {
     if (status === "Rejected") {
-        return <span className="text-[11px] font-semibold text-red-500">Not moving forward</span>;
+        return <span className="text-[11px] font-medium text-red-400">Not moving forward</span>;
     }
     const currentIdx = PIPELINE_STAGES.indexOf(status);
     return (
@@ -55,8 +118,8 @@ function PipelineTracker({ status }) {
             {PIPELINE_STAGES.map((stage, i) => (
                 <div
                     key={stage}
-                    className={`h-1.5 rounded-full transition-colors ${i <= currentIdx ? "bg-amber-500" : "bg-slate-200"
-                        } ${i === currentIdx ? "w-5" : "w-2.5"}`}
+                    className={`h-1 rounded-full transition-all ${i <= currentIdx ? "bg-amber-500" : "bg-slate-200"
+                        } ${i === currentIdx ? "w-5" : "w-2"}`}
                 />
             ))}
         </div>
@@ -71,7 +134,6 @@ function Field({ label, children }) {
         </div>
     );
 }
-
 function Input(props) {
     return (
         <input
@@ -80,7 +142,6 @@ function Input(props) {
         />
     );
 }
-
 function Select({ children, ...props }) {
     return (
         <select
@@ -91,7 +152,6 @@ function Select({ children, ...props }) {
         </select>
     );
 }
-
 function TextArea(props) {
     return (
         <textarea
@@ -101,48 +161,53 @@ function TextArea(props) {
     );
 }
 
-// ─── one clear primary action button (the obvious next step) plus a
-// small "More" menu for everything else. HR no longer has to open a dropdown
-// just to find out what they're supposed to do next. ───────────────────────
+/* ─────────────────────────────────────────────────────────────────────────
+   RowActions — redesigned to stay a single compact pill no matter how long
+   the label is (icon + short text + title tooltip for the full label),
+   instead of a heavy block that wraps to two lines per row.
+   ────────────────────────────────────────────────────────────────────── */
 function RowActions({ primary, secondary, busy }) {
     const [open, setOpen] = useState(false);
-
     return (
-        <div className="flex items-center gap-2 justify-end">
+        <div className="flex items-center gap-1.5 justify-end">
             {primary && (
                 <button
                     onClick={primary.onClick}
                     disabled={busy}
-                    className={`text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${primary.danger
+                    title={primary.fullLabel || primary.label}
+                    className={`inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${primary.danger
                         ? "bg-red-50 text-red-600 hover:bg-red-100"
-                        : "bg-amber-600 text-white hover:bg-amber-700"
+                        : primary.subtle
+                            ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                            : "bg-amber-600 text-white hover:bg-amber-700"
                         }`}
                 >
+                    {primary.icon}
                     {busy ? primary.busyLabel || "Working…" : primary.label}
                 </button>
             )}
-
             {secondary && secondary.length > 0 && (
                 <div className="relative">
                     <button
                         onClick={() => setOpen(o => !o)}
                         disabled={busy}
-                        className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg w-8 h-8 flex items-center justify-center text-sm disabled:opacity-40"
+                        className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg w-8 h-8 flex items-center justify-center disabled:opacity-40"
                         title="More actions"
                     >
-                        ⋯
+                        <Icon.Dots />
                     </button>
                     {open && (
                         <>
                             <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-                            <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden py-1">
+                            <div className="absolute right-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden py-1">
                                 {secondary.map((a, i) => (
                                     <button
                                         key={i}
                                         onClick={() => { setOpen(false); a.onClick(); }}
-                                        className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 ${a.danger ? "text-red-500" : "text-slate-700"
+                                        className={`w-full flex items-center gap-2 text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 ${a.danger ? "text-red-500" : "text-slate-700"
                                             }`}
                                     >
+                                        {a.icon}
                                         {a.label}
                                     </button>
                                 ))}
@@ -151,7 +216,6 @@ function RowActions({ primary, secondary, busy }) {
                     )}
                 </div>
             )}
-
             {!primary && (!secondary || secondary.length === 0) && (
                 <span className="text-xs text-slate-400">No action pending</span>
             )}
@@ -211,21 +275,16 @@ const MODAL_CONFIG = {
     selection: { title: "Selection Approval", submitLabel: "Confirm Decision" },
     offer: { title: "Create Offer", submitLabel: "Create Offer" },
     joining: { title: "Confirm Joining", submitLabel: "Confirm Joining" },
+    regularization: { title: "Regularization of Service", submitLabel: "Generate Letter" },
 };
 
 export default function CandidateManagement() {
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
-
-    // tracks which single row is mid-action, so only that row's button
-    // shows a busy state instead of the whole page feeling frozen.
     const [busyCandidateId, setBusyCandidateId] = useState(null);
-
     const [statusFilter, setStatusFilter] = useState("");
     const [searchName, setSearchName] = useState("");
-
-    // Modal States
     const [activeModal, setActiveModal] = useState(null);
     const [selectedCandidate, setSelectedCandidate] = useState(null);
     const [formData, setFormData] = useState<Record<string, any>>({});
@@ -234,12 +293,8 @@ export default function CandidateManagement() {
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
     const [jobPostings, setJobPostings] = useState([]);
-
-    // tracks each "Offer" stage candidate's actual offer.status (Pending/Approved/Rejected)
-    // separately from candidate.status, since candidate.status stays "Offer" throughout.
     const [offerStatusMap, setOfferStatusMap] = useState<Record<string, any>>({});
 
-    // confirm dialog + toast state
     type ConfirmState = {
         title: string;
         message: string;
@@ -249,14 +304,12 @@ export default function CandidateManagement() {
     } | null;
     const [confirmState, setConfirmState] = useState<ConfirmState>(null);
     const [toasts, setToasts] = useState<Array<{ id: number; type: "success" | "error"; message: string }>>([]);
-
     const notify = (type, message) => {
         const id = Date.now() + Math.random();
         setToasts(prev => [...prev, { id, type, message }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
     };
     const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
-
     const askConfirm = (
         title: string,
         message: string,
@@ -276,7 +329,6 @@ export default function CandidateManagement() {
             })
             .catch(err => console.error(err));
     }, []);
-
     useEffect(() => { loadCandidates(); }, [statusFilter, jobPostingFilter]);
 
     const loadCandidates = async () => {
@@ -288,7 +340,6 @@ export default function CandidateManagement() {
             if (jobPostingFilter) filter.jobPostingId = jobPostingFilter;
             if (fromDate) filter.fromDate = fromDate;
             if (toDate) filter.toDate = toDate;
-
             const res = await adminService.searchCandidates(filter);
             if (res.Success || res.success) {
                 const list = res.Data || res.data || [];
@@ -302,7 +353,6 @@ export default function CandidateManagement() {
             setLoading(false);
         }
     };
-
     const handleClearFilters = () => {
         setStatusFilter("");
         setSearchName("");
@@ -311,12 +361,9 @@ export default function CandidateManagement() {
         setToDate("");
         setTimeout(loadCandidates, 0);
     };
-
-    // fetch offer.status for every candidate currently at the "Offer" stage
     const loadOfferStatuses = async (candidateList) => {
         const offerCandidates = candidateList.filter(c => c.status === "Offer");
         if (offerCandidates.length === 0) return;
-
         const results = await Promise.all(
             offerCandidates.map(async (c) => {
                 try {
@@ -330,7 +377,6 @@ export default function CandidateManagement() {
         );
         setOfferStatusMap(prev => ({ ...prev, ...Object.fromEntries(results) }));
     };
-
     const handleSimpleStatusUpdate = (candidateId, status) => {
         askConfirm(
             `Mark as ${status}?`,
@@ -361,8 +407,6 @@ export default function CandidateManagement() {
             { danger: status === "Rejected", confirmLabel: `Mark as ${status}` }
         );
     };
-
-    // Approve / Reject an offer
     const handleOfferAction = (candidate, status) => {
         askConfirm(
             status === "Approved" ? "Approve this offer?" : "Reject this offer?",
@@ -402,9 +446,6 @@ export default function CandidateManagement() {
             { danger: status === "Rejected", confirmLabel: status === "Approved" ? "Approve" : "Reject" }
         );
     };
-
-    // download handlers with per-row busy state + toast on failure,
-    // instead of a silent fetch that gives no feedback while it's working.
     const handleDownloadOfferLetter = async (candidate) => {
         setBusyCandidateId(candidate.candidateId);
         try {
@@ -416,7 +457,6 @@ export default function CandidateManagement() {
             setBusyCandidateId(null);
         }
     };
-
     const handleDownloadAppointmentLetter = async (candidate) => {
         setBusyCandidateId(candidate.candidateId);
         try {
@@ -428,13 +468,17 @@ export default function CandidateManagement() {
             setBusyCandidateId(null);
         }
     };
-
     const openModal = async (type, candidate) => {
         setSelectedCandidate(candidate);
-        setFormData(type === "selection" ? { status: "Selected" } : {});
+        setFormData(
+            type === "selection"
+                ? { status: "Selected" }
+                : type === "regularization"
+                    ? { effectiveDate: new Date().toISOString().split("T")[0] }
+                    : {}
+        );
         setDependentData(null);
         setActiveModal(type);
-
         try {
             if (type === "feedback") {
                 const res = await adminService.getInterviewsByCandidate(candidate.candidateId);
@@ -472,21 +516,18 @@ export default function CandidateManagement() {
             setActiveModal(null);
         }
     };
-
     const closeModal = () => {
         setActiveModal(null);
         setSelectedCandidate(null);
         setFormData({});
         setDependentData(null);
     };
-
     const submitModal = async (e) => {
         e.preventDefault();
         setActionLoading(true);
         try {
             let res;
             const currentUserId = getUserId();
-
             if (activeModal === "interview") {
                 res = await adminService.scheduleInterview({
                     candidateId: selectedCandidate.candidateId,
@@ -505,13 +546,6 @@ export default function CandidateManagement() {
                     roundNo: formData.roundNo ? parseInt(formData.roundNo) : 1,
                     approvedBy: currentUserId
                 });
-
-                // ── Auto-advance the candidate based on the feedback result,
-                // so HR doesn't have to open a second action (Selection Approval /
-                // Reject Candidate) just to move the candidate off this round.
-                //   Pass -> auto "Selected"
-                //   Fail -> auto "Rejected"
-                //   Hold -> stays on "Interview" so the next round can be scheduled
                 if (res.Success || res.success) {
                     if (formData.result === "Pass") {
                         const selRes = await adminService.approveSelection({
@@ -534,8 +568,6 @@ export default function CandidateManagement() {
                             notify("error", rejRes.Message || "Feedback saved, but rejection update failed.");
                         }
                     }
-                    // "Hold" -> candidate remains at "Interview"; nothing extra to do.
-
                     notify(
                         "success",
                         formData.result === "Pass"
@@ -547,7 +579,7 @@ export default function CandidateManagement() {
                     closeModal();
                     loadCandidates();
                     setActionLoading(false);
-                    return; // skip the generic success handling below
+                    return;
                 }
             } else if (activeModal === "selection") {
                 res = await adminService.approveSelection({
@@ -572,8 +604,22 @@ export default function CandidateManagement() {
                     confirmedBy: currentUserId,
                     employeeCode: formData.employeeCode || null
                 });
+            } else if (activeModal === "regularization") {
+                try {
+                    await adminService.downloadRegularizationLetter(
+                        selectedCandidate.candidateId,
+                        formData.effectiveDate
+                    );
+                    notify("success", "Regularization letter generated.");
+                    closeModal();
+                } catch (err) {
+                    console.error(err);
+                    notify("error", "Couldn't generate the regularization letter. Please try again.");
+                } finally {
+                    setActionLoading(false);
+                }
+                return;
             }
-
             if (res.Success || res.success) {
                 notify("success", res.Message || "Done!");
                 closeModal();
@@ -589,58 +635,56 @@ export default function CandidateManagement() {
         }
     };
 
-    // ─── Builds { primary, secondary } for a candidate's current stage ──────
-    // primary = the one obvious next step, shown as a real button on the row.
-    // secondary = everything else, tucked into the "⋯" menu.
+    // ─── Builds { primary, secondary } for a candidate's current stage.
+    // primary buttons stay short + iconed so they never wrap; the full
+    // action name still shows up as a hover tooltip via `fullLabel`. ────────
     const getActionsFor = (c) => {
         let primary = null;
         const secondary = [];
-
         if (c.status === "Applied") {
-            primary = { label: "Shortlist", onClick: () => handleSimpleStatusUpdate(c.candidateId, "Shortlisted") };
+            primary = { label: "Shortlist", icon: <Icon.Check />, onClick: () => handleSimpleStatusUpdate(c.candidateId, "Shortlisted") };
         }
-
         if (c.status === "Shortlisted") {
-            primary = { label: "Schedule Interview", onClick: () => openModal("interview", c) };
+            primary = { label: "Schedule Interview", icon: <Icon.Calendar />, onClick: () => openModal("interview", c) };
         }
-
         if (c.status === "Interview") {
-            primary = { label: "Add Feedback", onClick: () => openModal("feedback", c) };
+            primary = { label: "Add Feedback", icon: <Icon.Check />, onClick: () => openModal("feedback", c) };
             secondary.push({ label: "Selection Approval", onClick: () => openModal("selection", c) });
         }
-
         if (c.status === "Selected") {
-            primary = { label: "Create Offer", onClick: () => openModal("offer", c) };
+            primary = { label: "Create Offer", icon: <Icon.Check />, onClick: () => openModal("offer", c) };
         }
-
         if (c.status === "Offer") {
             const offerStatus = offerStatusMap[c.candidateId] || "Pending";
-            secondary.push({ label: "Download Offer Letter", onClick: () => handleDownloadOfferLetter(c) });
-
+            secondary.push({ label: "Download Offer Letter", icon: <Icon.Download />, onClick: () => handleDownloadOfferLetter(c) });
             if (offerStatus === "Approved") {
-                primary = { label: "Confirm Joining", onClick: () => openModal("joining", c) };
+                primary = { label: "Confirm Joining", icon: <Icon.Check />, onClick: () => openModal("joining", c) };
             } else if (offerStatus === "Rejected") {
                 // no forward action — table shows "Not moving forward" via sub-badge
             } else {
-                primary = { label: "Approve Offer", onClick: () => handleOfferAction(c, "Approved") };
+                primary = { label: "Approve Offer", icon: <Icon.Check />, onClick: () => handleOfferAction(c, "Approved") };
                 secondary.push({ label: "Reject Offer", onClick: () => handleOfferAction(c, "Rejected"), danger: true });
             }
         }
-
         if (c.status === "Joined") {
-            primary = { label: "Download Appointment Letter", onClick: () => handleDownloadAppointmentLetter(c), busyLabel: "Preparing…" };
+            primary = {
+                label: "Appointment Letter",
+                fullLabel: "Download Appointment Letter",
+                icon: <Icon.Download />,
+                subtle: true,
+                busyLabel: "Preparing…",
+                onClick: () => handleDownloadAppointmentLetter(c),
+            };
+            secondary.push({ label: "Regularization of Service", icon: <Icon.Calendar />, onClick: () => openModal("regularization", c) });
         }
-
         if (!["Rejected", "Joined", "Offer"].includes(c.status)) {
             secondary.push({ label: "Reject Candidate", onClick: () => handleSimpleStatusUpdate(c.candidateId, "Rejected"), danger: true });
         }
-
         return { primary, secondary };
     };
 
     return (
         <div className="space-y-6">
-
             {/* Filters */}
             <div className="flex flex-wrap items-end justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap items-end gap-3">
@@ -661,7 +705,6 @@ export default function CandidateManagement() {
                             <option value="Rejected">Rejected</option>
                         </select>
                     </div>
-
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Job Role</label>
                         <select
@@ -675,7 +718,6 @@ export default function CandidateManagement() {
                             ))}
                         </select>
                     </div>
-
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">From Date</label>
                         <input
@@ -685,7 +727,6 @@ export default function CandidateManagement() {
                             className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                         />
                     </div>
-
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">To Date</label>
                         <input
@@ -695,19 +736,20 @@ export default function CandidateManagement() {
                             className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
                         />
                     </div>
-
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Name</label>
-                        <input
-                            type="text"
-                            placeholder="Search by name..."
-                            value={searchName}
-                            onChange={e => setSearchName(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && loadCandidates()}
-                            className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
-                        />
+                        <div className="relative">
+                            <Icon.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                            <input
+                                type="text"
+                                placeholder="Search by name..."
+                                value={searchName}
+                                onChange={e => setSearchName(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && loadCandidates()}
+                                className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
+                            />
+                        </div>
                     </div>
-
                     <button onClick={loadCandidates}
                         className="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700">
                         Search
@@ -717,17 +759,16 @@ export default function CandidateManagement() {
                         Clear
                     </button>
                 </div>
-                <span className="text-xs text-slate-400">{candidates.length} candidate(s)</span>
+                <span className="text-xs text-slate-400 whitespace-nowrap">{candidates.length} candidate(s)</span>
             </div>
 
             {/* Candidates Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
                 <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500">
+                    <thead className="sticky top-0 z-[5] bg-slate-50/95 backdrop-blur text-[10px] font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
                         <tr>
-                            <th className="px-4 py-3 text-left">Name</th>
-                            <th className="px-4 py-3 text-left">Email</th>
-                            <th className="px-4 py-3 text-left">Phone</th>
+                            <th className="px-4 py-3 text-left">Candidate</th>
+                            <th className="px-4 py-3 text-left">Contact</th>
                             <th className="px-4 py-3 text-left">Experience</th>
                             <th className="px-4 py-3 text-left">Resume</th>
                             <th className="px-4 py-3 text-left">Pipeline Stage</th>
@@ -736,20 +777,43 @@ export default function CandidateManagement() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={7} className="text-center py-8 text-slate-400">Loading...</td></tr>
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <tr key={i}>
+                                    <td className="px-4 py-3" colSpan={6}>
+                                        <div className="h-8 rounded-lg bg-slate-100 animate-pulse" />
+                                    </td>
+                                </tr>
+                            ))
                         ) : candidates.length === 0 ? (
-                            <tr><td colSpan={7} className="text-center py-8 text-slate-400">No candidates found</td></tr>
+                            <tr>
+                                <td colSpan={6} className="py-14">
+                                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                                        <Icon.Inbox />
+                                        <p className="text-sm font-medium text-slate-500">No candidates found</p>
+                                        <p className="text-xs">Try adjusting your filters, or check back later.</p>
+                                    </div>
+                                </td>
+                            </tr>
                         ) : (
                             candidates.map(c => {
                                 const { primary, secondary } = getActionsFor(c);
                                 const isBusy = busyCandidateId === c.candidateId;
                                 return (
-                                    <tr key={c.candidateId} className="hover:bg-slate-50/60">
-                                        <td className="px-4 py-3 font-medium text-slate-800">
-                                            {c.firstName} {c.lastName}
+                                    <tr key={c.candidateId} className="hover:bg-slate-50/60 align-top">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <Avatar firstName={c.firstName} lastName={c.lastName} />
+                                                <span className="font-medium text-slate-800">
+                                                    {c.firstName} {c.lastName}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-3 text-slate-500">{c.email}</td>
-                                        <td className="px-4 py-3 text-slate-500">{c.phone}</td>
+                                        <td className="px-4 py-3 text-slate-500">
+                                            <div className="flex flex-col">
+                                                <span>{c.email}</span>
+                                                <span className="text-xs text-slate-400">{c.phone}</span>
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-3 text-slate-500">{c.experience || "-"}</td>
                                         <td className="px-4 py-3">
                                             {c.resumeUrl ? (
@@ -765,7 +829,7 @@ export default function CandidateManagement() {
                                             )}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="flex flex-col gap-1">
+                                            <div className="flex flex-col gap-1.5">
                                                 <div className="flex items-center gap-2">
                                                     <Badge status={c.status} />
                                                     {c.status === "Offer" && (
@@ -792,15 +856,11 @@ export default function CandidateManagement() {
                     <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg my-8 relative">
                         <button onClick={closeModal}
                             className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl">✕</button>
-
                         <h2 className="text-xl font-bold text-slate-900 mb-1">{MODAL_CONFIG[activeModal].title}</h2>
                         <p className="text-sm text-slate-500 mb-6">
                             {selectedCandidate ? `${selectedCandidate.firstName ?? ""} ${selectedCandidate.lastName ?? ""}`.trim() : ""}
                         </p>
-
                         <form onSubmit={submitModal} className="space-y-4">
-
-                            {/* ---- Schedule Interview ---- */}
                             {activeModal === "interview" && (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">
@@ -842,8 +902,6 @@ export default function CandidateManagement() {
                                     </Field>
                                 </>
                             )}
-
-                            {/* ---- Interview Feedback ---- */}
                             {activeModal === "feedback" && (
                                 <>
                                     <Field label="Rating (1-5) *">
@@ -874,8 +932,6 @@ export default function CandidateManagement() {
                                     )}
                                 </>
                             )}
-
-                            {/* ---- Selection Approval ---- */}
                             {activeModal === "selection" && (
                                 <>
                                     <Field label="Decision *">
@@ -892,8 +948,6 @@ export default function CandidateManagement() {
                                     </Field>
                                 </>
                             )}
-
-                            {/* ---- Create Offer ---- */}
                             {activeModal === "offer" && (
                                 <>
                                     <Field label="Offered CTC (per annum) *">
@@ -915,8 +969,6 @@ export default function CandidateManagement() {
                                     </div>
                                 </>
                             )}
-
-                            {/* ---- Confirm Joining ---- */}
                             {activeModal === "joining" && (
                                 <>
                                     <Field label="Actual Joining Date *">
@@ -929,7 +981,19 @@ export default function CandidateManagement() {
                                     </p>
                                 </>
                             )}
-
+                            {activeModal === "regularization" && (
+                                <>
+                                    <Field label="Confirmation Effective Date *">
+                                        <Input type="date" required
+                                            value={formData.effectiveDate || ""}
+                                            onChange={e => setFormData({ ...formData, effectiveDate: e.target.value })} />
+                                    </Field>
+                                    <p className="text-xs text-slate-400 -mt-1">
+                                        This is the date from which the employee's service is confirmed after
+                                        probation. The letter (.docx) will download automatically.
+                                    </p>
+                                </>
+                            )}
                             <button type="submit" disabled={actionLoading}
                                 className="w-full py-3 mt-2 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all text-sm shadow-md">
                                 {actionLoading ? "Processing..." : MODAL_CONFIG[activeModal].submitLabel}
@@ -938,8 +1002,6 @@ export default function CandidateManagement() {
                     </div>
                 </div>
             )}
-
-            {/* in-app confirm dialog + toasts, replacing window.confirm()/alert() */}
             <ConfirmDialog
                 state={confirmState}
                 onCancel={() => setConfirmState(null)}

@@ -56,12 +56,15 @@ export default function Attendance() {
     const [showMarkModal, setShowMarkModal] = useState(false);
     const [empSearchOpen, setEmpSearchOpen] = useState(false);
     const [empSearchText, setEmpSearchText] = useState("");
+    const [dutyEmpSearchOpen, setDutyEmpSearchOpen] = useState(false);
+    const [dutyEmpSearchText, setDutyEmpSearchText] = useState("");
     const [showSummaryModal, setShowSummaryModal] = useState(false);
     const [showRegModal, setShowRegModal] = useState(false);
     const [showDutyModal, setShowDutyModal] = useState(false); 
     const [actionLoading, setActionLoading] = useState(false);
     const [dutyLocationStatus, setDutyLocationStatus] = useState("idle"); 
     const [dutyCapturedLocation, setDutyCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
+
     const getTodayDateStr = () => {
         const now = new Date();
         const yyyy = now.getFullYear();
@@ -204,32 +207,24 @@ export default function Attendance() {
                 setTodaysRecord(rec);
                 setPunchMode("out");
             } else {
-                // Record hai lekin checkIn khaali (e.g. Absent/Leave/Holiday manually mark
-                // kiya gaya tha) — Punch In abhi bhi allow karo.
+                
                 setTodaysRecord(rec);
                 setPunchMode("in");
             }
         } catch (err) {
-            console.error("Failed to check today's attendance status:", err);
-            // Fail-open: check fail ho jaaye to bhi Punch In allow karo, form block mat karo.
+            
             setTodaysRecord(null);
             setPunchMode("in");
         }
     };
 
-    // Modal openers — Employee role ka empId auto-select ho jaata hai,
-    // admin-level users ke liye dropdown khaali khulta hai (unhe choose karna hota hai)
     const openMarkModal = () => {
-        // Guard: Employee role ka user agar apne employee-record se link hi nahi hai
-        // (loggedInEmpId 0 reh gaya — token claim missing/mismatch), to modal khulne se
-        // pehle hi clear message do, silently empId:0 submit hone se better hai.
+
         if (!isAdminLevel && loggedInEmpId <= 0) {
             alert("Your account is not linked to an employee record, so you can't mark attendance. Please contact HR/Admin.");
             return;
         }
-        // Fresh state har baar modal khulne par — date aaj ki, punch times/location clear
-        // Mark Attendance sirf khud ke liye — Manager ho ya Employee, dono apni hi
-        // attendance punch karte hain (team ke liye punch karna admin-level ka kaam hai).
+
         setMarkForm({
             empId: isAdminLevel ? "" : loggedInEmpId.toString(),
             attDate: getTodayDateStr(),
@@ -243,9 +238,7 @@ export default function Attendance() {
         setTodaysRecord(null);
         setEmpSearchOpen(false);
         setEmpSearchText("");
-        // Employee role ke liye empId turant maloom hai, to abhi hi punch-mode check kar lo.
-        // Admin-level ke liye employee dropdown khaali khulta hai — jab tak koi select na
-        // kare, punchMode null rehta hai (form neeche khud-ba-khud hidden rahega).
+     
         if (!isAdminLevel) {
             determinePunchMode(loggedInEmpId);
         } else {
@@ -254,8 +247,7 @@ export default function Attendance() {
         setShowMarkModal(true);
     };
 
-    // Admin-level user ne employee dropdown me koi employee select/change kiya —
-    // uske liye bhi aaj ka punch-status turant check karo.
+  
     const handleMarkEmployeeChange = (empId) => {
         setMarkForm(prev => ({ ...prev, empId }));
         determinePunchMode(empId);
@@ -269,8 +261,7 @@ export default function Attendance() {
         setShowSummaryModal(true);
     };
 
-    // Regularization request modal — Employee apni khud ki date ke liye
-    // request karega; admin-level bhi kisi ke liye submit kar sakta hai.
+
     const openRegModal = () => {
         if (!isAdminLevel && loggedInEmpId <= 0) {
             alert("Your account is not linked to an employee record, so you can't submit a request. Please contact HR/Admin.");
@@ -293,10 +284,13 @@ export default function Attendance() {
             countsAsDuty: true,
             remarks: ""
         });
-        setDutyLocationStatus("idle"); // 🆕
-        setDutyCapturedLocation({ latitude: null, longitude: null, address: null }); // 🆕
+        setDutyLocationStatus("idle");
+        setDutyCapturedLocation({ latitude: null, longitude: null, address: null });
+        setDutyEmpSearchOpen(false);
+        setDutyEmpSearchText("");
         setShowDutyModal(true);
     };
+
 
     // Lat/long se readable address nikalta hai (OpenStreetMap Nominatim — free, no key)
     const reverseGeocode = async (latitude, longitude) => {
@@ -365,17 +359,10 @@ export default function Attendance() {
     const [locationStatus, setLocationStatus] = useState("idle"); // idle | fetching | captured | denied
     const [capturedLocation, setCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
 
-    // punchMode drives what the Mark Attendance modal shows:
-    // null = admin hasn't picked an employee yet | "checking" = looking up today's record |
-    // "in" = no record yet today, show Punch In | "out" = checked in, not out yet, show Punch Out |
-    // "done" = both already done today, show a message instead of the form
+
     const [punchMode, setPunchMode] = useState(null);
     const [todaysRecord, setTodaysRecord] = useState(null);
 
-    // Jab punchMode "out" ban jaata hai (matlab aaj subah ka Punch In record
-    // mil gaya), uska checkIn time form me dikhane ke liye sync kar do —
-    // display ke liye hi hai, submit ke waqt original todaysRecord.checkIn
-    // hi payload me jaayega (raw format preserve karne ke liye).
     useEffect(() => {
         if (punchMode === "out" && todaysRecord) {
             setMarkForm(prev => ({
@@ -386,10 +373,6 @@ export default function Attendance() {
         }
     }, [punchMode, todaysRecord]);
 
-    // Punch In — sirf tab chalta hai jab punchMode "in" ho (matlab aaj ka koi
-    // record nahi mila). Current time ko checkIn me capture karta hai + turant
-    // location fetch karna shuru kar deta hai (taaki submit se pehle hi
-    // location dikh jaaye). Status bhi "Present" set kar deta hai.
     const handlePunchIn = () => {
         const time = getCurrentTimeStr();
         setMarkForm(prev => ({ ...prev, checkIn: time, status: "Present" }));
@@ -398,8 +381,6 @@ export default function Attendance() {
         }
     };
 
-    // Punch Out — sirf tab chalta hai jab punchMode "out" ho (matlab subah
-    // Punch In already ho chuka hai). Current time ko checkOut me capture karta hai.
     const handlePunchOut = () => {
         const time = getCurrentTimeStr();
         setMarkForm(prev => ({ ...prev, checkOut: time }));
@@ -416,9 +397,7 @@ export default function Attendance() {
             return;
         }
 
-        // Ab check-in/check-out manually type nahi hote — Punch In/Punch Out
-        // buttons se hi aate hain. Har mode me sirf uska apna punch zaroori hai
-        // (sirf Absent/Leave/Holiday jaise no-punch statuses ke liye chhod diya gaya hai).
+
         const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
         if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
             alert("Please tap Punch In before submitting.");
@@ -435,14 +414,11 @@ export default function Attendance() {
 
         setActionLoading(true);
         try {
-            // Agar location punch ke waqt already capture ho chuki hai to usi ko reuse karo,
-            // warna (denied ho gayi thi ya kisi wajah se miss ho gayi) submit se pehle ek aakhri try.
+  
             const { latitude, longitude, address } =
                 locationStatus === "captured" ? capturedLocation : await getCurrentLocation();
 
-            // Punch Out mode me subah wala checkIn raw format me (jaisa backend se aaya tha)
-            // wapas bhejo — display ke liye truncate kiya gaya HH:mm nahi. Isi empId+attDate
-            // ke record ko backend match karke update karega (naya row insert nahi hoga).
+          
             const checkInForPayload = punchMode === "out"
                 ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
                 : (markForm.checkIn ? markForm.checkIn + ":00" : null);
@@ -463,10 +439,7 @@ export default function Attendance() {
 
             const res = await adminService.markAttendance(payload);
             if (res.Success || res.success) {
-                // Client rule: agar Punch In cutoff (9:05 AM) ke baad hua hai, to attendance
-                // record ke saath-saath ek regularization request bhi khud-ba-khud ban jaani
-                // chahiye taaki HR use "Regularization Requests" tab me Approve/Reject kar sake.
-                // Ye poori tarah frontend se hi handle ho raha hai — koi backend change nahi.
+               
                 const isLatePunchIn = punchMode === "in" && !noPunchStatus && markForm.checkIn > LATE_CUTOFF;
                 if (isLatePunchIn) {
                     try {
@@ -478,9 +451,7 @@ export default function Attendance() {
                             reason: `Late arrival — punched in at ${markForm.checkIn} (after ${LATE_CUTOFF} cutoff)`,
                         });
                     } catch (regErr) {
-                        // Attendance khud successfully mark ho chuki hai — regularization
-                        // request banane me koi glitch aaye to bhi user ko block mat karo,
-                        // bas console me log kar do taaki HR ko manually pata chal sake agar zaroorat pade.
+                        
                         console.error("Auto regularization request failed:", regErr);
                     }
                 }
@@ -504,10 +475,7 @@ export default function Attendance() {
         }
     };
 
-    // Guard: sirf admin-level roles hi regularization request approve/reject
-    // kar sakte hain. Buttons already UI mein isAdminLevel se hidden hain
-    // (Employee dekh hi nahi payega), lekin ye function-level check double-safety
-    // hai — agar kabhi is function ko kisi aur jagah se bhi call kiya jaaye.
+
     const handleRegAction = async (requestId, statusAction) => {
         if (!isAdminLevel) {
             alert("You don't have permission to approve or reject regularization requests.");
@@ -529,10 +497,7 @@ export default function Attendance() {
         }
     };
 
-    // Late-attendance approval action — Attendance Logs tab se seedha approve/reject.
-    // Yeh "Regularization Requests" tab wale handleRegAction se alag hai — wahan wale
-    // requests employee khud manually banata hai, jabki yeh late_minutes se auto-detect
-    // hokar backend ne khud attendance_requests table me daali hoti hain.
+
     const handleLateApprovalAction = async (requestId, statusAction) => {
         if (!isAdminLevel) {
             alert("You don't have permission to approve or reject attendance.");
@@ -596,8 +561,7 @@ export default function Attendance() {
                 setShowSummaryModal(false);
                 setActiveTab("summaries");
             } else {
-                // Backend throws for invalid month/year (e.g. year > current year) —
-                // this was silently failing with no feedback before.
+              
                 alert(res.Message || "Failed to generate summary.");
             }
         } catch (err) {
@@ -619,7 +583,7 @@ export default function Attendance() {
         try {
             const payload = {
                 empId: parseInt(dutyForm.empId, 10),
-                attDate: dutyForm.attDate ? `${dutyForm.attDate}T00:00:00` : null,
+                dutyDate: dutyForm.attDate,
                 status: dutyForm.status,
                 location: dutyForm.location || null,
                 countsAsDuty: dutyForm.countsAsDuty,
@@ -723,8 +687,6 @@ export default function Attendance() {
     const pagedSummaries = paginate(filteredSummaries);
     const pagedSundayHoliday = paginate(filteredSundayHolidayData);
 
-    // Total count + total pages for whichever tab is active — drives the
-    // search placeholder and the pagination controls below the table.
     const activeListMeta = {
         logs: { total: filteredLogs.length, placeholder: "Search by employee, status, or source..." },
         requests: { total: filteredRequests.length, placeholder: "Search by employee, reason, or status..." },
@@ -880,6 +842,7 @@ export default function Attendance() {
                         </button>
                     </div>
                 )}
+                {/* Search bar (hidden on dashboard tab, and while loading) */}
                 {/* Search bar (hidden on dashboard tab, and while loading) */}
                 {!loading && <SearchBar />}
                 {loading ? (
@@ -1065,68 +1028,75 @@ export default function Attendance() {
                     </div>
                 ) : activeTab === "sundayWorking" && isTeamLevel ? (
                
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[900px]">
-                        <thead>
-                            <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
-                                <th className="px-4 py-4 sticky left-0 bg-slate-50">Employee</th>
-                                {sundayDateColumns.map((d, i) => (
-                                    <th key={i} className="px-3 py-4 text-center whitespace-nowrap">
-                                        {d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                                    </th>
-                                ))}
-                                <th className="px-4 py-4 text-center">Duty</th>
-                                <th className="px-4 py-4 text-center">Comp-Off</th>
-                                <th className="px-4 py-4 text-center">Prev Bal</th>
-                                <th className="px-4 py-4 text-center">Final Dues</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                            {filteredSundayHolidayData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={sundayDateColumns.length + 5} className="px-6 py-12 text-center text-slate-400 text-sm">
-                                        {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
-                                    </td>
-                                </tr>
-                            ) : paginate(filteredSundayHolidayData).map((row, idx) => {
-                                const cells = row.cells || row.Cells || [];
-                                const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
-                                return (
-                                    <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/50">
-                                        <td className="px-4 py-3 font-semibold text-slate-900 sticky left-0 bg-white whitespace-nowrap">
-                                            {empName}
-                                        </td>
-                                        {sundayDateColumns.map((d, i) => {
-                                            const cell = cells.find(c => {
-                                                const cd = new Date(c.date || c.Date);
-                                                return cd.toDateString() === d.toDateString();
-                                            });
-                                            const status = cell?.status || cell?.Status || "OFF";
-                                            const isPresent = status === "Present";
-                                            return (
-                                                <td key={i} className="px-3 py-3 text-center">
-                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${isPresent
-                                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                                            : status === "Absent"
-                                                                ? "bg-rose-50 text-rose-700 border border-rose-200"
-                                                                : "bg-slate-50 text-slate-400 border border-slate-200"
-                                                        }`}>
-                                                        {status === "Present" ? "P" : status === "Absent" ? "A" : status === "Half-Day" ? "HD" : "OFF"}
-                                                    </span>
-                                                </td>
-                                            );
-                                        })}
-                                        <td className="px-4 py-3 text-center font-mono font-bold">{row.monthDutyCount ?? row.MonthDutyCount ?? 0}</td>
-                                        <td className="px-4 py-3 text-center font-mono font-bold text-amber-600">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
-                                        <td className="px-4 py-3 text-center font-mono">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
-                                        <td className="px-4 py-3 text-center font-mono font-bold text-emerald-700">{row.finalDues ?? row.FinalDues ?? 0}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                    <PaginationBar />
-                </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse min-w-[900px]">
+                                            <thead>
+                                                <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
+                                                    <th className="px-4 py-4 sticky left-0 bg-slate-50">Employee</th>
+                                                    {sundayDateColumns.map((d, i) => (
+                                                        <th key={i} className="px-3 py-4 text-center whitespace-nowrap">
+                                                            {d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                                                        </th>
+                                                    ))}
+                                                    <th className="px-4 py-4 text-center">Duty</th>
+                                                    <th className="px-4 py-4 text-center">Comp-Off</th>
+                                                    <th className="px-4 py-4 text-center">Prev Bal</th>
+                                                    <th className="px-4 py-4 text-center">Final Dues</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                                {filteredSundayHolidayData.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={sundayDateColumns.length + 5} className="px-6 py-12 text-center text-slate-400 text-sm">
+                                                            {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
+                                                        </td>
+                                                    </tr>
+                                                ) : paginate(filteredSundayHolidayData).map((row, idx) => {
+                                                    const cells = row.cells || row.Cells || [];
+                                                    const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
+                                                    return (
+                                                        <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/50">
+                                                            <td className="px-4 py-3 font-semibold text-slate-900 sticky left-0 bg-white whitespace-nowrap">
+                                                                {empName}
+                                                            </td>
+                                                            {sundayDateColumns.map((d, i) => {
+                                                                const cell = cells.find(c => {
+                                                                    const cd = new Date(c.date || c.Date);
+                                                                    return cd.toDateString() === d.toDateString();
+                                                                });
+                                                                const status = cell?.status || cell?.Status || "OFF";
+                                                                const isOnDuty = status.startsWith("ON-DUTY") || status === "Present";
+                                                                const isAbsent = status === "Absent";
+                                                                const isHalfDay = status === "Half-Day";
+                                                                return (
+                                                                    <td key={i} className="px-3 py-3 text-center">
+                                                                        <span
+                                                                            title={status}
+                                                                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${isOnDuty
+                                                                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                                                                    : isAbsent
+                                                                                        ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                                                                        : isHalfDay
+                                                                                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                                                                            : "bg-slate-50 text-slate-400 border border-slate-200"
+                                                                                }`}
+                                                                        >
+                                                                            {status === "N/A" ? "N/A" : status.toUpperCase()}
+                                                                        </span>
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                            <td className="px-4 py-3 text-center font-mono font-bold">{row.monthDutyCount ?? row.MonthDutyCount ?? 0}</td>
+                                                            <td className="px-4 py-3 text-center font-mono font-bold text-amber-600">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
+                                                            <td className="px-4 py-3 text-center font-mono">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
+                                                            <td className="px-4 py-3 text-center font-mono font-bold text-emerald-700">{row.finalDues ?? row.FinalDues ?? 0}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                        <PaginationBar />
+                                    </div>
                 ) : activeTab === "summaries" && isAdminLevel ? (
                     // Monthly Summary — sirf isAdminLevel true hone par render hota hai
                     // (tab list se bhi hidden hai Employee/Manager role ke liye, ye double-safety hai)
@@ -1268,8 +1238,7 @@ export default function Attendance() {
                                 Checking today's attendance status...
                             </div>
                         ) : punchMode === "done" ? (
-                            // Aaj ke liye Punch In + Punch Out dono ho chuke hain — dobara punch
-                            // ki zaroorat nahi, form ki jagah sirf summary dikhado
+                           
                             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 space-y-1">
                                 <p className="font-bold">Attendance already marked for today ✅</p>
                                 <p className="text-xs">
@@ -1278,17 +1247,15 @@ export default function Attendance() {
                             </div>
                         ) : (
                             <form onSubmit={handleMarkAttendance} className="space-y-4">
-                                {/* Aaj Sunday hai — user ko batado ki ye off-day working ke tor
-                                    par record hoga aur HR/Manager ko "Sunday Working" tab me dikhega. */}
+                          
                                 {isSunday(markForm.attDate) && (
-                                    <div className="px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-xs text-violet-700 font-semibold">
-                                        📅 Aaj Sunday hai — ye attendance "Sunday Working" ke tor par HR ko alag se dikhayi jayegi.
-                                    </div>
+                                                <div className="px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-xs text-violet-700 font-semibold">
+                                                     Today is Sunday — this attendance will be shown separately to HR under "Sunday Working."
+                                                </div>
                                 )}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
-                                    {/* Date ab manual pick nahi hoti — hamesha aaj ki date auto-fill
-                                        hoti hai (read-only), taaki koi purani/future date galti se select na ho jaaye. */}
+                                  
                                     <input
                                         type="date"
                                         disabled
@@ -1297,11 +1264,7 @@ export default function Attendance() {
                                     />
                                 </div>
 
-                                {/* Punch In / Punch Out — manual time-type ki jagah ab ek tap se
-                                    current system time capture hoti hai. Sirf ek hi button active
-                                    hota hai ek waqt me:
-                                    - punchMode "in"  → sirf Punch In tap kiya ja sakta hai (Punch Out disabled — subah abhi punch-in hi nahi hua)
-                                    - punchMode "out" → Punch In already ho chuka (read-only ✅), sirf Punch Out tap kiya ja sakta hai */}
+                              
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Punch In</label>
@@ -1358,7 +1321,7 @@ export default function Attendance() {
                                         )}
                                         {locationStatus === "captured" && (
                                             <span className="text-emerald-600 font-medium truncate">
-                                                📍 {capturedLocation.address
+                                                 {capturedLocation.address
                                                     ? capturedLocation.address
                                                     : `${capturedLocation.latitude?.toFixed(5)}, ${capturedLocation.longitude?.toFixed(5)}`}
                                             </span>
@@ -1511,6 +1474,7 @@ export default function Attendance() {
             )}
 
             {/* 🆕 Modal: Mark Sunday/Holiday Duty — sirf HR/Admin/CMD ke liye (button khud hi non-admin ko nahi dikhta) */}
+            
             {showDutyModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white border w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
@@ -1527,19 +1491,51 @@ export default function Attendance() {
                         <form onSubmit={handleMarkSundayDuty} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Employee *</label>
-                                <select
-                                    required
-                                    value={dutyForm.empId}
-                                    onChange={(e) => setDutyForm({ ...dutyForm, empId: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
-                                >
-                                    <option value="" disabled>-- Select Employee --</option>
-                                    {employees.map((emp) => (
-                                        <option key={emp.empId} value={emp.empId}>
-                                            {emp.firstName} {emp.lastName} ({emp.empCode})
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        required={!dutyForm.empId}
+                                        value={
+                                            dutyEmpSearchOpen
+                                                ? dutyEmpSearchText
+                                                : (() => {
+                                                    const sel = employees.find((emp) => String(emp.empId) === String(dutyForm.empId));
+                                                    return sel ? `${sel.firstName} ${sel.lastName} (${sel.empCode})` : "";
+                                                })()
+                                        }
+                                        onFocus={() => { setDutyEmpSearchOpen(true); setDutyEmpSearchText(""); }}
+                                        onChange={(e) => setDutyEmpSearchText(e.target.value)}
+                                        onBlur={() => setTimeout(() => setDutyEmpSearchOpen(false), 150)}
+                                        placeholder="-- Select Employee --"
+                                        className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+                                    />
+                                    {dutyEmpSearchOpen && (
+                                        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border rounded-xl shadow-lg">
+                                            {(() => {
+                                                const q = dutyEmpSearchText.trim().toLowerCase();
+                                                const filtered = employees.filter((emp) =>
+                                                    `${emp.firstName} ${emp.lastName} ${emp.empCode}`.toLowerCase().includes(q)
+                                                );
+                                                if (filtered.length === 0) {
+                                                    return <div className="px-3 py-2 text-sm text-slate-400">No employees found</div>;
+                                                }
+                                                return filtered.map((emp) => (
+                                                    <div
+                                                        key={emp.empId}
+                                                        onMouseDown={() => {
+                                                            setDutyForm(prev => ({ ...prev, empId: emp.empId.toString() }));
+                                                            setDutyEmpSearchText("");
+                                                            setDutyEmpSearchOpen(false);
+                                                        }}
+                                                        className="px-3 py-2 text-sm hover:bg-amber-50 cursor-pointer"
+                                                    >
+                                                        {emp.firstName} {emp.lastName} ({emp.empCode})
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date *</label>
@@ -1561,31 +1557,25 @@ export default function Attendance() {
                                 </select>
                             </div>
 
-                            {/* 🆕 Location — manual type + live GPS capture, backend SundayDutyRequestDto.Location field ke liye */}
+                            {/* 🆕 Location — sirf live GPS capture, koi manual typing nahi */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
-                                <div className="flex gap-2">
-                                    <input type="text" placeholder="e.g. Site Office, Head Office"
-                                        value={dutyForm.location}
-                                        onChange={e => setDutyForm({ ...dutyForm, location: e.target.value })}
-                                        className="flex-1 px-3 py-2 rounded-xl border text-sm" />
-                                    <button
-                                        type="button"
-                                        onClick={handleGetDutyLocation}
-                                        disabled={dutyLocationStatus === "fetching"}
-                                        className="px-3 py-2 rounded-xl border text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 disabled:opacity-60 whitespace-nowrap"
-                                    >
-                                        {dutyLocationStatus === "fetching" ? "..." : "📍 Live"}
-                                    </button>
-                                </div>
-                                {dutyLocationStatus === "fetching" && (
-                                    <p className="text-[11px] text-amber-500 mt-1 animate-pulse">Getting your location...</p>
-                                )}
-                                {dutyLocationStatus === "captured" && (
-                                    <p className="text-[11px] text-emerald-600 mt-1 font-medium">✅ Location captured</p>
-                                )}
-                                    {dutyLocationStatus === "denied" && (
-                                    <p className="text-[11px] text-amber-600 mt-1">Location unavailable — you can type it manually</p>
+                                <button
+                                    type="button"
+                                    onClick={handleGetDutyLocation}
+                                    disabled={dutyLocationStatus === "fetching"}
+                                    className="w-full px-3 py-2.5 rounded-xl border text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {dutyLocationStatus === "fetching" ? (
+                                        <span className="text-amber-500 animate-pulse">Getting your location...</span>
+                                    ) : dutyLocationStatus === "captured" ? (
+                                        <span className="text-emerald-600 truncate"> {dutyForm.location}</span>
+                                    ) : (
+                                        <span className="text-slate-600"> Capture Live Location</span>
+                                    )}
+                                </button>
+                                {dutyLocationStatus === "denied" && (
+                                    <p className="text-[11px] text-amber-600 mt-1">Location unavailable — please allow location access and try again</p>
                                 )}
                             </div>
 
@@ -1605,7 +1595,7 @@ export default function Attendance() {
                                 >
                                     {actionLoading ? "Saving..." : "Save"}
                                 </button>
-                         
+
                             </div>
                         </form>
                     </div>

@@ -201,6 +201,8 @@ export const adminService = {
         downloadFile(`${API_BASE}/candidates/${candidateId}/offer-letter`, `Offer_Letter_${candidateId}.docx`),
     downloadAppointmentLetter: (candidateId?: any) =>
         downloadFile(`${API_BASE}/candidates/${candidateId}/appointment-letter`, `Appointment_Letter_${candidateId}.docx`),
+    downloadRegularizationLetter: (candidateId?: any, effectiveDate?: any) =>
+        downloadFile(`${API_BASE}/candidates/${candidateId}/regularization-letter?effectiveDate=${effectiveDate}`,`Regularization_Letter_${candidateId}.docx`),
 
     // 17. Self Service (Profile)
     getMyProfile: () => apiCall(`${BASE}/api/hr/profile`),

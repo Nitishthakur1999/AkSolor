@@ -214,11 +214,11 @@ namespace AkerpSuite.Server.Services
         #region Issue offer latter and appointemt latter
         Task<byte[]?> GenerateOfferLetterAsync(int candidateId);
         Task<byte[]?> GenerateAppointmentLetterAsync(int candidateId);
+        Task<byte[]?> GenerateRegularizationLetterAsync(int candidateId, DateTime effectiveDate);
 
         #endregion
 
         Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year);
-
         Task<byte[]> GetSundayHolidayStatusPdfAsync(int month, int year);
         Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
     }

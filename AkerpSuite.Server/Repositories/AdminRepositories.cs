@@ -1807,8 +1807,9 @@ WHERE is_active = 1";
                 commandType: CommandType.StoredProcedure);
         }
 
-        #endregion       
+        #endregion
 
+        #region Sunday work
         public async Task<List<EmployeeBasicDto>> GetActiveEmployeesBasicAsync()
         {
             using var conn = _context.CreateConnection();
@@ -1856,7 +1857,7 @@ WHERE is_active = 1";
                 commandType: CommandType.StoredProcedure);
         }
 
- 
+
         public async Task RecalculateLedgerAsync(int empId, int month, int year)
         {
             using var conn = _context.CreateConnection();
@@ -1866,6 +1867,7 @@ WHERE is_active = 1";
                 commandType: CommandType.StoredProcedure);
         }
 
+        #endregion
 
 
     }

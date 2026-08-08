@@ -228,12 +228,13 @@ namespace AkerpSuite.Server.Repositories
 
         #endregion
 
+        #region Sunday work
         Task<List<EmployeeBasicDto>> GetActiveEmployeesBasicAsync();
         Task<List<SundayDutyRecord>> GetSundayDutyRecordsAsync(DateTime monthStart, DateTime monthEnd);
         Task<List<SundayLedgerRecord>> GetSundayLedgerAsync(int month, int year);
         Task UpsertSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
         Task RecalculateLedgerAsync(int empId, int month, int year);
-
+        #endregion
 
 
 

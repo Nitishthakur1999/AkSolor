@@ -479,12 +479,12 @@ namespace AkerpSuite.Server.DTOs.Role
 
     public class SundayDutyRequestDto
     {
-            public int EmpId { get; set; }
-            public DateTime DutyDate { get; set; }
-            public string Status { get; set; } = "OFF"; 
-            public string? Location { get; set; }
-            public bool CountsAsDuty { get; set; } = true;
+        public int EmpId { get; set; }
+        public DateTime DutyDate { get; set; }
+        public string Status { get; set; } = "OFF";
+        public string? Location { get; set; }
+        public bool CountsAsDuty { get; set; } = true;
     }
-    
+
 
 }
