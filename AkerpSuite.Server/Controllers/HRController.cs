@@ -42,6 +42,12 @@ namespace AkerpSuite.Server.Controllers
         private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
         private const string InventoryViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
+        // team wants a different split.
+        private const string PurchaseWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Manager;
+        private const string PurchaseViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Manager + "," + Roles.Accounts;
+
+        // Status changes (Approved/Cancelled) are a step above regular write access.
+        private const string PurchaseApproveRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Manager;
         public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
         {
             _service = service;
@@ -1028,7 +1034,7 @@ namespace AkerpSuite.Server.Controllers
 
         #region HR – Employee Milestone Notifications
 
-        [HttpPost("milestones/probation/test-send")] 
+        [HttpPost("milestones/probation/test-send")]
         public async Task<IActionResult> TestSendProbationReminders()
         {
             var count = await _service.SendProbationCompletionRemindersAsync();
@@ -1036,6 +1042,182 @@ namespace AkerpSuite.Server.Controllers
         }
 
         #endregion
+
+        #region Suppliers
+
+        [HttpPost("suppliers")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> CreateSupplier([FromBody] SupplierRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { Success = false, Message = "Invalid request" });
+
+            var id = await _service.CreateSupplierAsync(request);
+            return Ok(new { Success = true, Message = "Supplier created successfully", SupplierId = id });
+        }
+
+        [HttpPut("suppliers")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> UpdateSupplier([FromBody] SupplierUpdateRequestDto request)
+        {
+            var updated = await _service.UpdateSupplierAsync(request);
+            if (!updated)
+                return NotFound(new { Success = false, Message = "Supplier not found" });
+
+            return Ok(new { Success = true, Message = "Supplier updated successfully" });
+        }
+
+        [HttpPatch("suppliers/{id:int}/toggle-status")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> ToggleSupplierStatus(int id)
+        {
+            var updated = await _service.ToggleSupplierStatusAsync(id);
+            if (!updated)
+                return NotFound(new { Success = false, Message = "Supplier not found" });
+
+            return Ok(new { Success = true, Message = "Supplier status toggled successfully" });
+        }
+
+        [HttpGet("suppliers/{id:int}")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> GetSupplierById(int id)
+        {
+            var data = await _service.GetSupplierByIdAsync(id);
+            if (data == null)
+                return NotFound(new { Success = false, Message = "Supplier not found" });
+
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // GET api/purchase/suppliers?keyword=&isActive=
+        [HttpGet("suppliers")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> SearchSuppliers([FromQuery] SupplierSearchRequestDto filter)
+        {
+            var data = await _service.SearchSuppliersAsync(filter);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        #endregion
+
+        #region PO Consignee
+
+        [HttpPost("consignees")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> CreateConsignee([FromBody] PoConsigneeRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { Success = false, Message = "Invalid request" });
+
+            var id = await _service.CreateConsigneeAsync(request);
+            return Ok(new { Success = true, Message = "Consignee created successfully", ConsigneeId = id });
+        }
+
+        [HttpGet("consignees")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> GetAllConsignees()
+        {
+            var data = await _service.GetAllConsigneesAsync();
+            return Ok(new { Success = true, Data = data });
+        }
+
+        #endregion
+
+        #region Purchase Order
+
+        [HttpPost("orders")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { Success = false, Message = "Invalid request" });
+
+            try
+            {
+                var poId = await _service.CreatePurchaseOrderAsync(request);
+                return Ok(new { Success = true, Message = "Purchase Order created successfully", PoId = poId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpPatch("orders/status")]
+        [Authorize(Roles = PurchaseApproveRoles)]
+        public async Task<IActionResult> UpdatePoStatus([FromBody] PurchaseOrderStatusUpdateDto request)
+        {
+            try
+            {
+                var updated = await _service.UpdatePoStatusAsync(request);
+                if (!updated)
+                    return NotFound(new { Success = false, Message = "Purchase Order not found" });
+
+                return Ok(new { Success = true, Message = $"Purchase Order marked as {request.Status}" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpGet("orders/{id:int}")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> GetPurchaseOrderById(int id)
+        {
+            var data = await _service.GetPurchaseOrderByIdAsync(id);
+            if (data == null)
+                return NotFound(new { Success = false, Message = "Purchase Order not found" });
+
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // GET api/purchase/orders?supplierId=&status=&fromDate=&toDate=&keyword=
+        [HttpGet("orders")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> SearchPurchaseOrders([FromQuery] PurchaseOrderSearchRequestDto filter)
+        {
+            var data = await _service.SearchPurchaseOrdersAsync(filter);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        #endregion
+
+        #region GRN (Goods Receipt Note)
+
+        [HttpPost("grn")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> CreateGrn([FromBody] GrnRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { Success = false, Message = "Invalid request" });
+
+            try
+            {
+                var result = await _service.CreateGrnAsync(request);
+                return Ok(new
+                {
+                    Success = true,
+                    Message = $"Stock received successfully. PO status: {result.PoStatus}",
+                    Data = result
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpGet("grn/po/{poId:int}")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> GetGrnsByPo(int poId)
+        {
+            var data = await _service.GetGrnsByPoAsync(poId);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        #endregion
+
 
     }
 }

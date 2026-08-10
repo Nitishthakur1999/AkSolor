@@ -152,7 +152,7 @@ namespace AkerpSuite.Server.Repositories
         Task<IEnumerable<BannerResponseDto>> GetActiveBannersAsync();
         Task<bool> UpdateBannerAsync(BannerUpdateRequestDto request, string? imagePath);
         Task<bool> DeleteBannerAsync(int id);
-            #endregion
+        #endregion
 
         #region Public Site – Gallery
         Task<GalleryResponseDto> CreateGalleryAsync(GalleryRequestDto request, string? imagePath);
@@ -204,6 +204,31 @@ namespace AkerpSuite.Server.Repositories
         Task<IEnumerable<ContactQueryResponseDto>> GetAllContactQueriesAsync(bool? isRead);
         Task<bool> MarkQueryReadAsync(int id);
         Task<bool> DeleteContactQueryAsync(int id);
+        #endregion
+
+        #region Suppliers
+        Task<int> CreateSupplierAsync(SupplierRequestDto request);
+        Task<bool> UpdateSupplierAsync(SupplierUpdateRequestDto request);
+        Task<bool> ToggleSupplierStatusAsync(int supplierId);
+        Task<SupplierResponseDto?> GetSupplierByIdAsync(int supplierId);
+        Task<IEnumerable<SupplierResponseDto>> SearchSuppliersAsync(SupplierSearchRequestDto filter);
+        #endregion
+
+        #region PO Consignee
+        Task<int> CreateConsigneeAsync(PoConsigneeRequestDto request);
+        Task<IEnumerable<PoConsigneeResponseDto>> GetAllConsigneesAsync();
+        #endregion
+
+        #region Purchase Order
+        Task<int> CreatePurchaseOrderAsync(PurchaseOrderRequestDto request);
+        Task<bool> UpdatePoStatusAsync(int poId, string status);
+        Task<PurchaseOrderResponseDto?> GetPurchaseOrderByIdAsync(int poId);
+        Task<IEnumerable<PurchaseOrderResponseDto>> SearchPurchaseOrdersAsync(PurchaseOrderSearchRequestDto filter);
+        #endregion
+
+        #region GRN (Goods Receipt)
+        Task<GrnResponseDto> CreateGrnAsync(GrnRequestDto request);
+        Task<IEnumerable<GrnResponseDto>> GetGrnsByPoAsync(int poId);
         #endregion
     }
 }

@@ -394,5 +394,26 @@ export const adminService = {
     markQueryRead: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}/mark-read`, "PATCH"),
     deleteContactQuery: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}`, "DELETE"),
 
+
+    // SUPPLIY
+    createSupplier: (data?: any) => apiCall(`${SALES_API_BASE}/suppliers`, "POST", data),
+    updateSupplier: (data?: any) => apiCall(`${SALES_API_BASE}/suppliers`, "PUT", data),
+    toggleSupplierStatus: (id?: any) => apiCall(`${SALES_API_BASE}/suppliers/${id}/toggle-status`, "PATCH"),
+    getSupplierById: (id?: any) => apiCall(`${SALES_API_BASE}/suppliers/${id}`),
+    searchSuppliers: (filters?: any) => apiCall(`${SALES_API_BASE}/suppliers${buildQuery(filters)}`), // { keyword, isActive }
+
+    // PO Consignees
+    createConsignee: (data?: any) => apiCall(`${SALES_API_BASE}/consignees`, "POST", data),
+    getAllConsignees: () => apiCall(`${SALES_API_BASE}/consignees`),
+
+    // Purchase Orders
+    createPurchaseOrder: (data?: any) => apiCall(`${SALES_API_BASE}/orders`, "POST", data),
+    updatePoStatus: (data?: any) => apiCall(`${SALES_API_BASE}/orders/status`, "PATCH", data), // { poId, status }
+    getPurchaseOrderById: (id?: any) => apiCall(`${SALES_API_BASE}/orders/${id}`),
+    searchPurchaseOrders: (filters?: any) => apiCall(`${SALES_API_BASE}/orders${buildQuery(filters)}`), // { supplierId, status, fromDate, toDate, keyword }
+
+    // GRN (Goods Receipt Note)
+    createGrn: (data?: any) => apiCall(`${SALES_API_BASE}/grn`, "POST", data),
+    getGrnsByPo: (poId?: any) => apiCall(`${SALES_API_BASE}/grn/po/${poId}`),
 };
 

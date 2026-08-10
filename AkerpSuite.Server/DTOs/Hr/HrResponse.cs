@@ -358,7 +358,7 @@
     }
     public class EmployeeMilestoneResponseDto
     {
-        public int NotifId { get; set; }              
+        public int NotifId { get; set; }
         public int EmpId { get; set; }
         public string EmpName { get; set; } = string.Empty;
         public DateTime DOJ { get; set; }
@@ -528,5 +528,110 @@
         public string Message { get; set; } = string.Empty;
         public bool IsRead { get; set; }
         public DateTime SubmittedOn { get; set; }
+    }
+
+    public class SupplierResponseDto
+    {
+        public int SupplierId { get; set; }
+        public string SupplierName { get; set; }
+        public string Gstin { get; set; }
+        public string PanNo { get; set; }
+        public string Address { get; set; }
+        public string StateName { get; set; }
+        public string StateCode { get; set; }
+        public string ContactNo { get; set; }
+        public string Email { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    // ============================================================
+    // PO CONSIGNEE — RESPONSE
+    // ============================================================
+
+    public class PoConsigneeResponseDto
+    {
+        public int ConsigneeId { get; set; }
+        public string ConsigneeName { get; set; }
+        public string SiteAddress { get; set; }
+        public string Gstin { get; set; }
+        public string StateName { get; set; }
+        public string StateCode { get; set; }
+        public int? LeadId { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    // ============================================================
+    // PURCHASE ORDER (header) — RESPONSE
+    // ============================================================
+
+    public class PurchaseOrderResponseDto
+    {
+        public int PoId { get; set; }
+        public int VoucherNo { get; set; }
+        public DateTime? PoDate { get; set; }
+        public int SupplierId { get; set; }
+        public string SupplierName { get; set; }
+        public int? ConsigneeId { get; set; }
+        public string ConsigneeName { get; set; }
+        public string ReferenceNo { get; set; }
+        public DateTime? ReferenceDate { get; set; }
+        public string DispatchedThrough { get; set; }
+        public string Destination { get; set; }
+        public string TermsOfDelivery { get; set; }
+        public string ModeOfPayment { get; set; }
+        public string Status { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal IgstAmount { get; set; }
+        public decimal RoundOff { get; set; }
+        public int? CreatedBy { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<PurchaseOrderItemResponseDto> Items { get; set; } = new();
+    }
+
+    // ============================================================
+    // PURCHASE ORDER ITEM (line) — RESPONSE
+    // ============================================================
+
+    public class PurchaseOrderItemResponseDto
+    {
+        public int PoItemId { get; set; }
+        public int PoId { get; set; }
+        public int? ItemId { get; set; }
+        public string ItemCode { get; set; }
+        public string Description { get; set; }
+        public string HsnSac { get; set; }
+        public decimal GstRate { get; set; }
+        public decimal Quantity { get; set; }
+        public string Unit { get; set; }
+        public decimal Rate { get; set; }
+        public decimal Amount { get; set; }
+        public decimal ReceivedQty { get; set; }
+        public decimal PendingQty => Quantity - ReceivedQty;
+    }
+
+    // ============================================================
+    // GRN (Goods Receipt Note) — RESPONSE
+    // ============================================================
+
+    public class GrnResponseDto
+    {
+        public int GrnId { get; set; }
+        public int PoId { get; set; }
+        public DateTime? GrnDate { get; set; }
+        public int? ReceivedBy { get; set; }
+        public string Remarks { get; set; }
+        public string PoStatus { get; set; }
+        public List<GrnItemResponseDto> Items { get; set; } = new();
+    }
+
+    public class GrnItemResponseDto
+    {
+        public int GrnItemId { get; set; }
+        public int PoItemId { get; set; }
+        public int ItemId { get; set; }
+        public string ItemName { get; set; }
+        public decimal ReceivedQty { get; set; }
+        public decimal NewStockBalance { get; set; }
     }
 }

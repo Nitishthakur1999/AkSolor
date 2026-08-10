@@ -236,16 +236,6 @@ namespace AkerpSuite.Server.Repositories
         Task RecalculateLedgerAsync(int empId, int month, int year);
         #endregion
 
-
-
-
-
-
-
-
-
-
-
     }
 }
 

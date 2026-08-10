@@ -94,7 +94,7 @@ namespace AkerpSuite.Server.DTOs.Hr
         public DateTime? CreatedAt { get; set; }
         public string? ErrorMessage { get; set; }
     }
-    
+
     public class SelfAttendanceRegularizationRequestDto
     {
         public DateTime RequestDate { get; set; }
@@ -304,8 +304,8 @@ namespace AkerpSuite.Server.DTOs.Hr
     {
         public int ItemId { get; set; }
         public decimal Quantity { get; set; }
-        public string? ReferenceType { get; set; } 
-        public string? ReferenceNo { get; set; }   
+        public string? ReferenceType { get; set; }
+        public string? ReferenceNo { get; set; }
         public string? Remarks { get; set; }
         public int CreatedBy { get; set; }
     }
@@ -314,7 +314,7 @@ namespace AkerpSuite.Server.DTOs.Hr
     {
         public int ItemId { get; set; }
         public decimal Quantity { get; set; }
-        public string? ReferenceType { get; set; } 
+        public string? ReferenceType { get; set; }
         public string? ReferenceNo { get; set; }
         public string? Remarks { get; set; }
         public int CreatedBy { get; set; }
@@ -485,4 +485,133 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? Subject { get; set; }
         public string Message { get; set; } = string.Empty;
     }
+
+    public enum PoStatus
+    {
+        Draft,
+        Approved,
+        PartiallyReceived,
+        Completed,
+        Cancelled
+    }
+
+    // ============================================================
+    // SUPPLIER — REQUESTS
+    // ============================================================
+
+    public class SupplierRequestDto
+    {
+        public string SupplierName { get; set; }
+        public string Gstin { get; set; }
+        public string PanNo { get; set; }
+        public string Address { get; set; }
+        public string StateName { get; set; }
+        public string StateCode { get; set; }
+        public string ContactNo { get; set; }
+        public string Email { get; set; }
+    }
+
+    public class SupplierUpdateRequestDto : SupplierRequestDto
+    {
+        public int SupplierId { get; set; }
+    }
+
+    public class SupplierSearchRequestDto
+    {
+        public string? Keyword { get; set; }
+        public bool? IsActive { get; set; }
+    }
+
+    // ============================================================
+    // PO CONSIGNEE — REQUESTS
+    // ============================================================
+
+    public class PoConsigneeRequestDto
+    {
+        public string ConsigneeName { get; set; }
+        public string SiteAddress { get; set; }
+        public string Gstin { get; set; }
+        public string StateName { get; set; }
+        public string StateCode { get; set; }
+        public int? LeadId { get; set; }
+    }
+
+    // ============================================================
+    // PURCHASE ORDER (header) — REQUESTS
+    // ============================================================
+
+    public class PurchaseOrderRequestDto
+    {
+        //public int VoucherNo { get; set; }
+        public DateTime? PoDate { get; set; }
+        public int SupplierId { get; set; }
+        public int? ConsigneeId { get; set; }
+        public string ReferenceNo { get; set; }
+        public DateTime? ReferenceDate { get; set; }
+        public string DispatchedThrough { get; set; }
+        public string Destination { get; set; }
+        public string TermsOfDelivery { get; set; }
+        public string ModeOfPayment { get; set; }
+        public int? CreatedBy { get; set; }
+        public List<PurchaseOrderItemRequestDto> Items { get; set; }
+    }
+
+    public class PurchaseOrderStatusUpdateDto
+    {
+        public int PoId { get; set; }
+        public PoStatus Status { get; set; }
+    }
+
+    public class PurchaseOrderSearchRequestDto
+    {
+        public int? SupplierId { get; set; }
+        public PoStatus? Status { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public string? Keyword { get; set; }
+    }
+
+    // ============================================================
+    // PURCHASE ORDER ITEM (line) — REQUESTS
+    // ============================================================
+
+    public class PurchaseOrderItemRequestDto
+    {
+        // Reference an existing inventory item...
+        public int? ItemId { get; set; }
+
+        // ...or leave ItemId null and provide these to auto-create one
+        // (repository calls sp_CreateInventoryItem when ItemId is null).
+        public string NewItemName { get; set; }
+        public string NewItemCategory { get; set; }
+
+        public string Description { get; set; }
+        public string HsnSac { get; set; }
+        public decimal GstRate { get; set; }
+        public decimal Quantity { get; set; }
+        public string Unit { get; set; }
+        public decimal Rate { get; set; }
+        // amount is server-computed (quantity * rate) — not sent by client
+    }
+
+    // ============================================================
+    // GRN (Goods Receipt Note) — REQUESTS
+    // ============================================================
+
+    public class GrnRequestDto
+    {
+        public int PoId { get; set; }
+        public DateTime? GrnDate { get; set; }
+        public int? ReceivedBy { get; set; }
+        public string Remarks { get; set; }
+        public List<GrnItemRequestDto> Items { get; set; }
+    }
+
+    public class GrnItemRequestDto
+    {
+        public int PoItemId { get; set; }
+        public int ItemId { get; set; }
+        public decimal ReceivedQty { get; set; }
+    }
+
 }

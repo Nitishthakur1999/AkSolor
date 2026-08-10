@@ -635,11 +635,11 @@ namespace AkerpSuite.Server.Services
         public Task<IEnumerable<SalaryHistoryResponseDto>> GetAllIncrementsAsync(DateTime? fromDate, DateTime? toDate)
             => _repository.GetAllIncrementsAsync(fromDate, toDate);
         #endregion
-   
+
         #region Public Site – Banner
 
-    public async Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath)
-        => await _repository.CreateBannerAsync(request, imagePath);
+        public async Task<BannerResponseDto> CreateBannerAsync(BannerRequestDto request, string? imagePath)
+            => await _repository.CreateBannerAsync(request, imagePath);
 
         public async Task<IEnumerable<BannerResponseDto>> GetAllBannersAsync()
             => await _repository.GetAllBannersAsync();
@@ -667,7 +667,7 @@ namespace AkerpSuite.Server.Services
             return await _repository.DeleteBannerAsync(id);
         }
 
-            #endregion
+        #endregion
 
         #region Public Site – Gallery
 
@@ -845,6 +845,178 @@ namespace AkerpSuite.Server.Services
 
             return newPath;
         }
+
+        #endregion
+
+        #region Suppliers
+
+        public async Task<int> CreateSupplierAsync(SupplierRequestDto request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (string.IsNullOrWhiteSpace(request.SupplierName))
+                throw new InvalidOperationException("Supplier name is required.");
+
+            var id = await _repository.CreateSupplierAsync(request);
+
+            _logger.LogInformation("Supplier '{Name}' created with Id {SupplierId}.", request.SupplierName, id);
+
+            return id;
+        }
+
+        public async Task<bool> UpdateSupplierAsync(SupplierUpdateRequestDto request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var existing = await _repository.GetSupplierByIdAsync(request.SupplierId);
+            if (existing == null)
+                throw new KeyNotFoundException("Supplier not found.");
+
+            var result = await _repository.UpdateSupplierAsync(request);
+
+            _logger.LogInformation("Supplier {SupplierId} updated.", request.SupplierId);
+
+            return result;
+        }
+
+        public async Task<bool> ToggleSupplierStatusAsync(int supplierId)
+        {
+            var existing = await _repository.GetSupplierByIdAsync(supplierId);
+            if (existing == null)
+                throw new KeyNotFoundException("Supplier not found.");
+
+            return await _repository.ToggleSupplierStatusAsync(supplierId);
+        }
+
+        public Task<SupplierResponseDto?> GetSupplierByIdAsync(int supplierId) =>
+            _repository.GetSupplierByIdAsync(supplierId);
+
+        public Task<IEnumerable<SupplierResponseDto>> SearchSuppliersAsync(SupplierSearchRequestDto filter) =>
+            _repository.SearchSuppliersAsync(filter);
+
+        #endregion
+
+        #region PO Consignee
+
+        public async Task<int> CreateConsigneeAsync(PoConsigneeRequestDto request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (string.IsNullOrWhiteSpace(request.ConsigneeName))
+                throw new InvalidOperationException("Consignee name is required.");
+
+            return await _repository.CreateConsigneeAsync(request);
+        }
+
+        public Task<IEnumerable<PoConsigneeResponseDto>> GetAllConsigneesAsync() =>
+            _repository.GetAllConsigneesAsync();
+
+        #endregion
+
+        #region Purchase Order
+
+        public async Task<int> CreatePurchaseOrderAsync(PurchaseOrderRequestDto request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (request.SupplierId <= 0)
+                throw new InvalidOperationException("Supplier is required.");
+
+            if (request.Items == null || request.Items.Count == 0)
+                throw new InvalidOperationException("At least one item is required to create a Purchase Order.");
+
+            foreach (var item in request.Items)
+            {
+                if (item.Quantity <= 0)
+                    throw new InvalidOperationException($"Quantity must be greater than zero for '{item.Description}'.");
+
+                if (item.Rate < 0)
+                    throw new InvalidOperationException($"Rate cannot be negative for '{item.Description}'.");
+
+                if (item.ItemId == null && string.IsNullOrWhiteSpace(item.NewItemName))
+                    throw new InvalidOperationException(
+                        $"Item '{item.Description}' must either reference an existing inventory item or provide NewItemName.");
+            }
+
+            var poId = await _repository.CreatePurchaseOrderAsync(request);
+
+            _logger.LogInformation(
+                "Purchase Order {PoId} created for supplier {SupplierId} with {ItemCount} item(s).",
+                poId, request.SupplierId, request.Items.Count);
+
+            return poId;
+        }
+
+        public async Task<bool> UpdatePoStatusAsync(PurchaseOrderStatusUpdateDto request)
+        {
+            // request.Status is a PoStatus enum, so it's always one of the 5 valid values
+            // by construction — no need to re-validate against a string allow-list.
+            var existing = await _repository.GetPurchaseOrderByIdAsync(request.PoId);
+            if (existing == null)
+                throw new KeyNotFoundException("Purchase Order not found.");
+
+            // The SQL column is a VARCHAR ENUM, so convert once here at the service/repo boundary.
+            var statusText = request.Status.ToString();
+
+            var result = await _repository.UpdatePoStatusAsync(request.PoId, statusText);
+
+            _logger.LogInformation("PO {PoId} status changed to {Status}.", request.PoId, statusText);
+
+            return result;
+        }
+
+        public Task<PurchaseOrderResponseDto?> GetPurchaseOrderByIdAsync(int poId) =>
+            _repository.GetPurchaseOrderByIdAsync(poId);
+
+        public Task<IEnumerable<PurchaseOrderResponseDto>> SearchPurchaseOrdersAsync(PurchaseOrderSearchRequestDto filter) =>
+            _repository.SearchPurchaseOrdersAsync(filter);
+
+        #endregion
+
+        #region GRN (Goods Receipt)
+
+        public async Task<GrnResponseDto> CreateGrnAsync(GrnRequestDto request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            var po = await _repository.GetPurchaseOrderByIdAsync(request.PoId);
+            if (po == null)
+                throw new KeyNotFoundException("Purchase Order not found.");
+
+            if (po.Status is "Completed" or "Cancelled")
+                throw new InvalidOperationException($"Cannot receive stock — PO is already '{po.Status}'.");
+
+            if (request.Items == null || request.Items.Count == 0)
+                throw new InvalidOperationException("At least one item must be received.");
+
+            foreach (var item in request.Items)
+            {
+                var poItem = po.Items.FirstOrDefault(i => i.PoItemId == item.PoItemId);
+                if (poItem == null)
+                    throw new InvalidOperationException($"PO item {item.PoItemId} does not belong to this PO.");
+
+                if (item.ReceivedQty <= 0)
+                    throw new InvalidOperationException("Received quantity must be greater than zero.");
+
+                if (poItem.ReceivedQty + item.ReceivedQty > poItem.Quantity)
+                    throw new InvalidOperationException(
+                        $"Received quantity for '{poItem.Description}' exceeds pending quantity ({poItem.PendingQty}).");
+            }
+
+            var result = await _repository.CreateGrnAsync(request);
+
+            _logger.LogInformation("GRN {GrnId} created for PO {PoId}.", result.GrnId, request.PoId);
+
+            return result;
+        }
+
+        public Task<IEnumerable<GrnResponseDto>> GetGrnsByPoAsync(int poId) =>
+            _repository.GetGrnsByPoAsync(poId);
 
         #endregion
 

@@ -40,7 +40,8 @@ import LeadDetail from "@/admin/pages/LeadDetail";
 import Inventory from "@/admin/pages/Inventory";
 import PublicSitePage from "@/admin/pages/Publicsitepage";
 import SalarySheet from "@/admin/pages/SalarySheet";
- 
+import PurchaseModule from "@/admin/pages/Purchasemodule";
+
 
 function ComingSoon({ title = "Page", icon = "fa-solid fa-circle" }) {
     return (
@@ -89,7 +90,10 @@ const COMPONENT_MAP = {
     "/sales/leads": <Leads />,
 
     // ── Inventory ─────────────────────────────────────────────────────────
-    "/inventory": <Inventory />, 
+    "/inventory": <Inventory />,
+
+    // ── Purchase ──────────────────────────────────────────────────────────
+    "/purchase": <PurchaseModule />,
 
     // ── Admin ─────────────────────────────────────────────────────────────
     "/roles": <Roles />,
@@ -109,7 +113,7 @@ const COMPONENT_MAP = {
     "/self/attendance": <MyAttendance />,
     "/self/payslip": <MyPayslip />,
     "/public-site": <PublicSitePage />,
- 
+
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -176,7 +180,7 @@ function Router() {
 
                     {/* ── Dynamic pages from DB ── */}
                     {sortedPages.map((page) => {
-                        if (page.pageLink === "/dashboard") return null; 
+                        if (page.pageLink === "/dashboard") return null;
                         const component = COMPONENT_MAP[page.pageLink];
                         if (!component) return null;
                         return (

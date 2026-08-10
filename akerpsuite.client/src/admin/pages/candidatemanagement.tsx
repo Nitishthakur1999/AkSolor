@@ -7,10 +7,7 @@ const getUserId = () => {
     return user?.userId ?? user?.UserId ?? user?.emp_id ?? 1;
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Tiny inline icon set — no extra dependency, just the handful this page
-   needs. Kept as simple stroke-based SVGs matching a 1.5px line weight.
-   ────────────────────────────────────────────────────────────────────── */
+
 const Icon = {
     Download: (p) => (
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"

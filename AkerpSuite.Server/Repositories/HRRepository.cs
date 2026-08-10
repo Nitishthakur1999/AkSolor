@@ -1714,5 +1714,322 @@ namespace AkerpSuite.Server.Repositories
         }
 
         #endregion
+
+        #region Suppliers
+
+        public async Task<int> CreateSupplierAsync(SupplierRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_Supplier_Create",
+                new
+                {
+                    p_SupplierName = request.SupplierName,
+                    p_Gstin = request.Gstin,
+                    p_PanNo = request.PanNo,
+                    p_Address = request.Address,
+                    p_StateName = request.StateName,
+                    p_StateCode = request.StateCode,
+                    p_ContactNo = request.ContactNo,
+                    p_Email = request.Email
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateSupplierAsync(SupplierUpdateRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Supplier_Update",
+                new
+                {
+                    p_SupplierId = request.SupplierId,
+                    p_SupplierName = request.SupplierName,
+                    p_Gstin = request.Gstin,
+                    p_PanNo = request.PanNo,
+                    p_Address = request.Address,
+                    p_StateName = request.StateName,
+                    p_StateCode = request.StateCode,
+                    p_ContactNo = request.ContactNo,
+                    p_Email = request.Email
+                },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> ToggleSupplierStatusAsync(int supplierId)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Supplier_ToggleStatus",
+                new { p_SupplierId = supplierId },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<SupplierResponseDto?> GetSupplierByIdAsync(int supplierId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<SupplierResponseDto>(
+                "sp_Supplier_GetById",
+                new { p_SupplierId = supplierId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<SupplierResponseDto>> SearchSuppliersAsync(SupplierSearchRequestDto filter)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<SupplierResponseDto>(
+                "sp_Supplier_Search",
+                new { p_Keyword = filter.Keyword, p_IsActive = filter.IsActive },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        #endregion
+
+        #region PO Consignee
+
+        public async Task<int> CreateConsigneeAsync(PoConsigneeRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QuerySingleAsync<int>(
+                "sp_Consignee_Create",
+                new
+                {
+                    p_ConsigneeName = request.ConsigneeName,
+                    p_SiteAddress = request.SiteAddress,
+                    p_Gstin = request.Gstin,
+                    p_StateName = request.StateName,
+                    p_StateCode = request.StateCode,
+                    p_LeadId = request.LeadId
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<PoConsigneeResponseDto>> GetAllConsigneesAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<PoConsigneeResponseDto>(
+                "sp_Consignee_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        #endregion
+
+        #region Purchase Order
+        public async Task<int> CreatePurchaseOrderAsync(PurchaseOrderRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            conn.Open();
+            using var txn = conn.BeginTransaction();
+
+            try
+            {
+                var poId = await conn.QuerySingleAsync<int>(
+                    "sp_PurchaseOrder_Create",
+                    new
+                    {
+                     //   p_VoucherNo = request.VoucherNo,
+                        p_PoDate = request.PoDate,
+                        p_SupplierId = request.SupplierId,
+                        p_ConsigneeId = request.ConsigneeId,
+                        p_ReferenceNo = request.ReferenceNo,
+                        p_ReferenceDate = request.ReferenceDate,
+                        p_DispatchedThrough = request.DispatchedThrough,
+                        p_Destination = request.Destination,
+                        p_TermsOfDelivery = request.TermsOfDelivery,
+                        p_ModeOfPayment = request.ModeOfPayment,
+                        p_CreatedBy = request.CreatedBy
+                    },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+
+                foreach (var item in request.Items)
+                {
+                    var itemId = item.ItemId;
+
+                    // Auto-create the inventory item master row if the person picked "new item"
+                    if (itemId == null)
+                    {
+                        itemId = await conn.QuerySingleAsync<int>(
+                            "sp_CreateInventoryItem",
+                            new
+                            {
+                                p_ItemCode = (string?)null,
+                                p_ItemName = item.NewItemName,
+                                p_Category = item.NewItemCategory,
+                                p_Unit = item.Unit,
+                                p_OpeningStock = 0m,
+                                p_ReorderLevel = 0m,
+                                p_CreatedBy = request.CreatedBy
+                            },
+                            transaction: txn, commandType: CommandType.StoredProcedure);
+                    }
+
+                    await conn.ExecuteAsync(
+                        "sp_PurchaseOrderItem_Add",
+                        new
+                        {
+                            p_PoId = poId,
+                            p_ItemId = itemId,
+                            p_Description = item.Description,
+                            p_HsnSac = item.HsnSac,
+                            p_GstRate = item.GstRate,
+                            p_Quantity = item.Quantity,
+                            p_Unit = item.Unit,
+                            p_Rate = item.Rate
+                        },
+                        transaction: txn, commandType: CommandType.StoredProcedure);
+                }
+
+                // Recomputes total_amount / igst_amount on the header from its item rows
+                await conn.ExecuteAsync(
+                    "sp_PurchaseOrder_RecalculateTotals",
+                    new { p_PoId = poId },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+
+                txn.Commit();
+                return poId;
+            }
+            catch
+            {
+                txn.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdatePoStatusAsync(int poId, string status)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_PurchaseOrder_UpdateStatus",
+                new { p_PoId = poId, p_Status = status },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<PurchaseOrderResponseDto?> GetPurchaseOrderByIdAsync(int poId)
+        {
+            using var conn = _context.CreateConnection();
+
+            var header = await conn.QueryFirstOrDefaultAsync<PurchaseOrderResponseDto>(
+                "sp_PurchaseOrder_GetById",
+                new { p_PoId = poId },
+                commandType: CommandType.StoredProcedure);
+
+            if (header == null) return null;
+
+            var items = await conn.QueryAsync<PurchaseOrderItemResponseDto>(
+                "sp_PurchaseOrderItem_GetByPo",
+                new { p_PoId = poId },
+                commandType: CommandType.StoredProcedure);
+
+            header.Items = items.ToList();
+            return header;
+        }
+
+        public async Task<IEnumerable<PurchaseOrderResponseDto>> SearchPurchaseOrdersAsync(PurchaseOrderSearchRequestDto filter)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<PurchaseOrderResponseDto>(
+                "sp_PurchaseOrder_Search",
+                new
+                {
+                    p_SupplierId = filter.SupplierId,
+                    p_Status = filter.Status,
+                    p_FromDate = filter.FromDate,
+                    p_ToDate = filter.ToDate,
+                    p_Keyword = filter.Keyword
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        #endregion
+
+        #region GRN (Goods Receipt)
+
+        public async Task<GrnResponseDto> CreateGrnAsync(GrnRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            conn.Open();
+            using var txn = conn.BeginTransaction();
+
+            try
+            {
+                var grnId = await conn.QuerySingleAsync<int>(
+                    "sp_Grn_Create",
+                    new
+                    {
+                        p_PoId = request.PoId,
+                        p_GrnDate = request.GrnDate,
+                        p_ReceivedBy = request.ReceivedBy,
+                        p_Remarks = request.Remarks
+                    },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+
+                var responseItems = new List<GrnItemResponseDto>();
+
+                foreach (var item in request.Items)
+                {
+                    var result = await conn.QueryFirstAsync<GrnItemResponseDto>(
+                        "sp_GrnItem_Add",
+                        new
+                        {
+                            p_GrnId = grnId,
+                            p_PoItemId = item.PoItemId,
+                            p_ItemId = item.ItemId,
+                            p_ReceivedQty = item.ReceivedQty,
+                            p_CreatedBy = request.ReceivedBy
+                        },
+                        transaction: txn, commandType: CommandType.StoredProcedure);
+
+                    responseItems.Add(result);
+                }
+
+                var poStatus = await conn.QuerySingleAsync<string>(
+                    "sp_PurchaseOrder_RecalculateStatus",
+                    new { p_PoId = request.PoId },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+
+                txn.Commit();
+
+                return new GrnResponseDto
+                {
+                    GrnId = grnId,
+                    PoId = request.PoId,
+                    GrnDate = request.GrnDate,
+                    ReceivedBy = request.ReceivedBy,
+                    Remarks = request.Remarks,
+                    PoStatus = poStatus,
+                    Items = responseItems
+                };
+            }
+            catch
+            {
+                txn.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<GrnResponseDto>> GetGrnsByPoAsync(int poId)
+        {
+            using var conn = _context.CreateConnection();
+
+            var headers = (await conn.QueryAsync<GrnResponseDto>(
+                "sp_Grn_GetByPo",
+                new { p_PoId = poId },
+                commandType: CommandType.StoredProcedure)).ToList();
+
+            foreach (var h in headers)
+            {
+                var items = await conn.QueryAsync<GrnItemResponseDto>(
+                    "sp_GrnItem_GetByGrn",
+                    new { p_GrnId = h.GrnId },
+                    commandType: CommandType.StoredProcedure);
+                h.Items = items.ToList();
+            }
+
+            return headers;
+        }
+
+        #endregion
     }
 }
