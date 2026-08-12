@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { adminService } from "@/services/adminService";
 import { Link, useSearchParams } from "react-router-dom";
 import * as XLSX from "xlsx";
+
 // ─── Constants ─────────────────────────────────────────────────────────────
 const MONTHS = [
     "January", "February", "March", "April", "May", "June",
@@ -32,18 +33,21 @@ const deductionTypeLabel = (code) =>
 
 function Badge({ status }) {
     const map = {
-        Generated: "bg-amber-50 text-amber-700 border-amber-200",
-        Draft: "bg-amber-50 text-amber-700 border-amber-200",
+        Generated: "bg-amber-50 text-amber-700 border-amber-200/50",
+        Draft: "bg-amber-50 text-amber-700 border-amber-200/50",
         Processing: "bg-slate-100 text-slate-500 border-slate-200",
-        Finalized: "bg-blue-50  text-blue-700  border-blue-200",
-        Paid: "bg-green-50 text-green-700 border-green-200",
-        Pending: "bg-amber-50 text-amber-700 border-amber-200",
-        Approved: "bg-green-50 text-green-700 border-green-200",
-        Rejected: "bg-red-50   text-red-700   border-red-200",
+        Finalized: "bg-blue-50 text-blue-700 border-blue-200/50",
+        Paid: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+        Pending: "bg-amber-50 text-amber-700 border-amber-200/50",
+        Approved: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+        Rejected: "bg-rose-50 text-rose-700 border-rose-200/50",
+        Active: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+        Closed: "bg-slate-100 text-slate-600 border-slate-200",
     };
     const cls = map[status] ?? "bg-slate-100 text-slate-600 border-slate-200";
     return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${cls}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${cls}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-75"></span>
             {status}
         </span>
     );
@@ -51,18 +55,20 @@ function Badge({ status }) {
 
 function Field({ label, children }) {
     return (
-        <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</label>
+        <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">{label}</label>
             {children}
         </div>
     );
 }
 
+const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm";
+
 function Input({ ...props }) {
     return (
         <input
             {...props}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
+            className={inputClass}
         />
     );
 }
@@ -74,7 +80,7 @@ function MonthYearPicker({ month, year, onChange }) {
                 <select
                     value={month}
                     onChange={e => onChange(parseInt(e.target.value), year)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white"
+                    className={`${inputClass} cursor-pointer appearance-none`}
                 >
                     {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
                 </select>
@@ -134,8 +140,8 @@ function EmployeePicker({ label = "Employee *", value, onChange, required = true
     };
 
     return (
-        <div className="flex flex-col gap-1 relative" ref={ref} style={{ minWidth: width ?? 220 }}>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</label>
+        <div className="flex flex-col gap-1.5 relative" ref={ref} style={{ minWidth: width ?? 220 }}>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">{label}</label>
             <input
                 type="text"
                 required={required}
@@ -148,22 +154,22 @@ function EmployeePicker({ label = "Employee *", value, onChange, required = true
                     if (!e.target.value) { onChange(""); setSelectedName(""); }
                 }}
                 onFocus={() => { if (!disabled) { setShowDropdown(true); setSearch(""); } }}
-                className={`px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white w-full ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : ""}`}
+                className={`${inputClass} ${disabled ? "opacity-50 cursor-not-allowed bg-slate-50" : ""}`}
             />
             {showDropdown && !disabled && (
-                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-64 overflow-y-auto z-50">
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-64 overflow-y-auto z-50">
                     {filtered.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-slate-400">No employees found.</div>
+                        <div className="px-4 py-3 text-sm text-slate-400 italic">No employees found.</div>
                     ) : (
                         filtered.map(emp => (
                             <button
                                 type="button"
                                 key={emp.empId}
                                 onClick={() => handleSelect(emp)}
-                                className="w-full text-left px-4 py-2.5 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
+                                className="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
                             >
-                                <div className="text-sm font-semibold text-slate-800">{emp.firstName} {emp.lastName}</div>
-                                <div className="text-[11px] text-slate-400">{emp.empCode || `#${emp.empId}`} · {emp.officialEmail}</div>
+                                <div className="text-sm font-bold text-slate-800">{emp.firstName} {emp.lastName}</div>
+                                <div className="text-xs text-slate-400 font-medium mt-0.5">{emp.empCode || `#${emp.empId}`} · {emp.officialEmail}</div>
                             </button>
                         ))
                     )}
@@ -211,8 +217,6 @@ function SalaryTab({ structures }) {
                 empId: parseInt(form.empId),
                 structureId: parseInt(form.structureId) || 1,
                 basic: parseFloat(form.basic),
-                // EPF Basic can differ from Basic (e.g. capped at statutory wage ceiling),
-                // so it's tracked separately. Falls back to Basic if left blank.
                 epfBasic: form.epfBasic ? parseFloat(form.epfBasic) : parseFloat(form.basic),
                 hra: parseFloat(form.hra) || 0,
                 ta: parseFloat(form.ta) || 0,
@@ -259,23 +263,28 @@ function SalaryTab({ structures }) {
     ];
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-                <input
-                    type="text" placeholder="Search by name or ID…"
-                    value={search} onChange={e => setSearch(e.target.value)}
-                    className="flex-1 min-w-[200px] max-w-xs px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400"
-                />
+        <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="relative group w-full sm:max-w-xs">
+                    <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                    <input
+                        type="text" placeholder="Search by name or ID…"
+                        value={search} onChange={e => setSearch(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
+                    />
+                </div>
                 <button
                     onClick={() => setShowForm(v => !v)}
-                    className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
-                >{showForm ? "Cancel" : "+ Set salary"}</button>
+                    className="px-5 py-2.5 bg-amber-400 text-[#0b2836] text-xs sm:text-sm font-bold rounded-xl hover:bg-amber-500 transition-all shadow-sm flex items-center gap-2"
+                >
+                    <i className={`fa-solid ${showForm ? "fa-xmark" : "fa-plus"}`} /> {showForm ? "Cancel" : "Set Salary"}
+                </button>
             </div>
 
             {showForm && (
-                <form onSubmit={handleSave} className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4">
-                    <p className="text-sm font-semibold text-slate-700">Set / update salary structure</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <form onSubmit={handleSave} className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-5 animate-in fade-in duration-200 shadow-sm">
+                    <p className="text-sm font-bold text-slate-800">Set / Update Salary Structure</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                         <EmployeePicker
                             value={form.empId}
                             onChange={(id) => setForm(f => ({ ...f, empId: id }))}
@@ -289,53 +298,53 @@ function SalaryTab({ structures }) {
                             <Input type="date" value={form.effectiveFrom} onChange={set("effectiveFrom")} required />
                         </Field>
                     </div>
-                    <p className="text-[11px] text-slate-400">
-                        Leave "EPF Basic" blank to use the same value as Basic. Set it separately only when EPF is calculated on a capped/different wage (e.g. statutory ceiling).
+                    <p className="text-xs text-slate-400 font-medium">
+                        Leave "EPF Basic" blank to use the same value as Basic. Set it separately only when EPF is calculated on a capped wage.
                     </p>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-3 border-t border-slate-200/60">
                         <button
                             type="submit" disabled={saving}
-                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all"
-                        >{saving ? "Saving…" : "Save structure"}</button>
+                            className="px-6 py-3 bg-[#0b2836] text-white text-sm font-bold rounded-xl hover:bg-[#0f3345] disabled:opacity-60 transition-all shadow-lg shadow-[#0b2836]/20"
+                        >{saving ? "Saving…" : "Save Structure"}</button>
                     </div>
                 </form>
             )}
 
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-sm border-collapse">
-                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[1000px]">
+                    <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                         <tr>
                             {["Employee", "Structure", "Basic", "EPF Basic", "HRA", "TA", "DA", "Special Allow.", "Gross CTC", "Effective From"].map(h => (
-                                <th key={h} className="px-5 py-3 text-left">{h}</th>
+                                <th key={h} className="px-5 py-4 text-left">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filtered.length === 0 ? (
-                            <tr><td colSpan={10} className="px-5 py-10 text-center text-slate-400">No salary records found.</td></tr>
+                            <tr><td colSpan={10} className="px-5 py-12 text-center text-slate-400 font-medium">No salary records found.</td></tr>
                         ) : filtered.map((s, i) => {
                             const gross = (s.basic ?? 0) + (s.hra ?? 0) + (s.ta ?? 0) + (s.da ?? 0) + (s.specialAllow ?? 0);
                             return (
-                                <tr key={s.salId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                    <td className="px-5 py-3">
-                                        <div className="font-semibold text-slate-800">
+                                <tr key={s.salId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="px-5 py-4">
+                                        <div className="font-bold text-slate-900">
                                             {s.firstName} {s.lastName}
                                         </div>
-                                        <div className="text-[11px] text-slate-400">{s.empCode || `#${s.empId}`}</div>
+                                        <div className="text-xs font-mono font-bold text-amber-600 mt-0.5">{s.empCode || `#${s.empId}`}</div>
                                     </td>
-                                    <td className="px-5 py-3">
-                                        <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full text-[10px] font-bold">
+                                    <td className="px-5 py-4">
+                                        <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/50 rounded-lg text-[11px] font-bold">
                                             {s.structureName ?? (s.structureId ? `#${s.structureId}` : "—")}
                                         </span>
                                     </td>
-                                    <td className="px-5 py-3">{fmtINR(s.basic)}</td>
-                                    <td className="px-5 py-3">{fmtINR(s.epfBasic ?? s.basic)}</td>
-                                    <td className="px-5 py-3">{fmtINR(s.hra)}</td>
-                                    <td className="px-5 py-3">{fmtINR(s.ta)}</td>
-                                    <td className="px-5 py-3">{fmtINR(s.da)}</td>
-                                    <td className="px-5 py-3">{fmtINR(s.specialAllow)}</td>
-                                    <td className="px-5 py-3 font-semibold text-slate-800">{fmtINR(gross)}</td>
-                                    <td className="px-5 py-3 text-slate-500 text-xs">{s.effectiveFrom ? s.effectiveFrom.slice(0, 10) : "—"}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(s.basic)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(s.epfBasic ?? s.basic)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(s.hra)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(s.ta)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(s.da)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(s.specialAllow)}</td>
+                                    <td className="px-5 py-4 font-mono font-bold text-emerald-700">{fmtINR(gross)}</td>
+                                    <td className="px-5 py-4 text-slate-500 font-medium text-xs">{s.effectiveFrom ? s.effectiveFrom.slice(0, 10) : "—"}</td>
                                 </tr>
                             );
                         })}
@@ -350,40 +359,40 @@ function PayrollResultTable({ title, period, list, loading }) {
     if (!period) return null;
     return (
         <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">
                 {title} — {MONTHS[(period.month ?? 1) - 1]} {period.year}
                 {!loading && <span className="text-slate-400 font-normal normal-case"> · {list?.length ?? 0} employee(s)</span>}
             </p>
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-sm border-collapse">
-                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[1000px]">
+                    <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                         <tr>
                             {["Employee", "Basic", "HRA", "TA", "DA", "Special Allow.", "Gross", "PF", "Deductions", "Net pay", "Status"].map(h => (
-                                <th key={h} className="px-5 py-3 text-left">{h}</th>
+                                <th key={h} className="px-5 py-4 text-left">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={11} className="px-5 py-10 text-center text-amber-500 animate-pulse">Loading…</td></tr>
+                            <tr><td colSpan={11} className="px-5 py-12 text-center text-amber-500 font-bold animate-pulse">Loading…</td></tr>
                         ) : !list || list.length === 0 ? (
-                            <tr><td colSpan={11} className="px-5 py-10 text-center text-slate-400">No records found for this period.</td></tr>
+                            <tr><td colSpan={11} className="px-5 py-12 text-center text-slate-400 font-medium">No records found for this period.</td></tr>
                         ) : list.map((d, i) => (
-                            <tr key={d.payrollId ?? d.empId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                <td className="px-5 py-3">
-                                    <div className="font-semibold text-slate-800">{d.empName ?? `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() ?? `EMP-${d.empId}`}</div>
-                                    <div className="text-[11px] text-slate-400">#{d.empId}</div>
+                            <tr key={d.payrollId ?? d.empId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-5 py-4">
+                                    <div className="font-bold text-slate-900">{d.empName ?? `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() ?? `EMP-${d.empId}`}</div>
+                                    <div className="text-xs font-mono font-bold text-amber-600 mt-0.5">#{d.empId}</div>
                                 </td>
-                                <td className="px-5 py-3">{fmtINR(d.basic)}</td>
-                                <td className="px-5 py-3">{fmtINR(d.hra)}</td>
-                                <td className="px-5 py-3">{fmtINR(d.ta)}</td>
-                                <td className="px-5 py-3">{fmtINR(d.da)}</td>
-                                <td className="px-5 py-3">{fmtINR(d.specialAllow ?? d.specialAllowance)}</td>
-                                <td className="px-5 py-3 font-semibold">{fmtINR(d.grossEarning ?? d.grossSalary ?? d.grossPay ?? d.totalGross)}</td>
-                                <td className="px-5 py-3">{fmtINR(d.pfDeduction ?? d.pfAmount ?? d.pfEmployee)}</td>
-                                <td className="px-5 py-3 text-red-600">{fmtINR(d.totalDeduction ?? d.totalDeductions)}</td>
-                                <td className="px-5 py-3 font-semibold text-green-600">{fmtINR(d.netSalary ?? d.netPay)}</td>
-                                <td className="px-5 py-3"><Badge status={d.status} /></td>
+                                <td className="px-5 py-4 font-mono">{fmtINR(d.basic)}</td>
+                                <td className="px-5 py-4 font-mono">{fmtINR(d.hra)}</td>
+                                <td className="px-5 py-4 font-mono">{fmtINR(d.ta)}</td>
+                                <td className="px-5 py-4 font-mono">{fmtINR(d.da)}</td>
+                                <td className="px-5 py-4 font-mono">{fmtINR(d.specialAllow ?? d.specialAllowance)}</td>
+                                <td className="px-5 py-4 font-mono font-semibold text-slate-800">{fmtINR(d.grossEarning ?? d.grossSalary ?? d.grossPay ?? d.totalGross)}</td>
+                                <td className="px-5 py-4 font-mono">{fmtINR(d.pfDeduction ?? d.pfAmount ?? d.pfEmployee)}</td>
+                                <td className="px-5 py-4 font-mono text-rose-600">{fmtINR(d.totalDeduction ?? d.totalDeductions)}</td>
+                                <td className="px-5 py-4 font-mono font-bold text-emerald-700">{fmtINR(d.netSalary ?? d.netPay)}</td>
+                                <td className="px-5 py-4"><Badge status={d.status} /></td>
                             </tr>
                         ))}
                     </tbody>
@@ -427,8 +436,6 @@ function PayrollTab({ months, onRefresh }) {
         }
     };
 
-    // 🐛 Bug 3 fix: DB enum has no "Generated" status — sp_payroll_generate sets
-    // status = 'Draft'. Filtering on "Generated" always returned 0.
     const stats = useMemo(() => ({
         total: months.length,
         generated: months.filter(m => m.status === "Draft").length,
@@ -501,58 +508,52 @@ function PayrollTab({ months, onRefresh }) {
     };
 
     return (
-        <div className="space-y-5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: "Total months", val: stats.total, color: "text-slate-800" },
                     { label: "Generated", val: stats.generated, color: "text-amber-600" },
                     { label: "Finalized", val: stats.finalized, color: "text-blue-600" },
-                    { label: "Paid", val: stats.paid, color: "text-green-600" },
+                    { label: "Paid", val: stats.paid, color: "text-emerald-600" },
                 ].map(({ label, val, color }) => (
-                    <div key={label} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                        <div className="text-[11px] text-slate-400 mb-1">{label}</div>
-                        <div className={`text-2xl font-semibold ${color}`}>{val}</div>
+                    <div key={label} className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</div>
+                        <div className={`text-3xl font-black ${color}`}>{val}</div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-700">Generate payroll</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400">Create payroll for a month/year for all or a specific employee.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 shadow-sm">
+                    <span className="text-sm font-bold text-slate-800 block">Generate Payroll</span>
+                    <p className="text-xs text-slate-500">Create payroll for a month/year for all or a specific employee.</p>
                     <button onClick={() => { hide(); setShowGen(v => !v); }}
-                        className="w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-amber-700 transition-all">
-                        Generate
+                        className="w-full py-2.5 bg-amber-400 text-[#0b2836] text-xs font-bold rounded-xl hover:bg-amber-500 transition-all shadow-sm">
+                        {showGen ? "Close Form" : "Generate Payroll"}
                     </button>
                 </div>
-                <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-700">Finalize payroll</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400">Lock payroll before disbursement. Requires approver ID.</p>
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 shadow-sm">
+                    <span className="text-sm font-bold text-slate-800 block">Finalize Payroll</span>
+                    <p className="text-xs text-slate-500">Lock payroll before disbursement. Requires approver ID.</p>
                     <button onClick={() => { hide(); setShowFin(v => !v); }}
-                        className="w-full py-2 border bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-slate-50 transition-all">
-                        Finalize
+                        className="w-full py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all shadow-sm">
+                        {showFin ? "Close Form" : "Finalize Payroll"}
                     </button>
                 </div>
-                <div className="border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-700">Mark as paid</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400">Confirm salary disbursed by Accounts team.</p>
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 shadow-sm">
+                    <span className="text-sm font-bold text-slate-800 block">Mark as Paid</span>
+                    <p className="text-xs text-slate-500">Confirm salary disbursed by Accounts team.</p>
                     <button onClick={() => { hide(); setShowPaid(v => !v); }}
-                        className="w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-amber-700 transition-all">
-                        Mark paid
+                        className="w-full py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm">
+                        {showPaid ? "Close Form" : "Mark as Paid"}
                     </button>
                 </div>
             </div>
 
             {showGen && (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                    <p className="text-sm font-semibold text-slate-700">Generate payroll</p>
-                    <label className="flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 cursor-pointer w-fit">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 animate-in fade-in duration-200 shadow-sm">
+                    <p className="text-sm font-bold text-slate-800">Generate Payroll Configuration</p>
+                    <label className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 cursor-pointer w-fit shadow-sm">
                         <input
                             type="checkbox"
                             checked={genForAll}
@@ -560,17 +561,16 @@ function PayrollTab({ months, onRefresh }) {
                                 setGenForAll(e.target.checked);
                                 if (e.target.checked) setGenForm(f => ({ ...f, empId: "" }));
                             }}
-                            className="w-4 h-4 accent-amber-600"
+                            className="w-4 h-4 text-amber-600 focus:ring-amber-500 rounded cursor-pointer"
                         />
-                        <span className="text-sm font-semibold text-amber-700">Generate for all employees</span>
-                        <span className="text-[11px] text-amber-400">(default)</span>
+                        <span className="text-sm font-bold text-slate-700">Generate for all employees (default)</span>
                     </label>
 
-                    <div className="flex flex-wrap gap-3 items-end">
+                    <div className="flex flex-wrap gap-4 items-end pt-2">
                         <MonthYearPicker month={genForm.month} year={genForm.year}
                             onChange={(m, y) => setGenForm(f => ({ ...f, month: m, year: y }))} />
                         <EmployeePicker
-                            label="Employee (only if not generating for all)"
+                            label="Employee (optional)"
                             required={false}
                             disabled={genForAll}
                             placeholder={genForAll ? "All employees selected" : "Search by name or ID..."}
@@ -583,12 +583,14 @@ function PayrollTab({ months, onRefresh }) {
                                 onChange={e => setGenForm(f => ({ ...f, createdBy: e.target.value }))}
                                 style={{ width: 130 }} />
                         </Field>
-                        <button disabled={loading === "Generate"} onClick={doGenerate}
-                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all self-end">
-                            {loading === "Generate" ? "Generating…" : genForAll ? "Generate for all" : "Generate"}
-                        </button>
-                        <button onClick={() => setShowGen(false)}
-                            className="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-100 self-end">Cancel</button>
+                        <div className="flex gap-2 self-end">
+                            <button disabled={loading === "Generate"} onClick={doGenerate}
+                                className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
+                                {loading === "Generate" ? "Generating…" : genForAll ? "Generate for all" : "Generate"}
+                            </button>
+                            <button onClick={() => setShowGen(false)}
+                                className="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-100">Cancel</button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -601,33 +603,37 @@ function PayrollTab({ months, onRefresh }) {
             />
 
             {showFin && (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
-                    <p className="text-sm font-semibold text-slate-700">Finalize payroll</p>
-                    <div className="flex flex-wrap gap-3 items-end">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 animate-in fade-in duration-200 shadow-sm">
+                    <p className="text-sm font-bold text-slate-800">Finalize Payroll Configuration</p>
+                    <div className="flex flex-wrap gap-4 items-end">
                         <MonthYearPicker month={finForm.month} year={finForm.year}
                             onChange={(m, y) => setFinForm(f => ({ ...f, month: m, year: y }))} />
-                        <button disabled={loading === "Finalize"} onClick={doFinalize}
-                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-900 disabled:opacity-60 transition-all self-end">
-                            {loading === "Finalize" ? "Finalizing…" : "Finalize"}
-                        </button>
-                        <button onClick={() => setShowFin(false)}
-                            className="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-100 self-end">Cancel</button>
+                        <div className="flex gap-2 self-end">
+                            <button disabled={loading === "Finalize"} onClick={doFinalize}
+                                className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-all">
+                                {loading === "Finalize" ? "Finalizing…" : "Finalize"}
+                            </button>
+                            <button onClick={() => setShowFin(false)}
+                                className="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-100">Cancel</button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {showPaid && (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
-                    <p className="text-sm font-semibold text-slate-700">Mark payroll as paid</p>
-                    <div className="flex flex-wrap gap-3 items-end">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 animate-in fade-in duration-200 shadow-sm">
+                    <p className="text-sm font-bold text-slate-800">Mark Payroll as Paid Configuration</p>
+                    <div className="flex flex-wrap gap-4 items-end">
                         <MonthYearPicker month={paidForm.month} year={paidForm.year}
                             onChange={(m, y) => setPaidForm(f => ({ ...f, month: m, year: y }))} />
-                        <button disabled={loading === "MarkPaid"} onClick={doMarkPaid}
-                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-60 transition-all self-end">
-                            {loading === "MarkPaid" ? "Saving…" : "Mark as paid"}
-                        </button>
-                        <button onClick={() => setShowPaid(false)}
-                            className="px-4 py-2.5 border border-amber-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-amber-100 self-end">Cancel</button>
+                        <div className="flex gap-2 self-end">
+                            <button disabled={loading === "MarkPaid"} onClick={doMarkPaid}
+                                className="px-6 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-60 transition-all">
+                                {loading === "MarkPaid" ? "Saving…" : "Mark as Paid"}
+                            </button>
+                            <button onClick={() => setShowPaid(false)}
+                                className="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-100">Cancel</button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -640,34 +646,34 @@ function PayrollTab({ months, onRefresh }) {
             />
 
             <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Payroll months history</p>
-                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                    <table className="w-full text-sm border-collapse">
-                        <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 ml-1">Payroll Months History</p>
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                    <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[800px]">
+                        <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                             <tr>
-                                {["Month / Year", "Employees", "Total gross", "Status", "Finalized by", ""].map(h => (
-                                    <th key={h} className="px-5 py-3 text-left">{h}</th>
+                                {["Month / Year", "Employees", "Total Gross", "Status", "Finalized By", "Actions"].map(h => (
+                                    <th key={h} className="px-5 py-4 text-left">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {months.length === 0 ? (
-                                <tr><td colSpan={6} className="px-5 py-10 text-center text-slate-400">No payroll months found.</td></tr>
+                                <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-400 font-medium">No payroll months found.</td></tr>
                             ) : months.map((m, i) => (
-                                <tr key={m.payrollId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                    <td className="px-5 py-3 font-semibold text-slate-800">
+                                <tr key={m.payrollId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="px-5 py-4 font-bold text-slate-900">
                                         {MONTHS[(m.month ?? 1) - 1]} {m.year}
                                     </td>
-                                    <td className="px-5 py-3">{m.empCount ?? "—"}</td>
-                                    <td className="px-5 py-3 font-semibold">{fmtINR(m.totalGross)}</td>
-                                    <td className="px-5 py-3"><Badge status={m.status} /></td>
-                                    <td className="px-5 py-3 text-slate-500">{m.finalizedBy ?? "—"}</td>
-                                    <td className="px-5 py-3">
+                                    <td className="px-5 py-4 font-mono font-semibold text-slate-700">{m.empCount ?? "—"}</td>
+                                    <td className="px-5 py-4 font-mono font-bold text-emerald-700">{fmtINR(m.totalGross)}</td>
+                                    <td className="px-5 py-4"><Badge status={m.status} /></td>
+                                    <td className="px-5 py-4 font-semibold text-slate-600">{m.finalizedBy ?? "—"}</td>
+                                    <td className="px-5 py-4">
                                         <button
                                             onClick={() => viewHistoryDetails(m)}
                                             disabled={loadingHistoryList}
-                                            className="px-3 py-1 text-xs font-bold bg-amber-100 hover:bg-amber-200 text-slate-600 rounded-xl transition-all disabled:opacity-60">
-                                            View details
+                                            className="px-4 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 text-xs font-bold rounded-xl transition-all border border-amber-200/50 shadow-sm disabled:opacity-60">
+                                            View Details
                                         </button>
                                     </td>
                                 </tr>
@@ -689,7 +695,7 @@ function PayrollTab({ months, onRefresh }) {
     );
 }
 
-// ── 3. Deductions Tab ────────────────────────────────────────────────────
+// ── 3. Deductions Tab ────────────────────────────────────────────────----
 function DeductionsTab({ deductions, onRefresh }) {
     const emptyForm = {
         empId: "", month: currentMonth, year: currentYear,
@@ -754,16 +760,16 @@ function DeductionsTab({ deductions, onRefresh }) {
 
     return (
         <div className="space-y-5">
-            <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                <p className="text-sm font-semibold text-slate-700">Add deduction / penalty</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+                <p className="text-sm font-bold text-slate-800">Add Deduction / Penalty</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                     <EmployeePicker
                         value={form.empId}
                         onChange={(id) => setForm(f => ({ ...f, empId: id }))}
                     />
                     <Field label="Deduction Type *">
                         <select value={form.deductionType} onChange={set("deductionType")} required
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
+                            className={`${inputClass} cursor-pointer appearance-none`}>
                             <option value="">Select type…</option>
                             {DEDUCTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
@@ -780,17 +786,17 @@ function DeductionsTab({ deductions, onRefresh }) {
                     <MonthYearPicker month={form.month} year={form.year}
                         onChange={(m, y) => setForm(f => ({ ...f, month: m, year: y }))} />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-3 border-t border-slate-200/60">
                     <button type="submit" disabled={saving}
-                        className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
-                        {saving ? "Adding…" : "Add deduction"}
+                        className="px-6 py-3 bg-[#0b2836] text-white text-sm font-bold rounded-xl hover:bg-[#0f3345] disabled:opacity-60 transition-all shadow-lg shadow-[#0b2836]/20">
+                        {saving ? "Adding…" : "Add Deduction"}
                     </button>
                 </div>
             </form>
 
             <div className="flex gap-3 flex-wrap items-center">
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400">
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 bg-white focus:outline-none focus:border-amber-400 cursor-pointer shadow-sm">
                     <option value="">All statuses</option>
                     <option>Pending</option>
                     <option>Approved</option>
@@ -798,49 +804,49 @@ function DeductionsTab({ deductions, onRefresh }) {
                 </select>
             </div>
 
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-sm border-collapse">
-                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[900px]">
+                    <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                         <tr>
                             {["Employee", "Month / Year", "Type", "Amount", "Reason", "Status", "Actions"].map(h => (
-                                <th key={h} className="px-5 py-3 text-left">{h}</th>
+                                <th key={h} className="px-5 py-4 text-left">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filtered.length === 0 ? (
-                            <tr><td colSpan={7} className="px-5 py-10 text-center text-slate-400">No deductions found.</td></tr>
+                            <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-400 font-medium">No deductions found.</td></tr>
                         ) : filtered.map((d, i) => (
-                            <tr key={d.deductionId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                <td className="px-5 py-3">
-                                    <div className="font-semibold text-slate-800">{d.empName ?? `EMP-${d.empId}`}</div>
-                                    <div className="text-[11px] text-slate-400">#{d.empId}</div>
+                            <tr key={d.deductionId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-5 py-4">
+                                    <div className="font-bold text-slate-900">{d.empName ?? `EMP-${d.empId}`}</div>
+                                    <div className="text-xs font-mono font-bold text-amber-600 mt-0.5">#{d.empId}</div>
                                 </td>
-                                <td className="px-5 py-3">{MONTHS[(d.month ?? 1) - 1]} {d.year}</td>
-                                <td className="px-5 py-3">
-                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold">
+                                <td className="px-5 py-4 font-semibold text-slate-700">{MONTHS[(d.month ?? 1) - 1]} {d.year}</td>
+                                <td className="px-5 py-4">
+                                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold border border-slate-200">
                                         {deductionTypeLabel(d.deductionType)}
                                     </span>
                                 </td>
-                                <td className="px-5 py-3 font-semibold text-red-600">−{fmtINR(d.amount)}</td>
-                                <td className="px-5 py-3 text-slate-500 max-w-[180px] truncate" title={d.reason}>{d.reason}</td>
-                                <td className="px-5 py-3"><Badge status={d.status} /></td>
-                                <td className="px-5 py-3">
+                                <td className="px-5 py-4 font-mono font-bold text-rose-600">−{fmtINR(d.amount)}</td>
+                                <td className="px-5 py-4 text-slate-600 font-medium max-w-[200px] truncate" title={d.reason}>{d.reason}</td>
+                                <td className="px-5 py-4"><Badge status={d.status} /></td>
+                                <td className="px-5 py-4">
                                     {d.status === "Pending" ? (
                                         <div className="flex gap-2">
                                             <button disabled={!!actLoading}
                                                 onClick={() => handleAction(d.deductionId, "Approved", "Verified and approved by HR")}
-                                                className="px-3 py-1 text-xs font-bold bg-green-50 hover:bg-green-100 text-green-700 rounded-xl border border-green-200 transition-all disabled:opacity-60">
+                                                className="px-3.5 py-1.5 text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200/50 transition-all disabled:opacity-60 shadow-sm">
                                                 Approve
                                             </button>
                                             <button disabled={!!actLoading}
                                                 onClick={() => handleAction(d.deductionId, "Rejected", "Rejected")}
-                                                className="px-3 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-700 rounded-xl border border-red-200 transition-all disabled:opacity-60">
+                                                className="px-3.5 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200/50 transition-all disabled:opacity-60 shadow-sm">
                                                 Reject
                                             </button>
                                         </div>
                                     ) : (
-                                        <span className="text-slate-400 text-xs">—</span>
+                                        <span className="text-slate-400 text-xs font-bold">—</span>
                                     )}
                                 </td>
                             </tr>
@@ -853,8 +859,6 @@ function DeductionsTab({ deductions, onRefresh }) {
 }
 
 // ── 4. Payroll Details Tab ───────────────────────────────────────────────
-// Builds & downloads the exact client-format "Salary Sheet" xlsx from loaded payroll details.
-// Column layout matches the client's reference file (S NO. ... SIGNATURE).
 function exportSalarySheet(details, month, year, companyName) {
     const title = `${(companyName || "COMPANY NAME").toUpperCase()}`;
     const subtitle = `SALARY SHEET FOR THE MONTH ${MONTHS[(month ?? 1) - 1].toUpperCase()}, ${year}`;
@@ -871,8 +875,6 @@ function exportSalarySheet(details, month, year, companyName) {
     const rows = details.map((d, i) => {
         const totalDays = Number(d.workingDays ?? 0);
         const presentDays = Number(d.presentDays ?? 0);
-        // Ratio to back-calculate the full monthly structure amount from the earned (prorated) amount
-        // already stored per pay run. When present === total, ratio is 1 and both sets match.
         const ratio = presentDays > 0 ? totalDays / presentDays : 1;
 
         const earnEpfBasic = Number(d.epfBasic ?? 0);
@@ -946,7 +948,10 @@ function exportSalarySheet(details, month, year, companyName) {
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 
 function DetailsTab() {
-    const [filter, setFilter] = useState({ month: currentMonth, year: currentYear, empId: "" });
+    const [month, setMonth] = useState(currentMonth);
+    const [year, setYear] = useState(currentYear);
+    const [empId, setEmpId] = useState("");
+
     const [details, setDetails] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loaded, setLoaded] = useState(false);
@@ -963,9 +968,9 @@ function DetailsTab() {
         setLoading(true);
         try {
             const res = await adminService.getPayrollDetails(
-                filter.month,
-                filter.year,
-                filter.empId ? parseInt(filter.empId) : undefined
+                month,
+                year,
+                empId ? parseInt(empId) : undefined
             );
             if (res.Success || res.success) {
                 setDetails(res.Data || res.data || []);
@@ -973,98 +978,110 @@ function DetailsTab() {
             } else {
                 alert(res.Message || "Failed to load details.");
             }
-        } catch (err) { console.error(err); }
-        finally { setLoading(false); }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="space-y-5">
-            <div className="flex flex-wrap gap-3 items-end">
-                <MonthYearPicker month={filter.month} year={filter.year}
-                    onChange={(m, y) => setFilter(f => ({ ...f, month: m, year: y }))} />
-                <EmployeePicker
-                    label="Employee (optional)"
-                    required={false}
-                    placeholder="Leave blank for all employees"
-                    value={filter.empId}
-                    onChange={(id) => setFilter(f => ({ ...f, empId: id }))}
-                    width={220}
-                />
-                <button onClick={loadDetails} disabled={loading}
-                    className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all self-end">
-                    {loading ? "Loading…" : "Load details"}
-                </button>
+        <div className="space-y-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <p className="text-sm font-bold text-slate-800">Filter Payroll Details</p>
+                <div className="flex flex-wrap gap-4 items-end">
+                    <MonthYearPicker
+                        month={month}
+                        year={year}
+                        onChange={(m, y) => { setMonth(m); setYear(y); }}
+                    />
+                    <EmployeePicker
+                        label="Employee (optional)"
+                        required={false}
+                        placeholder="Leave blank for all employees"
+                        value={empId}
+                        onChange={(id) => setEmpId(id)}
+                        width={240}
+                    />
+                    <button
+                        onClick={loadDetails}
+                        disabled={loading}
+                        className="px-6 py-3 bg-[#0b2836] text-white text-sm font-bold rounded-xl hover:bg-[#0f3345] disabled:opacity-60 transition-all self-end shadow-lg shadow-[#0b2836]/20"
+                    >
+                        {loading ? "Loading…" : "Load Details"}
+                    </button>
+                </div>
             </div>
 
             {loaded && details.length > 0 && (
-                <div className="flex flex-wrap gap-3 items-end bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                    <Field label="Company name (for sheet header)">
+                <div className="flex flex-wrap gap-4 items-center justify-between bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-6 shadow-sm">
+                    <Field label="Company Name (For Excel Sheet Header)">
                         <Input
-                            type="text" placeholder="e.g. MS AKS SOLAR SYSTEMS PRIVATE LIMITED"
+                            type="text" placeholder="e.g. AKS SOLAR SYSTEMS PRIVATE LIMITED"
                             value={companyName} onChange={e => setCompanyName(e.target.value)}
-                            style={{ width: 320 }}
+                            style={{ width: 340 }}
                         />
                     </Field>
                     <button
-                        onClick={() => exportSalarySheet(details, filter.month, filter.year, companyName)}
-                        className="px-6 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all self-end"
+                        onClick={() => exportSalarySheet(details, month, year, companyName)}
+                        className="px-6 py-3 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-all self-end shadow-lg shadow-emerald-600/20 flex items-center gap-2"
                     >
-                        ⬇ Download salary sheet (.xlsx)
+                        <i className="fa-solid fa-file-excel" /> Download Salary Sheet (.xlsx)
                     </button>
                 </div>
             )}
 
             {loaded && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[
-                        { label: "Total gross", val: fmtINR(totals.gross), color: "text-slate-800" },
-                        { label: "Total deductions", val: fmtINR(totals.deductions), color: "text-red-600" },
-                        { label: "Net payable", val: fmtINR(totals.net), color: "text-green-600" },
-                        { label: "PF total", val: fmtINR(totals.pf), color: "text-amber-600" },
+                        { label: "Total Gross", val: fmtINR(totals.gross), color: "text-slate-900" },
+                        { label: "Total Deductions", val: fmtINR(totals.deductions), color: "text-rose-600" },
+                        { label: "Net Payable", val: fmtINR(totals.net), color: "text-emerald-700" },
+                        { label: "PF Total", val: fmtINR(totals.pf), color: "text-amber-600" },
                     ].map(({ label, val, color }) => (
-                        <div key={label} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                            <div className="text-[11px] text-slate-400 mb-1">{label}</div>
-                            <div className={`text-xl font-semibold ${color}`}>{val}</div>
+                        <div key={label} className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</div>
+                            <div className={`text-2xl font-black ${color}`}>{val}</div>
                         </div>
                     ))}
                 </div>
             )}
 
             {loaded && (
-                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                    <table className="w-full text-sm border-collapse">
-                        <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                    <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[1100px]">
+                        <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                             <tr>
-                                {["Employee", "Basic", "HRA", "TA", "DA", "Special Allow.", "Gross", "PF", "Deductions", "Net pay", "Status", "Payslip"].map(h => (
-                                    <th key={h} className="px-5 py-3 text-left">{h}</th>
+                                {["Employee", "Basic", "HRA", "TA", "DA", "Special Allow.", "Gross", "PF", "Deductions", "Net Pay", "Status", "Payslip"].map(h => (
+                                    <th key={h} className="px-5 py-4 text-left">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {details.length === 0 ? (
-                                <tr><td colSpan={12} className="px-5 py-10 text-center text-slate-400">No payroll records for selected period.</td></tr>
+                                <tr><td colSpan={12} className="px-5 py-12 text-center text-slate-400 font-medium">No payroll records for selected period.</td></tr>
                             ) : details.map((d, i) => (
-                                <tr key={d.detailId ?? d.payrollId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                    <td className="px-5 py-3">
-                                        <div className="font-semibold text-slate-800">
+                                <tr key={d.detailId ?? d.payrollId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="px-5 py-4">
+                                        <div className="font-bold text-slate-900">
                                             {d.empName ?? (`${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || `EMP-${d.empId}`)}
                                         </div>
-                                        <div className="text-[11px] text-slate-400">#{d.empId}</div>
+                                        <div className="text-xs font-mono font-bold text-amber-600 mt-0.5">#{d.empId}</div>
                                     </td>
-                                    <td className="px-5 py-3">{fmtINR(d.basic)}</td>
-                                    <td className="px-5 py-3">{fmtINR(d.hra)}</td>
-                                    <td className="px-5 py-3">{fmtINR(d.ta)}</td>
-                                    <td className="px-5 py-3">{fmtINR(d.da)}</td>
-                                    <td className="px-5 py-3">{fmtINR(d.specialAllow ?? d.specialAllowance)}</td>
-                                    <td className="px-5 py-3 font-semibold">{fmtINR(d.grossEarning ?? d.grossSalary)}</td>
-                                    <td className="px-5 py-3">{fmtINR(d.pfDeduction ?? d.pfAmount ?? d.pfEmployee)}</td>
-                                    <td className="px-5 py-3 text-red-600">{fmtINR(d.totalDeduction ?? d.totalDeductions)}</td>
-                                    <td className="px-5 py-3 font-semibold text-green-600">{fmtINR(d.netSalary)}</td>
-                                    <td className="px-5 py-3"><Badge status={d.status} /></td>
-                                    <td className="px-5 py-3">
+                                    <td className="px-5 py-4 font-mono">{fmtINR(d.basic)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(d.hra)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(d.ta)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(d.da)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(d.specialAllow ?? d.specialAllowance)}</td>
+                                    <td className="px-5 py-4 font-mono font-semibold text-slate-800">{fmtINR(d.grossEarning ?? d.grossSalary)}</td>
+                                    <td className="px-5 py-4 font-mono">{fmtINR(d.pfDeduction ?? d.pfAmount ?? d.pfEmployee)}</td>
+                                    <td className="px-5 py-4 font-mono text-rose-600">{fmtINR(d.totalDeduction ?? d.totalDeductions)}</td>
+                                    <td className="px-5 py-4 font-mono font-bold text-emerald-700">{fmtINR(d.netSalary)}</td>
+                                    <td className="px-5 py-4"><Badge status={d.status} /></td>
+                                    <td className="px-5 py-4">
                                         <Link
-                                            to={`/payroll/payslip?empId=${d.empId}&month=${filter.month}&year=${filter.year}`}
-                                            className="px-3 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all inline-block"
+                                            to={`/payroll/payslip?empId=${d.empId}&month=${month}&year=${year}`}
+                                            className="px-3.5 py-1.5 text-xs font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl transition-all inline-block border border-amber-200/50 shadow-sm"
                                         >
                                             View
                                         </Link>
@@ -1077,8 +1094,12 @@ function DetailsTab() {
             )}
 
             {!loaded && !loading && (
-                <div className="text-center py-16 text-slate-400 text-sm">
-                    Select month &amp; year, then click "Load details".
+                <div className="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-3xl py-24 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 text-2xl shadow-sm mb-4">
+                        <i className="fa-solid fa-file-invoice-dollar" />
+                    </div>
+                    <p className="text-base font-bold text-slate-600">No Period Selected</p>
+                    <p className="text-sm text-slate-400 mt-1">Select month and year above, then click "Load Details".</p>
                 </div>
             )}
         </div>
@@ -1173,9 +1194,9 @@ function LoansTab() {
 
     return (
         <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 bg-white focus:outline-none focus:border-amber-400 cursor-pointer shadow-sm">
                     <option value="">All statuses</option>
                     <option>Pending</option>
                     <option>Active</option>
@@ -1184,97 +1205,99 @@ function LoansTab() {
                 </select>
                 <button
                     onClick={() => setShowForm(v => !v)}
-                    className="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 transition-all"
-                >{showForm ? "Cancel" : "+ New loan / advance"}</button>
+                    className="px-5 py-2.5 bg-amber-400 text-[#0b2836] text-xs sm:text-sm font-bold rounded-xl hover:bg-amber-500 transition-all shadow-sm flex items-center gap-2"
+                >
+                    <i className={`fa-solid ${showForm ? "fa-xmark" : "fa-plus"}`} /> {showForm ? "Cancel" : "New Loan / Advance"}
+                </button>
             </div>
 
             {showForm && (
-                <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                    <p className="text-sm font-semibold text-slate-700">New loan / advance request</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-5 animate-in fade-in duration-200 shadow-sm">
+                    <p className="text-sm font-bold text-slate-800">New Loan / Advance Request</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                         <EmployeePicker
                             value={form.empId}
                             onChange={(id) => setForm(f => ({ ...f, empId: id }))}
                         />
                         <Field label="Type *">
                             <select value={form.loanType} onChange={set("loanType")}
-                                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
+                                className={`${inputClass} cursor-pointer appearance-none`}>
                                 <option value="Loan">Loan</option>
                                 <option value="Advance">Advance</option>
                             </select>
                         </Field>
-                        <Field label="Total amount (₹) *">
+                        <Field label="Total Amount (₹) *">
                             <Input type="number" placeholder="e.g. 50000" value={form.totalAmount} onChange={set("totalAmount")} required />
                         </Field>
-                        <Field label="EMI amount (₹) *">
+                        <Field label="EMI Amount (₹) *">
                             <Input type="number" placeholder="e.g. 5000" value={form.emiAmount} onChange={set("emiAmount")} required />
                         </Field>
-                        <Field label="Loan date *">
+                        <Field label="Loan Date *">
                             <Input type="date" value={form.loanDate} onChange={set("loanDate")} required />
                         </Field>
                         <Field label="Remarks">
                             <Input type="text" placeholder="Optional note" value={form.remarks} onChange={set("remarks")} />
                         </Field>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-3 border-t border-slate-200/60">
                         <button type="submit" disabled={saving}
-                            className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
-                            {saving ? "Saving…" : "Submit request"}
+                            className="px-6 py-3 bg-[#0b2836] text-white text-sm font-bold rounded-xl hover:bg-[#0f3345] disabled:opacity-60 transition-all shadow-lg shadow-[#0b2836]/20">
+                            {saving ? "Saving…" : "Submit Request"}
                         </button>
                     </div>
                 </form>
             )}
 
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-sm border-collapse">
-                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[900px]">
+                    <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                         <tr>
-                            {["Employee", "Type", "Total", "EMI", "Remaining", "Loan date", "Status", "Actions"].map(h => (
-                                <th key={h} className="px-5 py-3 text-left">{h}</th>
+                            {["Employee", "Type", "Total", "EMI", "Remaining", "Loan Date", "Status", "Actions"].map(h => (
+                                <th key={h} className="px-5 py-4 text-left">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {loading ? (
-                            <tr><td colSpan={8} className="px-5 py-10 text-center text-amber-500 animate-pulse">Loading…</td></tr>
+                            <tr><td colSpan={8} className="px-5 py-12 text-center text-amber-500 font-bold animate-pulse">Loading…</td></tr>
                         ) : loans.length === 0 ? (
-                            <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-400">No loans/advances found.</td></tr>
+                            <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-400 font-medium">No loans/advances found.</td></tr>
                         ) : loans.map((l, i) => (
-                            <tr key={l.loanId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                <td className="px-5 py-3">
-                                    <div className="font-semibold text-slate-800">{l.empName ?? `EMP-${l.empId}`}</div>
-                                    <div className="text-[11px] text-slate-400">#{l.empId}</div>
+                            <tr key={l.loanId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-5 py-4">
+                                    <div className="font-bold text-slate-900">{l.empName ?? `EMP-${l.empId}`}</div>
+                                    <div className="text-xs font-mono font-bold text-amber-600 mt-0.5">#{l.empId}</div>
                                 </td>
-                                <td className="px-5 py-3">
-                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold">{l.loanType}</span>
+                                <td className="px-5 py-4">
+                                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold border border-slate-200">{l.loanType}</span>
                                 </td>
-                                <td className="px-5 py-3">{fmtINR(l.totalAmount)}</td>
-                                <td className="px-5 py-3">{fmtINR(l.emiAmount)}</td>
-                                <td className="px-5 py-3 font-semibold">{fmtINR(l.remainingAmount)}</td>
-                                <td className="px-5 py-3 text-slate-500 text-xs">{l.loanDate ? l.loanDate.slice(0, 10) : "—"}</td>
-                                <td className="px-5 py-3"><Badge status={l.status} /></td>
-                                <td className="px-5 py-3">
+                                <td className="px-5 py-4 font-mono font-semibold text-slate-700">{fmtINR(l.totalAmount)}</td>
+                                <td className="px-5 py-4 font-mono font-semibold text-slate-700">{fmtINR(l.emiAmount)}</td>
+                                <td className="px-5 py-4 font-mono font-bold text-emerald-700">{fmtINR(l.remainingAmount)}</td>
+                                <td className="px-5 py-4 text-slate-500 font-medium text-xs">{l.loanDate ? l.loanDate.slice(0, 10) : "—"}</td>
+                                <td className="px-5 py-4"><Badge status={l.status} /></td>
+                                <td className="px-5 py-4">
                                     {l.status === "Pending" ? (
                                         <div className="flex gap-2">
                                             <button disabled={!!actLoading}
                                                 onClick={() => handleAction(l.loanId, "Active")}
-                                                className="px-3 py-1 text-xs font-bold bg-green-50 hover:bg-green-100 text-green-700 rounded-xl border border-green-200 transition-all disabled:opacity-60">
+                                                className="px-3.5 py-1.5 text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200/50 transition-all disabled:opacity-60 shadow-sm">
                                                 Approve
                                             </button>
                                             <button disabled={!!actLoading}
                                                 onClick={() => handleAction(l.loanId, "Rejected")}
-                                                className="px-3 py-1 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-700 rounded-xl border border-red-200 transition-all disabled:opacity-60">
+                                                className="px-3.5 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200/50 transition-all disabled:opacity-60 shadow-sm">
                                                 Reject
                                             </button>
                                         </div>
                                     ) : l.status === "Active" ? (
                                         <button disabled={!!actLoading}
                                             onClick={() => handleClose(l.loanId)}
-                                            className="px-3 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all disabled:opacity-60">
-                                            Close loan
+                                            className="px-3.5 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all disabled:opacity-60 border border-slate-200 shadow-sm">
+                                            Close Loan
                                         </button>
                                     ) : (
-                                        <span className="text-slate-400 text-xs">—</span>
+                                        <span className="text-slate-400 text-xs font-bold">—</span>
                                     )}
                                 </td>
                             </tr>
@@ -1335,65 +1358,67 @@ function LateMarkRuleTab() {
     };
 
     return (
-        <div className="space-y-5">
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-1">Currently active rule</p>
+        <div className="space-y-6">
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-5 shadow-sm">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 mb-1">Currently Active Rule</p>
                 {loading ? (
-                    <p className="text-sm text-amber-600 animate-pulse">Loading…</p>
+                    <p className="text-sm font-bold text-amber-700 animate-pulse">Loading…</p>
                 ) : activeRule ? (
-                    <p className="text-lg font-bold text-amber-800">
+                    <p className="text-lg font-bold text-amber-900">
                         {activeRule.latesCount} late marks → {activeRule.penaltyType === "FullDay" ? "1 full day" : "half day"} deduction
                     </p>
                 ) : (
-                    <p className="text-sm text-amber-400">No active rule configured. Payroll will default to 3 lates = half day.</p>
+                    <p className="text-sm font-bold text-amber-700">No active rule configured. Payroll will default to 3 lates = half day.</p>
                 )}
             </div>
 
-            <form onSubmit={handleSave} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                <p className="text-sm font-semibold text-slate-700">Set a new rule</p>
-                <p className="text-[11px] text-slate-400">Saving a new rule replaces the active one — it will apply from the next payroll run onward.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-                    <Field label="Late marks count *">
+            <form onSubmit={handleSave} className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+                <p className="text-sm font-bold text-slate-800">Set a New Rule</p>
+                <p className="text-xs text-slate-400 font-medium">Saving a new rule replaces the active one — it will apply from the next payroll run onward.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-lg">
+                    <Field label="Late Marks Count *">
                         <Input type="number" min="1" placeholder="e.g. 3" value={form.latesCount}
                             onChange={e => setForm(f => ({ ...f, latesCount: e.target.value }))} required />
                     </Field>
                     <Field label="Penalty *">
                         <select value={form.penaltyType}
                             onChange={e => setForm(f => ({ ...f, penaltyType: e.target.value }))}
-                            className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white">
-                            <option value="HalfDay">Half day</option>
-                            <option value="FullDay">Full day</option>
+                            className={`${inputClass} cursor-pointer appearance-none`}>
+                            <option value="HalfDay">Half Day</option>
+                            <option value="FullDay">Full Day</option>
                         </select>
                     </Field>
                 </div>
-                <button type="submit" disabled={saving}
-                    className="px-6 py-2.5 bg-amber-600 text-white text-sm font-bold rounded-xl hover:bg-amber-700 disabled:opacity-60 transition-all">
-                    {saving ? "Saving…" : "Save rule"}
-                </button>
+                <div className="pt-3 border-t border-slate-200/60">
+                    <button type="submit" disabled={saving}
+                        className="px-6 py-3 bg-[#0b2836] text-white text-sm font-bold rounded-xl hover:bg-[#0f3345] disabled:opacity-60 transition-all shadow-lg shadow-[#0b2836]/20">
+                        {saving ? "Saving…" : "Save Rule"}
+                    </button>
+                </div>
             </form>
 
             <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Rule history</p>
-                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                    <table className="w-full text-sm border-collapse">
-                        <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 ml-1">Rule History</p>
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white">
+                    <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[600px]">
+                        <thead className="bg-slate-50/80 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
                             <tr>
-                                {["Lates count", "Penalty", "Status", "Created"].map(h => (
-                                    <th key={h} className="px-5 py-3 text-left">{h}</th>
+                                {["Lates Count", "Penalty", "Status", "Created Date"].map(h => (
+                                    <th key={h} className="px-5 py-4 text-left">{h}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {history.length === 0 ? (
-                                <tr><td colSpan={4} className="px-5 py-10 text-center text-slate-400">No rule history yet.</td></tr>
+                                <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-400 font-medium">No rule history yet.</td></tr>
                             ) : history.map((r, i) => (
-                                <tr key={r.ruleId ?? i} className="hover:bg-slate-50/70 transition-colors">
-                                    <td className="px-5 py-3 font-semibold">{r.latesCount}</td>
-                                    <td className="px-5 py-3">{r.penaltyType === "FullDay" ? "Full day" : "Half day"}</td>
-                                    <td className="px-5 py-3">
-                                        {r.isActive ? <Badge status="Approved" /> : <span className="text-slate-400 text-xs">Inactive</span>}
+                                <tr key={r.ruleId ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="px-5 py-4 font-bold text-slate-900">{r.latesCount}</td>
+                                    <td className="px-5 py-4 font-medium text-slate-700">{r.penaltyType === "FullDay" ? "Full Day" : "Half Day"}</td>
+                                    <td className="px-5 py-4">
+                                        {r.isActive ? <Badge status="Active" /> : <span className="text-slate-400 text-xs font-bold">Inactive</span>}
                                     </td>
-                                    <td className="px-5 py-3 text-slate-500 text-xs">{r.createdAt ? r.createdAt.slice(0, 10) : "—"}</td>
+                                    <td className="px-5 py-4 text-slate-500 font-medium text-xs">{r.createdAt ? r.createdAt.slice(0, 10) : "—"}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -1406,12 +1431,12 @@ function LateMarkRuleTab() {
 
 // ─── Main Component ────────────────────────────────────────────────────────
 const TABS = [
-    { id: "salary", label: "Salary structure" },
-    { id: "payroll", label: "Payroll processing" },
-    { id: "deductions", label: "Deductions" },
-    { id: "loans", label: "Loans / Advances" },
-    { id: "latemarks", label: "Late Mark Rules" },
-    { id: "details", label: "Payroll details" },
+    { id: "salary", label: "Salary Structure", icon: "fa-solid fa-file-invoice-dollar" },
+    { id: "payroll", label: "Payroll Processing", icon: "fa-solid fa-calculator" },
+    { id: "deductions", label: "Deductions", icon: "fa-solid fa-hand-holding-dollar" },
+    { id: "loans", label: "Loans / Advances", icon: "fa-solid fa-wallet" },
+    { id: "latemarks", label: "Late Mark Rules", icon: "fa-solid fa-clock-rotate-left" },
+    { id: "details", label: "Payroll Details", icon: "fa-solid fa-table-list" },
 ];
 
 export default function PayrollManagement() {
@@ -1442,28 +1467,50 @@ export default function PayrollManagement() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-900">Payroll management</h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                    Manage salary structures, generate &amp; finalize payroll, handle deductions, loans, and view payroll details.
-                </p>
+        <div className="space-y-5 pb-10 font-sans relative z-0">
+
+            {/* ── Premium Header Section ── */}
+            <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0 border border-white/5 backdrop-blur-sm">
+                        <i className="fa-solid fa-wallet text-xl text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Payroll Management</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            Manage salary structures, generate &amp; finalize payroll, handle deductions, loans, and view payroll details.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
-                <div className="flex overflow-x-auto border-b border-slate-200 px-2 text-xs font-bold uppercase tracking-wider text-slate-400 hide-scrollbar">
+            {/* ── Main Container (Tabs + Content) ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+
+                {/* ── Tabs Navigation ── */}
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50">
                     {TABS.map(t => (
-                        <button key={t.id} onClick={() => setActiveTab(t.id)}
-                            className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === t.id
-                                ? "border-amber-600 text-amber-600"
-                                : "border-transparent hover:text-slate-600"
-                                }`}>{t.label}</button>
+                        <button
+                            key={t.id}
+                            onClick={() => setActiveTab(t.id)}
+                            className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === t.id
+                                    ? "border-amber-500 text-amber-600 bg-white"
+                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                }`}
+                        >
+                            <i className={`${t.icon} text-[13px]`} />
+                            {t.label}
+                        </button>
                     ))}
                 </div>
 
-                <div className="p-6 min-h-[400px]">
+                <div className="p-6 sm:p-8 min-h-[400px]">
                     {loading ? (
-                        <div className="text-center text-amber-600 py-16 font-medium animate-pulse">Loading payroll data…</div>
+                        <div className="py-24 flex flex-col items-center justify-center gap-3">
+                            <i className="fa-solid fa-spinner text-3xl text-amber-500 animate-spin" />
+                            <div className="text-sm font-medium text-slate-500 animate-pulse">Loading payroll data...</div>
+                        </div>
                     ) : (
                         <>
                             {activeTab === "salary" && <SalaryTab structures={structures} />}

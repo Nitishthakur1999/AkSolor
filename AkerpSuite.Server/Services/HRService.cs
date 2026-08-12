@@ -953,19 +953,22 @@ namespace AkerpSuite.Server.Services
 
         public async Task<bool> UpdatePoStatusAsync(PurchaseOrderStatusUpdateDto request)
         {
-            // request.Status is a PoStatus enum, so it's always one of the 5 valid values
-            // by construction — no need to re-validate against a string allow-list.
             var existing = await _repository.GetPurchaseOrderByIdAsync(request.PoId);
             if (existing == null)
                 throw new KeyNotFoundException("Purchase Order not found.");
-
-            // The SQL column is a VARCHAR ENUM, so convert once here at the service/repo boundary.
+            if (request.Status == PoStatus.Completed)
+            {
+                var hasPendingQty = existing.Items?.Any(it => it.PendingQty > 0) ?? false;
+                if (hasPendingQty)
+                {
+                    throw new InvalidOperationException(
+                        "Cannot mark this Purchase Order as Completed while items still have pending quantity. " +
+                        "Record a GRN for the remaining quantity — the status will complete automatically once everything is received.");
+                }
+            }
             var statusText = request.Status.ToString();
-
             var result = await _repository.UpdatePoStatusAsync(request.PoId, statusText);
-
             _logger.LogInformation("PO {PoId} status changed to {Status}.", request.PoId, statusText);
-
             return result;
         }
 

@@ -542,7 +542,6 @@ namespace AkerpSuite.Server.DTOs.Hr
 
     public class PurchaseOrderRequestDto
     {
-        //public int VoucherNo { get; set; }
         public DateTime? PoDate { get; set; }
         public int SupplierId { get; set; }
         public int? ConsigneeId { get; set; }
@@ -577,21 +576,15 @@ namespace AkerpSuite.Server.DTOs.Hr
 
     public class PurchaseOrderItemRequestDto
     {
-        // Reference an existing inventory item...
         public int? ItemId { get; set; }
-
-        // ...or leave ItemId null and provide these to auto-create one
-        // (repository calls sp_CreateInventoryItem when ItemId is null).
         public string NewItemName { get; set; }
         public string NewItemCategory { get; set; }
-
         public string Description { get; set; }
         public string HsnSac { get; set; }
         public decimal GstRate { get; set; }
         public decimal Quantity { get; set; }
         public string Unit { get; set; }
         public decimal Rate { get; set; }
-        // amount is server-computed (quantity * rate) — not sent by client
     }
 
     // ============================================================

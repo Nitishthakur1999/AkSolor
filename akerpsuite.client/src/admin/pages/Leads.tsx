@@ -2,9 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
-
 const todayISO = () => new Date().toISOString().split("T")[0];
 
+// Common input styles for premium theme
+const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm";
+const labelClass = "block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1.5 ml-1";
 
 export default function Leads() {
     const navigate = useNavigate();
@@ -167,138 +169,170 @@ export default function Leads() {
     };
 
     return (
-        <div className="space-y-6 text-slate-800">
-            {/* HEADER */}
-            <div className="flex justify-between items-center bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">Leads Pipeline</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Manage incoming leads, track statuses, and view pipeline details.</p>
+        <div className="space-y-5 pb-10 font-sans relative z-0">
+
+            {/* ── Premium Header Section ── */}
+            <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0 border border-white/5 backdrop-blur-sm">
+                        <i className="fa-solid fa-filter-circle-dollar text-xl text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Leads Pipeline</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">Manage incoming leads, track statuses, and view pipeline details.</p>
+                    </div>
                 </div>
             </div>
 
             {errorMsg && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm font-semibold px-4 py-3 rounded-xl">
-                    {errorMsg}
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold px-5 py-3.5 rounded-xl shadow-sm flex items-center gap-2">
+                    <i className="fa-solid fa-triangle-exclamation" /> {errorMsg}
                 </div>
             )}
 
-            {/* MAIN CONTAINER */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            {/* ── Main Container (Tabs + Content) ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
 
-                {/* TABS */}
-                <div className="flex gap-2 overflow-x-auto border-b border-slate-100 px-4 sm:px-6 pt-2 text-xs font-bold uppercase tracking-wider">
+                {/* ── Tabs Navigation ── */}
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50">
                     <button
                         onClick={() => { setActiveTab("table"); resetForm(); }}
-                        className={`pb-3 pt-2 px-1 mr-6 border-b-2 whitespace-nowrap transition-colors ${activeTab === "table" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === "table"
+                                ? "border-amber-500 text-amber-600 bg-white"
+                                : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                            }`}
                     >
+                        <i className="fa-solid fa-table-list text-[13px]" />
                         All Leads
                     </button>
                     <button
                         onClick={() => setActiveTab("form")}
-                        className={`pb-3 pt-2 px-1 border-b-2 whitespace-nowrap transition-colors ${activeTab === "form" ? "border-amber-600 text-amber-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === "form"
+                                ? "border-amber-500 text-amber-600 bg-white"
+                                : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                            }`}
                     >
-                        + Create New Lead
+                        <i className="fa-solid fa-plus text-[13px]" />
+                        Create New Lead
                     </button>
                 </div>
 
-                <div className="p-3 sm:p-6 min-h-[400px]">
+                <div className="p-6 sm:p-8 min-h-[400px]">
                     {loading ? (
-                        <div className="flex flex-col justify-center items-center gap-3 py-16">
-                            <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-                            <div className="text-sm font-semibold text-amber-600 animate-pulse tracking-wide">
-                                Loading leads...
-                            </div>
+                        <div className="py-24 flex flex-col items-center justify-center gap-3">
+                            <i className="fa-solid fa-spinner text-3xl text-amber-500 animate-spin" />
+                            <div className="text-sm font-medium text-slate-500 animate-pulse">Loading leads data...</div>
                         </div>
                     ) : (
                         <>
                             {/* TAB 1: TABLE VIEW */}
                             {activeTab === "table" && (
-                                <div className="space-y-4">
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-slate-50/70 border border-slate-200 rounded-xl p-3">
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider sm:pl-1 shrink-0">Search:</span>
-                                        <input
-                                            type="text"
-                                            placeholder="Search by name, contact, status, or segment..."
-                                            value={searchTerm}
-                                            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                                            className="w-full flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-amber-500 transition-colors"
-                                        />
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="relative group w-full sm:max-w-md">
+                                            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search by name, contact, status, or segment..."
+                                                value={searchTerm}
+                                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                                className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors shadow-sm"
+                                            />
+                                        </div>
+                                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+                                            {filteredLeads.length} Lead(s) found
+                                        </span>
                                     </div>
 
-                                    <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                                        <table className="w-full text-left border-collapse min-w-[760px]">
-                                            <thead>
-                                                <tr className="bg-slate-50/70 text-[11px] font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
-                                                    <th className="px-6 py-4">Lead ID</th>
-                                                    <th className="px-6 py-4">Client Name</th>
+                                    <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm">
+                                        <table className="w-full text-left border-collapse min-w-[900px]">
+                                            <thead className="bg-slate-50/80 text-[10px] font-bold uppercase text-slate-500 tracking-widest border-b border-slate-200">
+                                                <tr>
+                                                    <th className="px-6 py-4">Lead Info</th>
                                                     <th className="px-6 py-4">Contact</th>
                                                     <th className="px-6 py-4">Segment</th>
                                                     <th className="px-6 py-4">Status</th>
-                                                    <th className="px-6 py-4 text-center">Actions</th>
+                                                    <th className="px-6 py-4 text-right">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                                 {currentLeads.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan={6} className="text-center py-10 text-slate-400 italic">
-                                                            No leads found.
+                                                        <td colSpan={5} className="text-center py-16">
+                                                            <div className="flex flex-col items-center gap-2 text-slate-400">
+                                                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100 mb-2">
+                                                                    <i className="fa-solid fa-inbox text-2xl text-slate-300" />
+                                                                </div>
+                                                                <p className="text-base font-bold text-slate-600">No leads found.</p>
+                                                                <p className="text-xs font-medium">Try adjusting your search query.</p>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ) : currentLeads.map((lead, idx) => {
                                                     const statusStyles = {
-                                                        new: "bg-blue-50 text-blue-700 border-blue-100/50",
-                                                        followup: "bg-amber-50 text-amber-700 border-amber-100/50",
-                                                        survey: "bg-amber-50 text-amber-700 border-amber-100/50",
-                                                        proposal: "bg-purple-50 text-purple-700 border-purple-100/50",
-                                                        negotiation: "bg-orange-50 text-orange-700 border-orange-100/50",
-                                                        won: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                                                        lost: "bg-rose-50 text-rose-700 border-rose-200",
-                                                        notfeasible: "bg-slate-100 text-slate-500 border-slate-200",
+                                                        new: "bg-blue-50 text-blue-700 border-blue-200/50 dot-blue-500",
+                                                        followup: "bg-amber-50 text-amber-700 border-amber-200/50 dot-amber-500",
+                                                        survey: "bg-amber-50 text-amber-700 border-amber-200/50 dot-amber-500",
+                                                        proposal: "bg-purple-50 text-purple-700 border-purple-200/50 dot-purple-500",
+                                                        negotiation: "bg-orange-50 text-orange-700 border-orange-200/50 dot-orange-500",
+                                                        won: "bg-emerald-50 text-emerald-700 border-emerald-200/50 dot-emerald-500",
+                                                        lost: "bg-rose-50 text-rose-700 border-rose-200/50 dot-rose-500",
+                                                        notfeasible: "bg-slate-100 text-slate-600 border-slate-200 dot-slate-400",
                                                     };
                                                     const statusKey = (lead.status || "").toLowerCase().replace(/\s+/g, "");
-                                                    const statusClass = statusStyles[statusKey] || "bg-slate-50 text-slate-600 border-slate-200";
+                                                    const statusClass = statusStyles[statusKey] || "bg-slate-50 text-slate-600 border-slate-200 dot-slate-400";
                                                     const initial = (lead.name || "?").trim().charAt(0).toUpperCase();
 
+                                                    // Extract dot color class (custom logic for UI)
+                                                    const dotMatch = statusClass.match(/dot-([a-z]+-[0-9]+)/);
+                                                    const dotColor = dotMatch ? `bg-${dotMatch[1]}` : "bg-slate-400";
+                                                    const finalStatusClass = statusClass.replace(/dot-[a-z]+-[0-9]+/, "").trim();
+
                                                     return (
-                                                        <tr key={lead.leadId || idx} className="hover:bg-slate-50/40 transition-colors duration-150 group">
-                                                            <td className="px-6 py-4 font-mono text-xs font-bold text-amber-600 group-hover:text-amber-700 transition-colors">
-                                                                #{lead.leadId}
-                                                            </td>
+                                                        <tr key={lead.leadId || idx} className="hover:bg-slate-50/60 transition-colors duration-150 group align-top">
                                                             <td className="px-6 py-4">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-amber-100/50">
+                                                                <div className="flex items-center gap-3.5">
+                                                                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-sm flex-shrink-0 border border-amber-200/60 shadow-sm">
                                                                         {initial}
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-semibold text-slate-900">{lead.name}</span>
-                                                                        {lead.label && (
-                                                                            <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100/50 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                                                                {lead.label}
-                                                                            </span>
-                                                                        )}
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors">{lead.name}</span>
+                                                                            {lead.label && (
+                                                                                <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100/50 rounded-md text-[9px] font-black uppercase tracking-wider shadow-sm">
+                                                                                    {lead.label}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="text-[11px] font-mono text-slate-400 font-medium">#{lead.leadId}</div>
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4 font-mono text-xs text-slate-500">{lead.contactNo}</td>
                                                             <td className="px-6 py-4">
-                                                                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100/50">
-                                                                    {lead.segmentName || "-"}
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span className="font-medium text-slate-700">{lead.email || "—"}</span>
+                                                                    <span className="text-[11px] font-mono font-bold text-slate-400">{lead.contactNo}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 tracking-wide uppercase">
+                                                                    {lead.segmentName || "General"}
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${statusClass}`}>
+                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${finalStatusClass}`}>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
                                                                     {lead.status}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4 text-center">
+                                                            <td className="px-6 py-4 text-right">
                                                                 <button
                                                                     onClick={() => navigate(`/sales/leads/${lead.leadId}`)}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100/40 active:scale-95 transition-all"
+                                                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 border border-amber-200/50 transition-all shadow-sm"
                                                                 >
                                                                     View Pipeline
-                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                                                    </svg>
+                                                                    <i className="fa-solid fa-arrow-right text-[10px]" />
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -310,35 +344,40 @@ export default function Leads() {
 
                                     {/* PAGINATION UI */}
                                     {totalItems > 0 && (
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-2 py-2 text-xs font-semibold text-slate-500">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-2 pt-2 text-sm text-slate-500 font-medium">
                                             <div>
-                                                Showing <span className="text-slate-800">{startEntry}</span> to{" "}
-                                                <span className="text-slate-800">{endEntry}</span> of{" "}
-                                                <span className="text-slate-800">{totalItems}</span> entries
+                                                Showing <span className="font-bold text-slate-800">{startEntry}</span> to{" "}
+                                                <span className="font-bold text-slate-800">{endEntry}</span> of{" "}
+                                                <span className="font-bold text-slate-800">{totalItems}</span> entries
                                             </div>
-                                            <div className="flex flex-wrap gap-1">
+                                            <div className="flex flex-wrap gap-1.5">
                                                 <button
                                                     disabled={currentPage === 1}
                                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                                    className="px-2.5 py-1.5 rounded-lg border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1.5"
                                                 >
-                                                    Previous
+                                                    <i className="fa-solid fa-chevron-left text-[10px]" /> Prev
                                                 </button>
-                                                {pageNumbers.map(number => (
-                                                    <button
-                                                        key={number}
-                                                        onClick={() => setCurrentPage(number)}
-                                                        className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === number ? "bg-amber-600 border-amber-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-                                                    >
-                                                        {number}
-                                                    </button>
-                                                ))}
+                                                <div className="hidden sm:flex items-center gap-1">
+                                                    {pageNumbers.map(number => (
+                                                        <button
+                                                            key={number}
+                                                            onClick={() => setCurrentPage(number)}
+                                                            className={`w-9 h-9 flex items-center justify-center rounded-xl border text-sm font-bold transition-all shadow-sm ${currentPage === number
+                                                                    ? "bg-amber-500 border-amber-500 text-white"
+                                                                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                                }`}
+                                                        >
+                                                            {number}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                                 <button
                                                     disabled={currentPage === totalPages}
                                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                                    className="px-2.5 py-1.5 rounded-lg border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1.5"
                                                 >
-                                                    Next
+                                                    Next <i className="fa-solid fa-chevron-right text-[10px]" />
                                                 </button>
                                             </div>
                                         </div>
@@ -348,27 +387,34 @@ export default function Leads() {
 
                             {/* TAB 2: ADD FORM */}
                             {activeTab === "form" && (
-                                <div className="max-w-3xl mx-auto">
-                                    <div className="flex justify-end mb-3">
+                                <div className="max-w-4xl mx-auto animate-in fade-in duration-200">
+                                    <div className="flex justify-end mb-4">
                                         <button
                                             type="button"
                                             onClick={() => setShowSegmentModal(true)}
-                                            className="px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100/40 active:scale-95 transition-all"
+                                            className="px-4 py-2 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 border border-amber-200/50 transition-all shadow-sm flex items-center gap-1.5"
                                         >
-                                            + Add Segment
+                                            <i className="fa-solid fa-layer-group" /> Add New Segment
                                         </button>
                                     </div>
-                                    <form onSubmit={handleSaveLead} className="space-y-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
 
-                                        <div className="grid gap-4 sm:grid-cols-2">
+                                    <form onSubmit={handleSaveLead} className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                                            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                                <i className="fa-solid fa-user-plus" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-slate-800">New Lead Details</h3>
+                                        </div>
+
+                                        <div className="grid gap-5 sm:grid-cols-2">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date *</label>
-                                                <input type="date" required value={leadForm.leadDate} onChange={e => setLeadForm({ ...leadForm, leadDate: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" />
+                                                <label className={labelClass}>Lead Date *</label>
+                                                <input type="date" required value={leadForm.leadDate} onChange={e => setLeadForm({ ...leadForm, leadDate: e.target.value })} className={inputClass} />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Type of Query (Segment) *</label>
-                                                <select required value={leadForm.segmentId} onChange={e => setLeadForm({ ...leadForm, segmentId: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm bg-white">
-                                                    <option value="">-- Select Segment --</option>
+                                                <label className={labelClass}>Type of Query (Segment) *</label>
+                                                <select required value={leadForm.segmentId} onChange={e => setLeadForm({ ...leadForm, segmentId: e.target.value })} className={`${inputClass} cursor-pointer appearance-none`}>
+                                                    <option value="" disabled>-- Select Segment --</option>
                                                     {segments.map(seg => (
                                                         <option key={seg.segmentId} value={seg.segmentId}>{seg.segmentName}</option>
                                                     ))}
@@ -376,54 +422,57 @@ export default function Leads() {
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="grid gap-5 sm:grid-cols-2">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Client Name *</label>
-                                                <input type="text" required placeholder="e.g. John Doe" value={leadForm.name} onChange={e => setLeadForm({ ...leadForm, name: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" />
+                                                <label className={labelClass}>Client Name *</label>
+                                                <input type="text" required placeholder="e.g. John Doe" value={leadForm.name} onChange={e => setLeadForm({ ...leadForm, name: e.target.value })} className={inputClass} />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number *</label>
+                                                <label className={labelClass}>Phone Number *</label>
                                                 <input type="text" required placeholder="e.g. 9876543210" value={leadForm.contactNo}
                                                     onChange={(e) => setLeadForm({ ...leadForm, contactNo: e.target.value })}
-                                                    className="w-full px-3 py-2 rounded-xl border text-sm"
+                                                    className={inputClass}
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="grid gap-5 sm:grid-cols-2">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
-                                                <input type="email" placeholder="e.g. john@example.com" value={leadForm.email} onChange={e => setLeadForm({ ...leadForm, email: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" />
+                                                <label className={labelClass}>Email Address</label>
+                                                <input type="email" placeholder="e.g. john@example.com" value={leadForm.email} onChange={e => setLeadForm({ ...leadForm, email: e.target.value })} className={inputClass} />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Reference (Lead Source)</label>
-                                                <input type="text" placeholder="e.g. Existing Client, Facebook, Dealer" value={leadForm.reference} onChange={e => setLeadForm({ ...leadForm, reference: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" />
+                                                <label className={labelClass}>Reference (Lead Source)</label>
+                                                <input type="text" placeholder="e.g. Existing Client, Facebook, Dealer" value={leadForm.reference} onChange={e => setLeadForm({ ...leadForm, reference: e.target.value })} className={inputClass} />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-5 sm:grid-cols-2">
+                                            <div>
+                                                <label className={labelClass}>Query Type</label>
+                                                <input type="text" placeholder="e.g. New Installation, Repair, Enquiry" value={leadForm.queryType} onChange={e => setLeadForm({ ...leadForm, queryType: e.target.value })} className={inputClass} />
+                                            </div>
+                                            <div>
+                                                <label className={labelClass}>Label</label>
+                                                <input type="text" placeholder="e.g. Hot Lead" value={leadForm.label} onChange={e => setLeadForm({ ...leadForm, label: e.target.value })} className={inputClass} />
                                             </div>
                                         </div>
 
                                         <div>
-                                            {/* TODO: confirm exact purpose vs Segment with backend — DB has both segment_id and query_type as separate columns */}
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Query Type</label>
-                                            <input type="text" placeholder="e.g. New Installation, Repair, Enquiry" value={leadForm.queryType} onChange={e => setLeadForm({ ...leadForm, queryType: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" />
+                                            <label className={labelClass}>Address / Location</label>
+                                            <textarea placeholder="Site or client address..." value={leadForm.address} onChange={e => setLeadForm({ ...leadForm, address: e.target.value })} rows={2} className={`${inputClass} resize-y`} />
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Address / Location</label>
-                                            <textarea placeholder="Site or client address..." value={leadForm.address} onChange={e => setLeadForm({ ...leadForm, address: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-xl border text-sm resize-none" />
+                                            <label className={labelClass}>Remarks</label>
+                                            <textarea placeholder="Any additional notes about this query..." value={leadForm.remarks} onChange={e => setLeadForm({ ...leadForm, remarks: e.target.value })} rows={3} className={`${inputClass} resize-y`} />
                                         </div>
 
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Remarks</label>
-                                            <textarea placeholder="Any additional notes about this query..." value={leadForm.remarks} onChange={e => setLeadForm({ ...leadForm, remarks: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-xl border text-sm resize-none" />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Label</label>
-                                            <input type="text" placeholder="e.g. Hot Lead" value={leadForm.label} onChange={e => setLeadForm({ ...leadForm, label: e.target.value })} className="w-full px-3 py-2 rounded-xl border text-sm" />
-                                        </div>
-
-                                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                                            <button type="submit" disabled={actionLoading} className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md whitespace-nowrap">
+                                        <div className="flex justify-end pt-5 border-t border-slate-100">
+                                            <button type="submit" disabled={actionLoading}
+                                                className="w-full sm:w-auto px-8 py-3 text-sm font-bold text-white bg-[#0b2836] hover:bg-[#0f3345] rounded-xl shadow-lg shadow-[#0b2836]/20 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:translate-y-0"
+                                            >
+                                                {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-floppy-disk" />}
                                                 {actionLoading ? "Saving..." : "Create Lead"}
                                             </button>
                                         </div>
@@ -437,26 +486,28 @@ export default function Leads() {
 
             {/* ── Add Segment Modal ── */}
             {showSegmentModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
-                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                            <h3 className="text-lg font-bold text-slate-900">Add New Segment</h3>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-[24px] p-7 shadow-2xl relative animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-slate-900">Add New Segment</h3>
                             <button
                                 type="button"
                                 onClick={() => { setShowSegmentModal(false); setSegmentName(""); setSegmentError(""); }}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 text-xl font-bold"
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                             >
-                                ×
+                                <i className="fa-solid fa-xmark text-lg" />
                             </button>
                         </div>
+
                         {segmentError && (
-                            <div className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg">
-                                {segmentError}
+                            <div className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-4 py-3 rounded-xl mb-5 flex items-center gap-2">
+                                <i className="fa-solid fa-circle-exclamation" /> {segmentError}
                             </div>
                         )}
-                        <form onSubmit={handleAddSegment} className="space-y-4">
+
+                        <form onSubmit={handleAddSegment} className="space-y-6">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                                <label className={labelClass}>
                                     Segment Name *
                                 </label>
                                 <input
@@ -466,22 +517,23 @@ export default function Leads() {
                                     placeholder="e.g. PMSGY, Industrial, Commercial"
                                     value={segmentName}
                                     onChange={(e) => setSegmentName(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl border text-sm"
+                                    className={inputClass}
                                 />
                             </div>
-                            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                            <div className="flex justify-end gap-3 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => { setShowSegmentModal(false); setSegmentName(""); setSegmentError(""); }}
-                                    className="px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-xl"
+                                    className="px-5 py-2.5 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={segmentLoading}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md"
+                                    className="px-6 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md shadow-amber-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 flex items-center gap-2"
                                 >
+                                    {segmentLoading ? <i className="fa-solid fa-spinner animate-spin" /> : null}
                                     {segmentLoading ? "Saving..." : "Save Segment"}
                                 </button>
                             </div>

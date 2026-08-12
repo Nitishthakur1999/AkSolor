@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { publicSiteService } from "../services/publicService";
 
-const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
-//const API_ORIGIN = "https://localhost:7272"; 
+//const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
+const API_ORIGIN = "https://localhost:7272"; 
 
 interface Banner {
     image: string;

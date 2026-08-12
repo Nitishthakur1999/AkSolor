@@ -1,18 +1,18 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { adminService, getDocumentUrl } from "@/services/adminService";
 
-
-
 const TABS = [
-    { key: "overview", label: "1. Overview" },
-    { key: "followups", label: "2. Follow-ups" },
-    { key: "survey", label: "3. Site Survey & Feasibility" },
-    { key: "proposal", label: "4. Proposal & Payment" },
-    { key: "bom", label: "5. BOM & Booking" },
-    { key: "dispatch", label: "6. Dispatch & Docs" },
+    { key: "overview", label: "1. Overview", icon: "fa-solid fa-address-card" },
+    { key: "followups", label: "2. Follow-ups", icon: "fa-solid fa-phone-volume" },
+    { key: "survey", label: "3. Site Survey & Feasibility", icon: "fa-solid fa-map-location-dot" },
+    { key: "proposal", label: "4. Proposal & Payment", icon: "fa-solid fa-file-invoice-dollar" },
+    { key: "bom", label: "5. BOM & Booking", icon: "fa-solid fa-boxes-stacked" },
+    { key: "dispatch", label: "6. Dispatch & Docs", icon: "fa-solid fa-truck-fast" },
 ];
+
 const todayISO = () => new Date().toISOString().split("T")[0];
+
 const nowLocalISO = () => {
     const d = new Date();
     d.setSeconds(0, 0);
@@ -20,34 +20,40 @@ const nowLocalISO = () => {
     const local = new Date(d.getTime() - offset * 60000);
     return local.toISOString().slice(0, 16);
 };
+
+// Common Input/Label Styles
+const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm disabled:bg-slate-100 disabled:text-slate-400";
+const labelClass = "block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1.5 ml-1";
+
 export default function LeadDetail() {
     const { id: leadId } = useParams();
+    const navigate = useNavigate(); // <-- Added to fix 'navigate' error
     const [activeTab, setActiveTab] = useState("overview");
     const [errorMsg, setErrorMsg] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
 
     // Header data (name, phone, status) — shared across all tabs
-    const [lead, setLead] = useState(null);
+    const [lead, setLead] = useState<any>(null);
     const [headerLoading, setHeaderLoading] = useState(true);
 
     // Per-tab data — only fetched once, when that tab is first opened
-    const [followups, setFollowups] = useState(null);
-    const [surveys, setSurveys] = useState(null);
-    const [proposals, setProposals] = useState(null);
-    const [payments, setPayments] = useState(null);
-    const [bom, setBom] = useState(null);
-    const [dispatch, setDispatch] = useState(null);
-    const [documents, setDocuments] = useState(null);
-    const [inventoryItems, setInventoryItems] = useState([]);
+    const [followups, setFollowups] = useState<any>(null);
+    const [surveys, setSurveys] = useState<any>(null);
+    const [proposals, setProposals] = useState<any>(null);
+    const [payments, setPayments] = useState<any>(null);
+    const [bom, setBom] = useState<any>(null);
+    const [dispatch, setDispatch] = useState<any>(null);
+    const [documents, setDocuments] = useState<any>(null);
+    const [inventoryItems, setInventoryItems] = useState<any[]>([]);
 
     const [tabLoading, setTabLoading] = useState(false);
 
     // Form states
     const [followupNote, setFollowupNote] = useState("");
-    const [followupDate, setFollowupDate] = useState(todayISO()); // agar todayISO helper pehle se nahi hai to define kar lein
+    const [followupDate, setFollowupDate] = useState(todayISO());
     const [nextFollowupDate, setNextFollowupDate] = useState("");
     const [surveyDateTime, setSurveyDateTime] = useState(nowLocalISO());
-    const [minDateTime, setMinDateTime] = useState(nowLocalISO());   // 👈 naya
+    const [minDateTime, setMinDateTime] = useState(nowLocalISO());
 
     useEffect(() => {
         const interval = setInterval(() => setMinDateTime(nowLocalISO()), 60000);
@@ -58,7 +64,7 @@ export default function LeadDetail() {
     const [materialError, setMaterialError] = useState<Record<string, any>>({});
     const [dispatchStatus, setDispatchStatus] = useState("Pending Packing");
     const [actionLoading, setActionLoading] = useState(false);
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [systemSizeKw, setSystemSizeKw] = useState("");
     const [totalAmount, setTotalAmount] = useState("");
@@ -66,10 +72,9 @@ export default function LeadDetail() {
 
     // Reminder modal state
     const [showReminderModal, setShowReminderModal] = useState(false);
-    //const [reminderForm, setReminderForm] = useState({ note: "", reminderDate: "" });
     const [reminderForm, setReminderForm] = useState({ note: "", reminderDate: "", reminderType: "Follow-up" });
 
-    // ── Add Item (Inventory Master) modal state — matches inventory_items table columns ──
+    // ── Add Item (Inventory Master) modal state ──
     const [showItemModal, setShowItemModal] = useState(false);
     const [itemForm, setItemForm] = useState({
         itemCode: "",
@@ -109,7 +114,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Failed to load lead");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Could not reach the server. Please try again.");
         } finally {
@@ -124,7 +129,7 @@ export default function LeadDetail() {
         remarks: "",
     });
 
-    const loadTabData = async (tab) => {
+    const loadTabData = async (tab: string) => {
         setErrorMsg("");
         try {
             if (tab === "followups" && followups === null) {
@@ -169,14 +174,13 @@ export default function LeadDetail() {
                 if (docsRes?.success) setDocuments(docsRes.data || []);
                 setTabLoading(false);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Could not load data for this tab.");
             setTabLoading(false);
         }
     };
 
-    // Re-fetch just the inventory item list (used after adding a new item)
     const refreshInventoryItems = async () => {
         try {
             const itemsRes = await adminService.getAllItems();
@@ -206,7 +210,6 @@ export default function LeadDetail() {
                 followupDate,
                 nextFollowupDate: nextFollowupDate || null
             });
-            
 
             if (res?.success) {
                 if (nextFollowupDate) {
@@ -232,7 +235,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not save follow-up.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while saving follow-up.");
         } finally {
@@ -264,7 +267,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not schedule survey.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while scheduling survey.");
         } finally {
@@ -272,18 +275,18 @@ export default function LeadDetail() {
         }
     };
 
-    const handleFeasibility = async (isFeasible) => {
+    const handleFeasibility = async (isFeasible: boolean) => {
         if (!surveys || surveys.length === 0) {
             setErrorMsg("No survey found to update.");
             return;
         }
-        const latestSurveyId = surveys[0].surveyId;   // 👈 sabse latest survey
+        const latestSurveyId = surveys[0].surveyId;
 
         setActionLoading(true);
         setErrorMsg("");
         try {
             const res = await adminService.updateFeasibility({
-                surveyId: latestSurveyId,   // 👈 ye add kiya
+                surveyId: latestSurveyId,
                 leadId: Number(leadId),
                 isFeasible,
             });
@@ -295,13 +298,14 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not update feasibility.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while updating feasibility.");
         } finally {
             setActionLoading(false);
         }
     };
+
     const handleGenerateProposal = async () => {
         if (!systemSizeKw || !totalAmount) {
             setErrorMsg("Please enter system size and total amount.");
@@ -311,7 +315,7 @@ export default function LeadDetail() {
         setErrorMsg("");
         try {
             const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-            const createdBy = storedUser.empId; // 👈 exact field name confirm karo localStorage output se
+            const createdBy = storedUser.empId;
 
             const res = await adminService.createProposal({
                 leadId: Number(leadId),
@@ -332,14 +336,15 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not generate proposal.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while generating proposal.");
         } finally {
             setActionLoading(false);
         }
     };
-    const handleProposalAction = async (proposalId, status) => {
+
+    const handleProposalAction = async (proposalId: number, status: string) => {
         setActionLoading(true);
         setErrorMsg("");
         try {
@@ -352,7 +357,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not update proposal.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while updating proposal.");
         } finally {
@@ -381,13 +386,14 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not add material.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while adding material.");
         } finally {
             setActionLoading(false);
         }
     };
+
     const handleAddMaterialValidated = () => {
         const errors: Record<string, string> = {};
 
@@ -400,8 +406,7 @@ export default function LeadDetail() {
             errors.quantity = "Enter a valid quantity greater than 0.";
         }
 
-        // Optional: prevent duplicate item in BOM
-        if (newMaterial.itemId && bom.some(b => String(b.itemId) === String(newMaterial.itemId))) {
+        if (newMaterial.itemId && bom.some((b: any) => String(b.itemId) === String(newMaterial.itemId))) {
             errors.itemId = "This item is already added.";
         }
 
@@ -413,7 +418,6 @@ export default function LeadDetail() {
         handleAddMaterial();
     };
 
-    // ── Add Item (Inventory Master) handler ──
     const handleAddItem = async () => {
         if (!itemForm.itemName.trim() || !itemForm.unit.trim()) {
             setErrorMsg("Please enter at least Item Name and Unit before saving.");
@@ -443,11 +447,11 @@ export default function LeadDetail() {
                     isActive: true,
                 });
                 setShowItemModal(false);
-                await refreshInventoryItems(); // dropdown turant refresh ho jayega
+                await refreshInventoryItems();
             } else {
                 setErrorMsg(res?.message || "Could not add item.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while adding item.");
         } finally {
@@ -480,7 +484,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not create dispatch entry.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while creating dispatch entry.");
         } finally {
@@ -508,7 +512,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not update dispatch status.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while updating dispatch status.");
         } finally {
@@ -516,7 +520,7 @@ export default function LeadDetail() {
         }
     };
 
-    const handleUploadDocument = async (e) => {
+    const handleUploadDocument = async (e: any) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -549,7 +553,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not upload document.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while uploading document.");
         } finally {
@@ -582,7 +586,7 @@ export default function LeadDetail() {
             } else {
                 setErrorMsg(res?.message || "Could not create reminder.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setErrorMsg(err?.message || "Something went wrong while creating reminder.");
         } finally {
@@ -591,57 +595,783 @@ export default function LeadDetail() {
     };
 
     if (headerLoading) {
-        return <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>;
+        return (
+            <div className="py-24 flex flex-col items-center justify-center gap-4">
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-amber-400 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <div className="text-sm font-semibold text-slate-400 tracking-wide animate-pulse">Loading lead details...</div>
+            </div>
+        );
     }
 
     if (!lead) {
         return (
-            <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm font-medium px-4 py-3 rounded-xl">
-                {errorMsg || "Lead not found."}
+            <div className="m-6 rounded-2xl bg-rose-50 border border-rose-100 px-6 py-6 text-center space-y-4 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl font-bold">
+                    <i className="fa-solid fa-triangle-exclamation" />
+                </div>
+                <p className="text-slate-700 text-sm font-bold">{errorMsg || "Lead not found."}</p>
+                <button
+                    onClick={() => navigate('/sales/leads')}
+                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
+                >
+                    Go Back to Leads
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            {/* HEADER */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        {lead.name}
-                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-bold">#{lead.leadId}</span>
-                    </h2>
-                    <p className="text-sm text-slate-500 mt-1">
-                        Phone: {lead.contactNo} | Current Stage: <span className="font-bold text-slate-700">{lead.status}</span>
-                    </p>
+        <div className="space-y-6 font-sans relative z-0 pb-10">
+
+            {/* ── Premium Header Section ── */}
+            <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-sm relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center shrink-0 border-4 border-[#0b2532] shadow-xl text-[#0b2532] text-xl font-black uppercase">
+                        {(lead.name || "?").trim().charAt(0)}
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{lead.name}</h2>
+                            <span className="px-2.5 py-1 bg-white/10 border border-white/20 text-white rounded-lg text-[10px] font-bold tracking-wider shadow-sm">
+                                #{lead.leadId}
+                            </span>
+                        </div>
+                        <p className="text-xs font-medium text-slate-400 mt-1 flex items-center gap-3">
+                            <span><i className="fa-solid fa-phone text-amber-500 mr-1.5" /> {lead.contactNo}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                            <span className="flex items-center gap-1.5">
+                                <span className="uppercase tracking-wider font-bold">Stage:</span>
+                                <span className="text-white px-2 py-0.5 rounded bg-amber-500/20 text-[10px] font-bold">{lead.status}</span>
+                            </span>
+                        </p>
+                    </div>
                 </div>
-                <button onClick={() => setShowReminderModal(true)} className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 transition-all">
-                    Create Reminder
-                </button>
+
+                <div className="relative z-10 w-full sm:w-auto">
+                    <button
+                        onClick={() => setShowReminderModal(true)}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-amber-400 text-[#0b2836] font-bold rounded-xl text-xs shadow-md shadow-amber-400/20 hover:bg-amber-500 transition-all flex items-center justify-center gap-2"
+                    >
+                        <i className="fa-regular fa-bell" /> Create Reminder
+                    </button>
+                </div>
             </div>
 
+            {/* Notifications */}
             {errorMsg && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm font-medium px-4 py-3 rounded-xl">
-                    {errorMsg}
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold px-5 py-3.5 rounded-xl shadow-sm flex items-center gap-2 animate-in fade-in">
+                    <i className="fa-solid fa-triangle-exclamation" /> {errorMsg}
                 </div>
             )}
             {successMsg && (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-medium px-4 py-3 rounded-xl">
-                    {successMsg}
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold px-5 py-3.5 rounded-xl shadow-sm flex items-center gap-2 animate-in fade-in">
+                    <i className="fa-solid fa-circle-check" /> {successMsg}
                 </div>
             )}
 
-            {/* REMINDER MODAL */}
+            {/* ── Main Container (Tabs + Content) ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+
+                {/* ── Tabs Navigation ── */}
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50">
+                    {TABS.map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`px-5 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === tab.key
+                                    ? "border-amber-500 text-amber-600 bg-white"
+                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                }`}
+                        >
+                            {tab.icon && <i className={`${tab.icon} text-[13px]`} />}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="p-6 sm:p-8 min-h-[400px]">
+                    {tabLoading ? (
+                        <div className="py-24 flex flex-col items-center justify-center gap-4">
+                            <div className="relative w-10 h-10 flex items-center justify-center">
+                                <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                                <div className="absolute inset-0 border-4 border-amber-400 rounded-full border-t-transparent animate-spin"></div>
+                            </div>
+                            <div className="text-sm font-semibold text-slate-400 tracking-wide animate-pulse">Loading data...</div>
+                        </div>
+                    ) : (
+                        <div className="animate-in fade-in duration-300">
+                            {/* TAB 1: OVERVIEW */}
+                            {activeTab === "overview" && (
+                                <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-slate-200/80 pb-3">
+                                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                                            <i className="fa-solid fa-address-card" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Client Information</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Client Name</p>
+                                            <p className="text-sm font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.name || "—"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Phone Number</p>
+                                            <p className="text-sm font-mono font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.contactNo || "—"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address</p>
+                                            <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.email || "—"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Site Address</p>
+                                            <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl break-words">{lead.address || "—"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 2: FOLLOW-UPS */}
+                            {activeTab === "followups" && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-white self-start">
+                                        <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
+                                            <i className="fa-solid fa-plus-circle text-amber-500" />
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Add Follow-up Note</h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                                            <div>
+                                                <label className={labelClass}>
+                                                    Follow-up Date *
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    value={followupDate}
+                                                    onChange={e => setFollowupDate(e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelClass}>
+                                                    Next Reminder (Optional)
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={nextFollowupDate}
+                                                    min={todayISO()}
+                                                    onChange={e => setNextFollowupDate(e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                                <p className="text-[10px] text-slate-400 mt-1.5 font-medium ml-1">Auto-creates a reminder notification.</p>
+                                            </div>
+                                        </div>
+
+                                        <label className={labelClass}>Discussion Notes</label>
+                                        <textarea
+                                            placeholder="What was discussed with the client?"
+                                            value={followupNote}
+                                            onChange={e => setFollowupNote(e.target.value)}
+                                            rows={4}
+                                            className={`${inputClass} resize-y mb-5`}
+                                        />
+                                        <button
+                                            onClick={handleAddFollowup}
+                                            disabled={actionLoading}
+                                            className="w-full px-6 py-3 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md hover:bg-[#0f3345] disabled:opacity-60 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                                        >
+                                            {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-paper-plane" />}
+                                            {actionLoading ? "Submitting..." : "Submit Follow-up"}
+                                        </button>
+                                    </div>
+
+                                    <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-slate-50">
+                                        <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 mb-5">
+                                            <i className="fa-solid fa-clock-rotate-left text-blue-500" />
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Interaction Timeline</h3>
+                                        </div>
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {(followups || []).length === 0 ? (
+                                                <div className="text-center py-10">
+                                                    <i className="fa-regular fa-comments text-3xl text-slate-300 mb-2" />
+                                                    <p className="text-sm font-bold text-slate-500">No follow-ups recorded yet.</p>
+                                                </div>
+                                            ) : followups.map((f: any, idx: number) => (
+                                                <div key={f.followupId || idx} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative">
+                                                    <div className="absolute top-5 right-5">
+                                                        <span className="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                                            By {f.createdBy || "System"}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs font-bold text-amber-600 mb-2 flex items-center gap-1.5">
+                                                        <i className="fa-regular fa-calendar" /> {f.followupDate?.split("T")[0]}
+                                                    </p>
+                                                    <p className="text-sm text-slate-700 font-medium leading-relaxed">{f.notes}</p>
+                                                    {f.nextFollowupDate && (
+                                                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-bold text-emerald-600">
+                                                            <i className="fa-regular fa-bell" />
+                                                            Reminder Set: {f.nextFollowupDate?.split("T")[0]}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 3: SITE SURVEY & FEASIBILITY */}
+                            {activeTab === "survey" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-white self-start space-y-8">
+
+                                        <div>
+                                            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
+                                                <i className="fa-solid fa-calendar-check text-amber-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Schedule Site Survey</h3>
+                                            </div>
+                                            <label className={labelClass}>Survey Date & Time *</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={surveyDateTime}
+                                                min={minDateTime}
+                                                onChange={e => setSurveyDateTime(e.target.value)}
+                                                className={inputClass}
+                                            />
+                                            <button
+                                                onClick={handleScheduleSurvey}
+                                                disabled={actionLoading}
+                                                className="mt-4 w-full px-6 py-3 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md hover:bg-[#0f3345] disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-regular fa-calendar-plus" />}
+                                                {actionLoading ? "Scheduling..." : "Schedule Survey"}
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-slate-200">
+                                            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+                                                <i className="fa-solid fa-clipboard-check text-emerald-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Feasibility Decision</h3>
+                                            </div>
+                                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 leading-relaxed">After survey completion, mark whether the project site is feasible for installation.</p>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => handleFeasibility(true)}
+                                                    disabled={actionLoading || !surveys || surveys.length === 0}
+                                                    className="flex-1 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded-xl text-xs shadow-sm hover:bg-emerald-100 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <i className="fa-solid fa-check" /> {actionLoading ? "..." : "Accept Feasibility"}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleFeasibility(false)}
+                                                    disabled={actionLoading || !surveys || surveys.length === 0}
+                                                    className="flex-1 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 font-bold rounded-xl text-xs shadow-sm hover:bg-rose-100 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <i className="fa-solid fa-xmark" /> {actionLoading ? "..." : "Reject Feasibility"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-slate-50">
+                                        <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 mb-5">
+                                            <i className="fa-solid fa-clock-rotate-left text-blue-500" />
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Survey History</h3>
+                                        </div>
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {(surveys || []).length === 0 ? (
+                                                <div className="text-center py-10">
+                                                    <i className="fa-solid fa-map-location-dot text-3xl text-slate-300 mb-2" />
+                                                    <p className="text-sm font-bold text-slate-500">No surveys scheduled yet.</p>
+                                                </div>
+                                            ) : surveys.map((s: any, idx: number) => (
+                                                <div key={s.surveyId || idx} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Scheduled Date</p>
+                                                            <p className="text-sm font-bold text-amber-600">
+                                                                {s.surveyDate ? new Date(s.surveyDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : "Not scheduled"}
+                                                            </p>
+                                                        </div>
+                                                        <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                                            {s.status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 mt-2">
+                                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Result</p>
+                                                        <div className="text-sm font-bold">
+                                                            {s.isFeasible === true && <span className="text-emerald-600 flex items-center gap-1.5"><i className="fa-solid fa-circle-check" /> Feasible for Installation</span>}
+                                                            {s.isFeasible === false && <span className="text-rose-600 flex items-center gap-1.5"><i className="fa-solid fa-circle-xmark" /> Not Feasible</span>}
+                                                            {(s.isFeasible === null || s.isFeasible === undefined) && <span className="text-amber-600 flex items-center gap-1.5"><i className="fa-solid fa-clock" /> Pending Decision</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    {s.surveyorName && (
+                                                        <p className="text-[11px] font-semibold text-slate-400 mt-3 flex items-center gap-1.5">
+                                                            <i className="fa-solid fa-user-tie" /> Surveyor: <span className="text-slate-700">{s.surveyorName}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 4: PROPOSAL & PAYMENT */}
+                            {activeTab === "proposal" && (
+                                <div className="space-y-8">
+                                    {/* Generate Proposal form */}
+                                    <div className="border border-slate-200 rounded-2xl p-6 shadow-sm bg-white">
+                                        <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
+                                            <i className="fa-solid fa-file-invoice text-amber-500" />
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Generate New Proposal</h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 items-end">
+                                            <div>
+                                                <label className={labelClass}>System Size (kW) *</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 5"
+                                                    value={systemSizeKw}
+                                                    onChange={e => setSystemSizeKw(e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelClass}>Total Amount (₹) *</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 250000"
+                                                    value={totalAmount}
+                                                    onChange={e => setTotalAmount(e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelClass}>Subsidy Amount (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="e.g. 78000"
+                                                    value={subsidyAmount}
+                                                    onChange={e => setSubsidyAmount(e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                            <div className="w-full">
+                                                <button
+                                                    onClick={handleGenerateProposal}
+                                                    disabled={actionLoading}
+                                                    className="w-full px-4 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md shadow-[#0b2836]/20 hover:bg-[#0f3345] disabled:opacity-60 transition-all flex items-center justify-center gap-2 h-[42px]"
+                                                >
+                                                    {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-plus" />}
+                                                    {actionLoading ? "Generating..." : "Generate"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Proposals table */}
+                                    <div className="border border-slate-200 rounded-2xl shadow-sm bg-white overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Proposal History</h3>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+                                                <thead className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="px-6 py-4">System Size</th>
+                                                        <th className="px-6 py-4">Total Amount</th>
+                                                        <th className="px-6 py-4">Subsidy Amount</th>
+                                                        <th className="px-6 py-4">Status</th>
+                                                        <th className="px-6 py-4 text-right">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                                    {(proposals || []).length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={5} className="px-6 py-12 text-center">
+                                                                <div className="flex flex-col items-center gap-2 text-slate-400">
+                                                                    <i className="fa-solid fa-file-circle-xmark text-3xl text-slate-300 mb-1" />
+                                                                    <p className="text-sm font-bold text-slate-500">No proposals generated yet.</p>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ) : proposals.map((p: any, idx: number) => (
+                                                        <tr key={p.proposalId || idx} className="hover:bg-slate-50/60 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-900">{p.systemSizeKw || "-"} kW</td>
+                                                            <td className="px-6 py-4 font-mono font-bold text-slate-900">₹ {Number(p.totalAmount || 0).toLocaleString("en-IN")}</td>
+                                                            <td className="px-6 py-4 font-mono font-bold text-emerald-600">₹ {Number(p.subsidyAmount || 0).toLocaleString("en-IN")}</td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${p.status === "Accepted"
+                                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                                                                        : p.status === "Rejected"
+                                                                            ? "bg-rose-50 text-rose-700 border-rose-200/60"
+                                                                            : "bg-amber-50 text-amber-700 border-amber-200/60"
+                                                                    }`}>
+                                                                    {p.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                {(p.status === "Draft" || p.status === "Pending") ? (
+                                                                    <div className="flex gap-2 justify-end">
+                                                                        <button
+                                                                            onClick={() => handleProposalAction(p.proposalId, "Accepted")}
+                                                                            disabled={actionLoading}
+                                                                            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-bold rounded-lg text-[10px] uppercase tracking-wider hover:bg-emerald-100 disabled:opacity-60 transition-all shadow-sm"
+                                                                        >
+                                                                            Accept
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleProposalAction(p.proposalId, "Rejected")}
+                                                                            disabled={actionLoading}
+                                                                            className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200/60 font-bold rounded-lg text-[10px] uppercase tracking-wider hover:bg-rose-100 disabled:opacity-60 transition-all shadow-sm"
+                                                                        >
+                                                                            Reject
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-slate-300 text-xs font-bold">—</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 5: BOM & BOOKING */}
+                            {activeTab === "bom" && (
+                                <div className="space-y-6">
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-5">
+                                            <div className="flex items-center gap-2">
+                                                <i className="fa-solid fa-boxes-stacked text-amber-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Material Requirements (BOM)</h3>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowItemModal(true)}
+                                                className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200/60 font-bold rounded-xl text-xs hover:bg-amber-100 transition-all shadow-sm flex items-center gap-2"
+                                            >
+                                                <i className="fa-solid fa-plus" /> New Inventory Item
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end mb-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                                            <div>
+                                                <label className={labelClass}>Select Material *</label>
+                                                <select
+                                                    value={newMaterial.itemId}
+                                                    onChange={e => setNewMaterial({ ...newMaterial, itemId: e.target.value })}
+                                                    className={`${inputClass} appearance-none cursor-pointer ${materialError.itemId ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500" : ""}`}
+                                                >
+                                                    <option value="" disabled>-- Select Item --</option>
+                                                    {inventoryItems.map(item => (
+                                                        <option key={item.itemId} value={item.itemId}>{item.itemName}</option>
+                                                    ))}
+                                                </select>
+                                                {materialError.itemId && (
+                                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{materialError.itemId}</p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className={labelClass}>Required Quantity *</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    step="1"
+                                                    placeholder="e.g. 10"
+                                                    value={newMaterial.quantity}
+                                                    onChange={e => setNewMaterial({ ...newMaterial, quantity: e.target.value })}
+                                                    className={`${inputClass} ${materialError.quantity ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500" : ""}`}
+                                                />
+                                                {materialError.quantity && (
+                                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{materialError.quantity}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="w-full">
+                                                <button
+                                                    onClick={handleAddMaterialValidated}
+                                                    disabled={actionLoading}
+                                                    className="w-full px-4 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm hover:bg-[#0f3345] shadow-md shadow-[#0b2836]/20 disabled:opacity-60 transition-all h-[42px] flex items-center justify-center gap-2"
+                                                >
+                                                    {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-plus" />}
+                                                    {actionLoading ? "Adding..." : "Add to BOM"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                                                    <tr>
+                                                        <th className="px-6 py-4">Item Name</th>
+                                                        <th className="px-6 py-4 text-center">Req. Qty</th>
+                                                        <th className="px-6 py-4">Unit</th>
+                                                        <th className="px-6 py-4 text-right">Availability Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                                    {(bom || []).length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={4} className="px-6 py-12 text-center">
+                                                                <div className="flex flex-col items-center gap-2 text-slate-400">
+                                                                    <i className="fa-solid fa-box-open text-3xl text-slate-300 mb-1" />
+                                                                    <p className="text-sm font-bold text-slate-500">No materials added to BOM yet.</p>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ) : bom.map((item: any, idx: number) => (
+                                                        <tr key={item.bomId || idx} className="hover:bg-slate-50/60 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-900">{item.itemName || "-"}</td>
+                                                            <td className="px-6 py-4 text-center font-mono font-bold text-slate-700 bg-slate-50/50">{item.requiredQty ?? "-"}</td>
+                                                            <td className="px-6 py-4 font-medium text-slate-500">{item.unit || "-"}</td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${item.shortageQty > 0
+                                                                        ? "bg-rose-50 text-rose-700 border-rose-200/50"
+                                                                        : "bg-emerald-50 text-emerald-700 border-emerald-200/50"
+                                                                    }`}>
+                                                                    {item.shortageQty > 0 ? (
+                                                                        <><i className="fa-solid fa-circle-exclamation" /> Needs Booking</>
+                                                                    ) : (
+                                                                        <><i className="fa-solid fa-circle-check" /> In Stock</>
+                                                                    )}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 6: DISPATCH & DOCS */}
+                            {activeTab === "dispatch" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                                    {/* LEFT COLUMN: Dispatch Info */}
+                                    <div className="space-y-8">
+
+                                        {/* Create Dispatch Entry */}
+                                        <div className="border border-slate-200 rounded-2xl p-6 bg-white shadow-sm">
+                                            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
+                                                <i className="fa-solid fa-truck-fast text-amber-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Create Dispatch Entry
+                                                </h3>
+                                            </div>
+
+                                            <div className="space-y-5 mb-6">
+                                                <div>
+                                                    <label className={labelClass}>Dispatch Date *</label>
+                                                    <input
+                                                        type="date"
+                                                        value={dispatchForm.dispatchDate}
+                                                        onChange={e => setDispatchForm({ ...dispatchForm, dispatchDate: e.target.value })}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className={labelClass}>Transporter Name</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. Blue Dart, Delhivery"
+                                                        value={dispatchForm.transporter}
+                                                        onChange={e => setDispatchForm({ ...dispatchForm, transporter: e.target.value })}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className={labelClass}>Tracking Number</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. TRK123456"
+                                                        value={dispatchForm.trackingNo}
+                                                        onChange={e => setDispatchForm({ ...dispatchForm, trackingNo: e.target.value })}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={handleCreateDispatch}
+                                                disabled={actionLoading}
+                                                className="w-full px-6 py-3 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md shadow-[#0b2836]/20 hover:bg-[#0f3345] disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-truck-ramp-box" />}
+                                                {actionLoading ? "Creating..." : "Create Dispatch Entry"}
+                                            </button>
+                                        </div>
+
+                                        {/* Dispatch Status update */}
+                                        <div className="border border-slate-200 rounded-2xl p-6 bg-white shadow-sm">
+                                            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-5">
+                                                <i className="fa-solid fa-route text-blue-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Update Dispatch Status
+                                                </h3>
+                                            </div>
+                                            <div className="mb-5">
+                                                <label className={labelClass}>New Status</label>
+                                                <select
+                                                    value={dispatchStatus}
+                                                    onChange={e => setDispatchStatus(e.target.value)}
+                                                    className={`${inputClass} cursor-pointer appearance-none`}
+                                                >
+                                                    <option value="Pending Packing">Pending Packing</option>
+                                                    <option value="Dispatched">Dispatched</option>
+                                                    <option value="Delivered">Delivered</option>
+                                                </select>
+                                            </div>
+                                            <button
+                                                onClick={handleUpdateDispatchStatus}
+                                                disabled={actionLoading}
+                                                className="w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-rotate" />}
+                                                {actionLoading ? "Updating..." : "Update Status"}
+                                            </button>
+                                        </div>
+
+                                        {/* Dispatch History */}
+                                        <div className="border border-slate-200 rounded-2xl p-6 bg-slate-50 shadow-sm">
+                                            <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 mb-5">
+                                                <i className="fa-solid fa-clock-rotate-left text-slate-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Dispatch History
+                                                </h3>
+                                            </div>
+                                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {(dispatch || []).length === 0 ? (
+                                                    <div className="text-center py-8">
+                                                        <i className="fa-solid fa-box text-3xl text-slate-300 mb-2" />
+                                                        <p className="text-sm font-bold text-slate-500">No dispatch entries yet.</p>
+                                                    </div>
+                                                ) : dispatch.map((d: any, idx: number) => (
+                                                    <div
+                                                        key={d.dispatchId ?? idx}
+                                                        className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
+                                                            <div>
+                                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Date</p>
+                                                                <p className="text-sm font-bold text-amber-600">
+                                                                    {d.dispatchDate ? new Date(d.dispatchDate).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : "Not set"}
+                                                                </p>
+                                                            </div>
+                                                            <span className="shrink-0 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200/50 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                                                                {d.status}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm mt-3">
+                                                            <div>
+                                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Transporter</p>
+                                                                <p className="font-semibold text-slate-800 truncate">{d.transporter || "—"}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Tracking #</p>
+                                                                <p className="font-mono font-bold text-slate-700 truncate">{d.trackingNo || "—"}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    {/* RIGHT COLUMN: Documents */}
+                                    <div className="border border-slate-200 rounded-2xl p-6 bg-white shadow-sm self-start">
+                                        <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-5">
+                                            <div className="flex items-center gap-2">
+                                                <i className="fa-regular fa-folder-open text-amber-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                                    Documents & Files
+                                                </h3>
+                                            </div>
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={actionLoading}
+                                                className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/50 rounded-lg text-xs font-bold transition-all disabled:opacity-60 flex items-center gap-1.5 shadow-sm"
+                                            >
+                                                {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-cloud-arrow-up" />}
+                                                {actionLoading ? "Uploading..." : "Upload File"}
+                                            </button>
+                                            <input type="file" ref={fileInputRef} onChange={handleUploadDocument} className="hidden" />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {(documents || []).length === 0 ? (
+                                                <div className="text-center py-12 bg-slate-50 border border-slate-100 border-dashed rounded-xl">
+                                                    <i className="fa-regular fa-file-pdf text-3xl text-slate-300 mb-2" />
+                                                    <p className="text-sm font-bold text-slate-500">No documents uploaded yet.</p>
+                                                    <p className="text-xs text-slate-400 mt-1 font-medium">Upload agreements, ID proofs, or site photos.</p>
+                                                </div>
+                                            ) : documents.map((doc: any, idx: number) => (
+                                                <div
+                                                    key={doc.docId ?? idx}
+                                                    onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
+                                                    className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 hover:border-amber-300 transition-all cursor-pointer flex items-center justify-between gap-4 shadow-sm group"
+                                                >
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                                                            <i className="fa-regular fa-file-lines text-lg" />
+                                                        </div>
+                                                        <div className="truncate">
+                                                            <p className="text-sm font-bold text-slate-800 truncate group-hover:text-amber-700 transition-colors">
+                                                                {doc.docName || "Untitled Document"}
+                                                            </p>
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                                                                Tap to view/download
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600 flex items-center justify-center shrink-0 transition-colors">
+                                                        <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ── Reminder Modal ── */}
             {showReminderModal && (
-                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">Create Reminder</h3>
-                        <div className="space-y-4">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md relative animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+                            <h3 className="text-lg font-bold text-slate-900">Create Reminder</h3>
+                            <button onClick={() => setShowReminderModal(false)} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors">
+                                <i className="fa-solid fa-xmark" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Reminder Type</label>
+                                <label className={labelClass}>Reminder Type</label>
                                 <select
                                     value={reminderForm.reminderType || "Follow-up"}
                                     onChange={e => setReminderForm({ ...reminderForm, reminderType: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
+                                    className={`${inputClass} cursor-pointer appearance-none`}
                                 >
                                     <option value="Follow-up">Follow-up</option>
                                     <option value="Call">Call</option>
@@ -650,30 +1380,33 @@ export default function LeadDetail() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Note *</label>
+                                <label className={labelClass}>Note *</label>
                                 <textarea
                                     value={reminderForm.note}
                                     onChange={e => setReminderForm({ ...reminderForm, note: e.target.value })}
                                     rows={3}
                                     placeholder="What should be remembered?"
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                    className={`${inputClass} resize-y`}
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Reminder Date & Time *</label>
+                                <label className={labelClass}>Reminder Date & Time *</label>
                                 <input
                                     type="datetime-local"
+                                    min={nowLocalISO()}
                                     value={reminderForm.reminderDate}
                                     onChange={e => setReminderForm({ ...reminderForm, reminderDate: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                    className={inputClass}
                                 />
                             </div>
                         </div>
-                        <div className="pt-5 flex justify-end gap-3">
+
+                        <div className="pt-6 flex justify-end gap-3 border-t border-slate-100 mt-6">
                             <button onClick={() => setShowReminderModal(false)} className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all">
                                 Cancel
                             </button>
-                            <button onClick={handleCreateReminder} disabled={actionLoading} className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
+                            <button onClick={handleCreateReminder} disabled={actionLoading} className="px-6 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-600/20 hover:bg-amber-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2">
+                                {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-regular fa-bell" />}
                                 {actionLoading ? "Saving..." : "Save Reminder"}
                             </button>
                         </div>
@@ -681,605 +1414,118 @@ export default function LeadDetail() {
                 </div>
             )}
 
-            {/* ── ADD ITEM (Inventory Master) MODAL ── */}
+            {/* ── Add Item (Inventory Master) MODAL ── */}
             {showItemModal && (
-                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">Add New Item</h3>
-                        <div className="space-y-4">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md relative animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+                            <h3 className="text-lg font-bold text-slate-900">Add New Inventory Item</h3>
+                            <button
+                                type="button"
+                                onClick={() => { setShowItemModal(false); setItemForm({ ...itemForm, itemName: "", unit: "" }); setErrorMsg(""); }}
+                                className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                            >
+                                <i className="fa-solid fa-xmark" />
+                            </button>
+                        </div>
+
+                        {errorMsg && (
+                            <div className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-4 py-3 rounded-xl mb-5 flex items-center gap-2">
+                                <i className="fa-solid fa-circle-exclamation" /> {errorMsg}
+                            </div>
+                        )}
+
+                        <form className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Item Code</label>
+                                <label className={labelClass}>Item Code</label>
                                 <input
                                     type="text"
-                                    placeholder="e.g. ITM-001"
+                                    placeholder="e.g. PNL-550"
                                     value={itemForm.itemCode}
                                     onChange={e => setItemForm({ ...itemForm, itemCode: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                    className={inputClass}
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Item Name *</label>
+                                <label className={labelClass}>Item Name *</label>
                                 <input
                                     type="text"
                                     required
                                     autoFocus
-                                    placeholder="e.g. Solar Panel 550W"
+                                    placeholder="e.g. Solar Panel 550W Mono PERC"
                                     value={itemForm.itemName}
                                     onChange={e => setItemForm({ ...itemForm, itemName: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                    className={inputClass}
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Category</label>
+                                    <label className={labelClass}>Category</label>
                                     <input
                                         type="text"
-                                        placeholder="e.g. Panels, Cables"
+                                        placeholder="e.g. Panels"
                                         value={itemForm.category}
                                         onChange={e => setItemForm({ ...itemForm, category: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                        className={inputClass}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Unit *</label>
+                                    <label className={labelClass}>Unit *</label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="e.g. Nos, Mtr, Kg"
                                         value={itemForm.unit}
                                         onChange={e => setItemForm({ ...itemForm, unit: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                        className={inputClass}
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Opening Stock</label>
+                                    <label className={labelClass}>Opening Stock</label>
                                     <input
                                         type="number"
                                         placeholder="0"
                                         value={itemForm.currentStock}
                                         onChange={e => setItemForm({ ...itemForm, currentStock: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                        className={inputClass}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Reorder Level</label>
+                                    <label className={labelClass}>Reorder Level</label>
                                     <input
                                         type="number"
                                         placeholder="0"
                                         value={itemForm.reorderLevel}
                                         onChange={e => setItemForm({ ...itemForm, reorderLevel: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                                        className={inputClass}
                                     />
                                 </div>
                             </div>
-                        </div>
-                        <div className="pt-5 flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowItemModal(false)}
-                                className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleAddItem}
-                                disabled={itemLoading}
-                                className="px-5 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all"
-                            >
-                                {itemLoading ? "Saving..." : "Save Item"}
-                            </button>
-                        </div>
+
+                            <div className="flex justify-end gap-3 pt-5 border-t border-slate-100 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowItemModal(false); setItemForm({ ...itemForm, itemName: "", unit: "" }); setErrorMsg(""); }}
+                                    className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAddItem}
+                                    disabled={itemLoading}
+                                    className="px-6 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md shadow-[#0b2836]/20 hover:bg-[#0f3345] hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2"
+                                >
+                                    {itemLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-floppy-disk" />}
+                                    {itemLoading ? "Saving..." : "Save Item"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
-
-            {/* MAIN CONTAINER */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
-                {/* TABS */}
-                <div className="flex overflow-x-auto border-b border-slate-200 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {TABS.map(tab => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
-                            className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? "border-amber-600 text-amber-600" : "border-transparent hover:text-slate-600"}`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="p-6 min-h-[400px]">
-                    {tabLoading ? (
-                        <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>
-                    ) : (
-                        <>
-                            {/* TAB 1: OVERVIEW */}
-                            {activeTab === "overview" && (
-                                <div className="bg-slate-50 rounded-2xl border border-slate-100 p-6">
-                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">Client Information</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Client Name</p>
-                                            <p className="text-sm font-semibold text-slate-800">{lead.name || "-"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Phone</p>
-                                            <p className="text-sm font-semibold text-slate-800">{lead.contactNo || "-"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Email</p>
-                                            <p className="text-sm font-semibold text-slate-800">{lead.email || "-"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Address</p>
-                                            <p className="text-sm font-semibold text-slate-800">{lead.address || "-"}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                                {/* TAB 2: FOLLOW-UPS */}
-                                {activeTab === "followups" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="border border-slate-200 rounded-2xl p-6">
-                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">Add Follow-up Note</h3>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                                        Follow-up Date *
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        required
-                                                        value={followupDate}
-                                                        onChange={e => setFollowupDate(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                                        Next Follow-up (Reminder)
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        value={nextFollowupDate}
-                                                        min={todayISO()}
-                                                        onChange={e => setNextFollowupDate(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                    />
-                                                    <p className="text-[11px] text-slate-400 mt-1">Set this to auto-create the next reminder.</p>
-                                                </div>
-                                            </div>
-
-                                            <textarea
-                                                placeholder="What was discussed with the client?"
-                                                value={followupNote}
-                                                onChange={e => setFollowupNote(e.target.value)}
-                                                rows={4}
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                            />
-                                            <button onClick={handleAddFollowup} disabled={actionLoading} className="mt-4 w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
-                                                {actionLoading ? "Submitting..." : "Submit Follow-up"}
-                                            </button>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">History Timeline</h3>
-                                            <div className="space-y-3">
-                                                {(followups || []).length === 0 ? (
-                                                    <p className="text-sm text-slate-400">No follow-ups yet.</p>
-                                                ) : followups.map((f, idx) => (
-                                                    <div key={f.followupId || idx} className="border border-slate-100 rounded-xl p-4 flex justify-between items-start">
-                                                        <div>
-                                                            <p className="text-xs font-bold text-amber-600">{f.followupDate?.split("T")[0]}</p>
-                                                            <p className="text-sm text-slate-700 mt-1">{f.notes}</p>
-                                                            {f.nextFollowupDate && (
-                                                                <p className="text-[11px] text-amber-600 font-semibold mt-1">
-                                                                    Next reminder: {f.nextFollowupDate?.split("T")[0]}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">
-                                                            Logged by {f.createdBy || "Unknown"}
-                                                        </span> </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                            {/* TAB 3: SITE SURVEY & FEASIBILITY */}
-                            {activeTab === "survey" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="border border-slate-200 rounded-2xl p-6">
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">Schedule Site Survey</h3>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Survey Date & Time *</label>
-                                            <input
-                                                type="datetime-local"
-                                                value={surveyDateTime}
-                                                min={minDateTime}
-                                                onChange={e => setSurveyDateTime(e.target.value)}
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                            />
-                                        <button onClick={handleScheduleSurvey} disabled={actionLoading} className="mt-4 w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
-                                            {actionLoading ? "Scheduling..." : "Schedule Survey"}
-                                        </button>
-
-                                        {/* NEW: Survey history list */}
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mt-8 mb-4">Survey History</h3>
-                                        <div className="space-y-3">
-                                            {(surveys || []).length === 0 ? (
-                                                <p className="text-sm text-slate-400">No surveys scheduled yet.</p>
-                                            ) : surveys.map((s, idx) => (
-                                                <div key={s.surveyId || idx} className="border border-slate-100 rounded-xl p-4 flex justify-between items-start">
-                                                    <div>
-                                                        <p className="text-xs font-bold text-amber-600">
-                                                            {s.surveyDate ? new Date(s.surveyDate).toLocaleString() : "Not scheduled"}
-                                                        </p>
-                                                        <p className="text-sm text-slate-700 mt-1">
-                                                            {s.isFeasible === true && <span className="text-emerald-600 font-semibold">✓ Feasible</span>}
-                                                            {s.isFeasible === false && <span className="text-rose-600 font-semibold">✕ Not Feasible</span>}
-                                                            {(s.isFeasible === null || s.isFeasible === undefined) && <span className="text-amber-600 font-semibold">Pending decision</span>}
-                                                        </p>
-                                                        {s.surveyorName && (
-                                                            <p className="text-[11px] text-slate-400 mt-1">Surveyor: {s.surveyorName}</p>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase">{s.status}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="border border-slate-200 rounded-2xl p-6">
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Feasibility Decision</h3>
-                                        <p className="text-xs text-slate-500 mb-4">After survey completion, mark whether the project site is feasible for installation.</p>
-                                        <div className="flex gap-3">
-                                            <button onClick={() => handleFeasibility(true)} disabled={actionLoading} className="flex-1 px-4 py-3 border border-emerald-200 text-emerald-600 font-bold rounded-xl text-sm hover:bg-emerald-50 disabled:opacity-60 transition-all">
-                                                {actionLoading ? "..." : "✓ Accept Feasibility"}
-                                            </button>
-                                            <button onClick={() => handleFeasibility(false)} disabled={actionLoading} className="flex-1 px-4 py-3 border border-rose-200 text-rose-600 font-bold rounded-xl text-sm hover:bg-rose-50 disabled:opacity-60 transition-all">
-                                                {actionLoading ? "..." : "✕ Reject Feasibility"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB 4: PROPOSAL & PAYMENT */}
-                                {activeTab === "proposal" && (
-                                    <div>
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Proposal Details</h3>
-                                        </div>
-
-                                        {/* Generate Proposal form — unchanged */}
-                                        <div className="border border-slate-200 rounded-2xl p-6 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">System Size (kW) *</label>
-                                                <input
-                                                    type="number"
-                                                    value={systemSizeKw}
-                                                    onChange={e => setSystemSizeKw(e.target.value)}
-                                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Total Amount (₹) *</label>
-                                                <input
-                                                    type="number"
-                                                    value={totalAmount}
-                                                    onChange={e => setTotalAmount(e.target.value)}
-                                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Subsidy Amount (₹)</label>
-                                                <input
-                                                    type="number"
-                                                    value={subsidyAmount}
-                                                    onChange={e => setSubsidyAmount(e.target.value)}
-                                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400"
-                                                />
-                                            </div>
-                                            <div className="flex items-end">
-                                                <button onClick={handleGenerateProposal} disabled={actionLoading} className="w-full px-4 py-2 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 disabled:opacity-60 transition-all">
-                                                    {actionLoading ? "Generating..." : "Generate New Proposal"}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Proposals table */}
-                                        <div className="border border-slate-200 rounded-2xl overflow-hidden">
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="bg-slate-50 border-b border-slate-200">
-                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">System Size</th>
-                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Total Amount</th>
-                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Subsidy Amount</th>
-                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Status</th>
-                                                        <th className="text-left px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {(proposals || []).length === 0 ? (
-                                                        <tr>
-                                                            <td colSpan={5} className="px-6 py-8 text-sm text-slate-400 text-center">
-                                                                No proposals yet.
-                                                            </td>
-                                                        </tr>
-                                                    ) : proposals.map((p, idx) => (
-                                                        <tr key={p.proposalId || idx} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60 transition-colors">
-                                                            <td className="px-6 py-4 font-bold text-slate-800">{p.systemSizeKw || "-"} kW</td>
-                                                            <td className="px-6 py-4 font-bold text-slate-800">₹ {Number(p.totalAmount || 0).toLocaleString("en-IN")}</td>
-                                                            <td className="px-6 py-4 font-bold text-slate-800">₹ {Number(p.subsidyAmount || 0).toLocaleString("en-IN")}</td>
-                                                            <td className="px-6 py-4">
-                                                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${p.status === "Accepted"
-                                                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                                                        : p.status === "Rejected"
-                                                                            ? "bg-red-50 text-red-600 border-red-200"
-                                                                            : "bg-amber-50 text-amber-600 border-amber-200"
-                                                                    }`}>
-                                                                    {p.status}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                {(p.status === "Draft" || p.status === "Pending") ? (
-                                                                    <div className="flex gap-2">
-                                                                        <button onClick={() => handleProposalAction(p.proposalId, "Accepted")} disabled={actionLoading} className="px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-xs hover:bg-emerald-700 disabled:opacity-60 transition-all">Accept</button>
-                                                                        <button onClick={() => handleProposalAction(p.proposalId, "Rejected")} disabled={actionLoading} className="px-4 py-1.5 border border-slate-200 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-50 disabled:opacity-60 transition-all">Reject</button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-slate-300">—</span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-                                {/* TAB 5: BOM & BOOKING */}
-                                {activeTab === "bom" && (
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Material Requirements (BOM)</h3>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowItemModal(true)}
-                                                className="text-xs font-bold text-amber-600 hover:text-amber-800"
-                                            >
-                                                + Add Item
-                                            </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-                                            <div>
-                                                <select
-                                                    value={newMaterial.itemId}
-                                                    onChange={e => setNewMaterial({ ...newMaterial, itemId: e.target.value })}
-                                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:border-amber-400 ${materialError.itemId ? "border-red-400" : "border-slate-200"
-                                                        }`}
-                                                >
-                                                    <option value="">-- Select Item --</option>
-                                                    {inventoryItems.map(item => (
-                                                        <option key={item.itemId} value={item.itemId}>{item.itemName}</option>
-                                                    ))}
-                                                </select>
-                                                {materialError.itemId && (
-                                                    <p className="text-xs text-red-500 mt-1">{materialError.itemId}</p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="1"
-                                                    placeholder="Quantity"
-                                                    value={newMaterial.quantity}
-                                                    onChange={e => setNewMaterial({ ...newMaterial, quantity: e.target.value })}
-                                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none focus:border-amber-400 ${materialError.quantity ? "border-red-400" : "border-slate-200"
-                                                        }`}
-                                                />
-                                                {materialError.quantity && (
-                                                    <p className="text-xs text-red-500 mt-1">{materialError.quantity}</p>
-                                                )}
-                                            </div>
-
-                                            <button
-                                                onClick={handleAddMaterialValidated}
-                                                disabled={actionLoading}
-                                                className="px-4 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-xs hover:bg-amber-700 disabled:opacity-60 transition-all h-[42px]"
-                                            >
-                                                {actionLoading ? "Adding..." : "+ Add Material"}
-                                            </button>
-                                        </div>
-
-                                        <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                                            <table className="w-full text-left border-collapse">
-                                                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wide">
-                                                    <tr>
-                                                        <th className="px-6 py-4">Item Name</th>
-                                                        <th className="px-6 py-4">Quantity</th>
-                                                        <th className="px-6 py-4">Unit</th>
-                                                        <th className="px-6 py-4">Availability</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
-                                                    {(bom || []).length === 0 ? (
-                                                        <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">No materials added yet.</td></tr>
-                                                    ) : bom.map((item, idx) => (
-                                                        <tr key={item.bomId || idx}>
-                                                            <td className="px-6 py-4 font-semibold text-slate-800">{item.itemName || "-"}</td>
-                                                            <td className="px-6 py-4">{item.requiredQty ?? "-"}</td>
-                                                            <td className="px-6 py-4">{item.unit || "-"}</td>
-                                                            <td className="px-6 py-4">
-                                                                <span className={`font-bold text-xs ${item.shortageQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
-                                                                    {item.shortageQty > 0 ? "Needs Booking" : "In Stock"}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* TAB 6: DISPATCH & DOCS */}
-                                {activeTab === "dispatch" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                                        {/* LEFT COLUMN */}
-                                        <div className="space-y-6">
-
-                                            {/* Create Dispatch Entry */}
-                                            <div className="border border-slate-200 rounded-2xl p-6">
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">
-                                                    Create Dispatch Entry
-                                                </h3>
-                                                <div className="space-y-4 mb-5">
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                                            Dispatch Date
-                                                        </label>
-                                                        <input
-                                                            type="date"
-                                                            value={dispatchForm.dispatchDate}
-                                                            onChange={e => setDispatchForm({ ...dispatchForm, dispatchDate: e.target.value })}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                                            Transporter Name
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="e.g. Blue Dart"
-                                                            value={dispatchForm.transporter}
-                                                            onChange={e => setDispatchForm({ ...dispatchForm, transporter: e.target.value })}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                                            Tracking Number
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="e.g. TRK123456"
-                                                            value={dispatchForm.trackingNo}
-                                                            onChange={e => setDispatchForm({ ...dispatchForm, trackingNo: e.target.value })}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={handleCreateDispatch}
-                                                    disabled={actionLoading}
-                                                    className="w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm hover:bg-amber-700 disabled:opacity-60 transition-all"
-                                                >
-                                                    {actionLoading ? "Creating..." : "Create Dispatch Entry"}
-                                                </button>
-                                            </div>
-
-                                            {/* Dispatch Status update */}
-                                            <div className="border border-slate-200 rounded-2xl p-6">
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">
-                                                    Dispatch Status
-                                                </h3>
-                                                <div className="mb-4">
-                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
-                                                        Update Status To
-                                                    </label>
-                                                    <select
-                                                        value={dispatchStatus}
-                                                        onChange={e => setDispatchStatus(e.target.value)}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
-                                                    >
-                                                        <option value="Dispatched">Dispatched</option>
-                                                        <option value="Delivered">Delivered</option>
-                                                    </select>
-                                                </div>
-                                                <button
-                                                    onClick={handleUpdateDispatchStatus}
-                                                    disabled={actionLoading}
-                                                    className="w-full px-6 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all"
-                                                >
-                                                    {actionLoading ? "Updating..." : "Update Status"}
-                                                </button>
-                                            </div>
-
-                                            {/* Dispatch History */}
-                                            <div className="border border-slate-200 rounded-2xl p-6">
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-4">
-                                                    Dispatch History
-                                                </h3>
-                                                <div className="space-y-3">
-                                                    {(dispatch || []).length === 0 ? (
-                                                        <p className="text-sm text-slate-400">No dispatch entries yet.</p>
-                                                    ) : dispatch.map((d, idx) => (
-                                                        <div
-                                                            key={d.dispatchId ?? idx}
-                                                            className="border border-slate-100 rounded-xl p-4 flex justify-between items-start gap-3"
-                                                        >
-                                                            <div className="min-w-0">
-                                                                <p className="text-xs font-bold text-amber-600">
-                                                                    {d.dispatchDate ? new Date(d.dispatchDate).toLocaleDateString() : "Not set"}
-                                                                </p>
-                                                                <p className="text-sm text-slate-700 mt-1 truncate">{d.transporter || "-"}</p>
-                                                                {d.trackingNo && (
-                                                                    <p className="text-xs text-slate-400 mt-1 truncate">Tracking: {d.trackingNo}</p>
-                                                                )}
-                                                            </div>
-                                                            <span className="shrink-0 px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-xs font-bold">
-                                                                {d.status}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* RIGHT COLUMN */}
-                                        <div className="border border-slate-200 rounded-2xl p-6">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-                                                    Documents
-                                                </h3>
-                                                <button
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    disabled={actionLoading}
-                                                    className="text-xs font-bold text-amber-600 hover:underline disabled:opacity-60"
-                                                >
-                                                    {actionLoading ? "Uploading..." : "+ Upload"}
-                                                </button>
-                                                <input type="file" ref={fileInputRef} onChange={handleUploadDocument} className="hidden" />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                {(documents || []).length === 0 ? (
-                                                    <p className="text-sm text-slate-400">No documents uploaded yet.</p>
-                                                ) : documents.map((doc, idx) => (
-                                                    <div
-                                                        key={doc.docId ?? idx}
-                                                        onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
-                                                        className="px-4 py-3 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-amber-200 transition-all flex items-center justify-between gap-3"
-                                                    >
-                                                        <span className="truncate">{doc.docName || "Untitled Document"}</span>
-                                                        <span className="shrink-0 text-xs text-amber-500 font-bold">View →</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                        </>
-                    )}
-                </div>
-            </div>
         </div>
     );
 }

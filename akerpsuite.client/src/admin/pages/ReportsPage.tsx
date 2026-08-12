@@ -3,10 +3,10 @@ import * as XLSX from "xlsx";
 import { adminService } from "@/services/adminService";
 
 const TABS = [
-    { key: "employees", label: "Employee Report" },
-    { key: "attendance", label: "Attendance Report" },
-    { key: "leave", label: "Leave Report" },
-    { key: "payroll", label: "Payroll Report" },
+    { key: "employees", label: "Employee Report", icon: "fa-solid fa-users-viewfinder" },
+    { key: "attendance", label: "Attendance Report", icon: "fa-solid fa-user-check" },
+    { key: "leave", label: "Leave Report", icon: "fa-solid fa-calendar-minus" },
+    { key: "payroll", label: "Payroll Report", icon: "fa-solid fa-file-invoice-dollar" },
 ];
 
 const ATTENDANCE_STATUS = ["Present", "Absent", "Half-Day", "Holiday", "WeekOff", "Leave"];
@@ -21,11 +21,6 @@ const MONTHS = [
     { value: 11, label: "November" }, { value: 12, label: "December" },
 ];
 
-// ---------------------------------------------------------------------
-// ROLE VISIBILITY LOGIC (exclusion-based, not strict hierarchy order)
-// ---------------------------------------------------------------------
-// For each role, list which roles it must NOT see. Any role not in the
-// list (including roles not even defined here) will still show up.
 const ROLE_VISIBILITY_RULES = {
     CMD: { seeAll: true },                 // CMD -> no restriction, sees everyone
     Admin: { hideRoles: ["CMD", "Admin"] }, // Admin -> hides CMD + itself, sees everyone else
@@ -33,15 +28,10 @@ const ROLE_VISIBILITY_RULES = {
     Employee: { selfOnly: true },           // Employee -> sees only their own record
 };
 
-/**
- * Returns the current logged-in user's role + empId.
- * NOTE: This is a placeholder. Replace this with however you actually
- * store the logged-in user in your app (auth context, redux, localStorage, etc).
- */
 const getCurrentUser = () => {
     try {
         const role = localStorage.getItem("role") || "Employee";
-        const empId = localStorage.getItem("empId"); // see note below
+        const empId = localStorage.getItem("empId");
         return {
             role,
             empId: empId != null ? empId : null,
@@ -51,22 +41,10 @@ const getCurrentUser = () => {
     }
 };
 
-/**
- * Core visibility filter.
- * - seeAll   -> no filtering at all (CMD)
- * - selfOnly -> only the logged-in user's own record (Employee)
- * - hideRoles -> hide records whose role is in this list; everything
- *                else (including roles not defined in ROLE_VISIBILITY_RULES
- *                at all) still shows (Admin / HR)
- *
- * `getRecordRole` and `getRecordEmpId` let each report type tell this
- * function how to read the role / empId off of its own record shape.
- */
 const filterByRoleVisibility = (records, { getRecordRole, getRecordEmpId }) => {
     const currentUser = getCurrentUser();
     const rule = ROLE_VISIBILITY_RULES[currentUser.role];
 
-    // Unknown/unlisted role -> safest default is "self only"
     if (!rule) {
         return records.filter((r) => getRecordEmpId(r) === currentUser.empId);
     }
@@ -79,7 +57,6 @@ const filterByRoleVisibility = (records, { getRecordRole, getRecordEmpId }) => {
         return records.filter((r) => getRecordEmpId(r) === currentUser.empId);
     }
 
-    // hideRoles -> keep everything except the roles listed
     return records.filter((r) => !rule.hideRoles.includes(getRecordRole(r)));
 };
 
@@ -92,8 +69,6 @@ const formatTime = (value) => (value ? value.toString().slice(0, 5) : "-");
 
 const PAGE_SIZE = 10;
 
-// Returns the text a record should be matched against for the search bar,
-// per report type. Keep this in sync with the columns shown in each table.
 const getSearchableText = (record, tab) => {
     if (tab === "employees") {
         return [record.empCode, record.fullName, record.deptName, record.desigName, record.roleName, record.employmentStatus]
@@ -112,6 +87,18 @@ const getSearchableText = (record, tab) => {
             .filter(Boolean).join(" ").toLowerCase();
     }
     return "";
+};
+
+// UI Helpers
+const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm";
+
+const getStatusBadge = (status) => {
+    const s = (status || "").toLowerCase();
+    if (["present", "approved", "active"].includes(s)) return "bg-emerald-50 text-emerald-700 border-emerald-200/50";
+    if (["absent", "rejected", "terminated", "resigned", "inactive"].includes(s)) return "bg-rose-50 text-rose-700 border-rose-200/50";
+    if (["pending", "half-day", "on leave"].includes(s)) return "bg-amber-50 text-amber-700 border-amber-200/50";
+    if (["holiday", "weekoff"].includes(s)) return "bg-blue-50 text-blue-700 border-blue-200/50";
+    return "bg-slate-50 text-slate-600 border-slate-200";
 };
 
 export default function ReportsPage({ initialTab = "employees" }) {
@@ -149,16 +136,12 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
             let data = res.data || [];
 
-            // ---- Apply role-hierarchy filtering per report type ----
             if (activeTab === "employees") {
                 data = filterByRoleVisibility(data, {
                     getRecordRole: (e) => e.roleName,
                     getRecordEmpId: (e) => e.empId,
                 });
             } else if (activeTab === "attendance") {
-                // NOTE: attendance records don't carry a role field from the API
-                // today. If you need CMD/Admin/HR to see "roles below them" here
-                // too, the backend needs to include each row's roleName.
                 data = filterByRoleVisibility(data, {
                     getRecordRole: (r) => r.roleName,
                     getRecordEmpId: (r) => r.empId,
@@ -191,13 +174,10 @@ export default function ReportsPage({ initialTab = "employees" }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
-    // Reset to page 1 whenever the search query changes
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery]);
 
-    // Search-filtered records (applied on top of the role-visibility-filtered
-    // records already in state). Pagination is applied on top of this.
     const filteredRecords = searchQuery.trim()
         ? records.filter((r) => getSearchableText(r, activeTab).includes(searchQuery.trim().toLowerCase()))
         : records;
@@ -278,10 +258,10 @@ export default function ReportsPage({ initialTab = "employees" }) {
     const renderFilters = () => {
         if (activeTab === "employees") {
             return (
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                <div className="flex-1 min-w-[200px]">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
                     <select
-                        className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[160px]"
+                        className={`${inputClass} cursor-pointer appearance-none`}
                         value={empFilters.status}
                         onChange={(e) => setEmpFilters((p) => ({ ...p, status: e.target.value }))}
                     >
@@ -295,28 +275,28 @@ export default function ReportsPage({ initialTab = "employees" }) {
         if (activeTab === "attendance") {
             return (
                 <>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">From Date</label>
+                    <div className="flex-1 min-w-[150px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">From Date</label>
                         <input
                             type="date"
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                            className={inputClass}
                             value={attFilters.fromDate}
                             onChange={(e) => setAttFilters((p) => ({ ...p, fromDate: e.target.value }))}
                         />
                     </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">To Date</label>
+                    <div className="flex-1 min-w-[150px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">To Date</label>
                         <input
                             type="date"
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                            className={inputClass}
                             value={attFilters.toDate}
                             onChange={(e) => setAttFilters((p) => ({ ...p, toDate: e.target.value }))}
                         />
                     </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                    <div className="flex-1 min-w-[180px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[160px]"
+                            className={`${inputClass} cursor-pointer appearance-none`}
                             value={attFilters.status}
                             onChange={(e) => setAttFilters((p) => ({ ...p, status: e.target.value }))}
                         >
@@ -331,10 +311,10 @@ export default function ReportsPage({ initialTab = "employees" }) {
         if (activeTab === "leave") {
             return (
                 <>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Month</label>
+                    <div className="flex-1 min-w-[160px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Month</label>
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[140px]"
+                            className={`${inputClass} cursor-pointer appearance-none`}
                             value={leaveFilters.month}
                             onChange={(e) => setLeaveFilters((p) => ({ ...p, month: e.target.value }))}
                         >
@@ -342,19 +322,19 @@ export default function ReportsPage({ initialTab = "employees" }) {
                             {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Year</label>
+                    <div className="flex-1 min-w-[120px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year</label>
                         <input
                             type="number"
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-24"
+                            className={inputClass}
                             value={leaveFilters.year}
                             onChange={(e) => setLeaveFilters((p) => ({ ...p, year: Number(e.target.value) }))}
                         />
                     </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                    <div className="flex-1 min-w-[160px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[160px]"
+                            className={`${inputClass} cursor-pointer appearance-none`}
                             value={leaveFilters.status}
                             onChange={(e) => setLeaveFilters((p) => ({ ...p, status: e.target.value }))}
                         >
@@ -369,21 +349,21 @@ export default function ReportsPage({ initialTab = "employees" }) {
         if (activeTab === "payroll") {
             return (
                 <>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Month</label>
+                    <div className="flex-1 min-w-[160px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Month</label>
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[140px]"
+                            className={`${inputClass} cursor-pointer appearance-none`}
                             value={payrollFilters.month}
                             onChange={(e) => setPayrollFilters((p) => ({ ...p, month: Number(e.target.value) }))}
                         >
                             {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Year</label>
+                    <div className="flex-1 min-w-[120px]">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year</label>
                         <input
                             type="number"
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-24"
+                            className={inputClass}
                             value={payrollFilters.year}
                             onChange={(e) => setPayrollFilters((p) => ({ ...p, year: Number(e.target.value) }))}
                         />
@@ -396,65 +376,67 @@ export default function ReportsPage({ initialTab = "employees" }) {
     };
 
     // ---------- Table (per tab) ----------
-    // NOTE on keys: `paginatedRecords` is sliced from `filteredRecords`, which
-    // is derived straight from what the API returned (after role-visibility
-    // filtering). If the backend query behind a report joins in a way that
-    // produces more than one row per record (e.g. an employee matching more
-    // than one department/role via a join), the same ID can appear twice in
-    // the same page and React's reconciliation gets confused ("two children
-    // with the same key"). Combining the row's own index with its ID keeps
-    // React happy regardless of whether the underlying data has duplicates,
-    // without silently hiding or de-duplicating rows the user might actually
-    // need to see (and investigate on the backend).
     const renderTable = () => {
         if (loading) {
             return (
-                <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
-                    Loading report...
+                <div className="py-24 flex flex-col items-center justify-center gap-4">
+                    <div className="relative w-12 h-12 flex items-center justify-center">
+                        <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                        <div className="absolute inset-0 border-4 border-amber-400 rounded-full border-t-transparent animate-spin"></div>
+                    </div>
+                    <div className="text-sm font-semibold text-slate-400 tracking-wide animate-pulse">Generating report data...</div>
                 </div>
             );
         }
 
         if (error) {
             return (
-                <div className="flex items-center justify-center py-16 text-red-600 text-sm bg-red-50">
-                    {error}
+                <div className="m-6 rounded-xl bg-rose-50 border border-rose-100 px-5 py-4 text-sm font-semibold text-rose-600 flex items-center gap-3">
+                    <i className="fa-solid fa-triangle-exclamation text-lg" /> {error}
                 </div>
             );
         }
 
         if (filteredRecords.length === 0) {
             return (
-                <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
-                    No records found for the selected filters.
+                <div className="py-24 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                        <i className="fa-solid fa-folder-open text-2xl text-slate-300" />
+                    </div>
+                    <p className="text-base font-bold text-slate-700">No Records Found</p>
+                    <p className="text-sm text-slate-400 mt-1 font-medium">Try adjusting your filters or search query.</p>
                 </div>
             );
         }
 
         if (activeTab === "employees") {
             return (
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
+                    <thead className="bg-slate-50/80 border-b border-slate-200">
                         <tr>
-                            <th className="px-4 py-3 text-left">Emp Code</th>
-                            <th className="px-4 py-3 text-left">Name</th>
-                            <th className="px-4 py-3 text-left">Department</th>
-                            <th className="px-4 py-3 text-left">Designation</th>
-                            <th className="px-4 py-3 text-left">Role</th>
-                            <th className="px-4 py-3 text-left">Joining Date</th>
-                            <th className="px-4 py-3 text-left">Status</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Department</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Designation</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Role</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Joining Date</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                         {paginatedRecords.map((e, i) => (
-                            <tr key={`emp-${e.empId}-${i}`} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">{e.empCode}</td>
-                                <td className="px-4 py-3 font-medium">{e.fullName}</td>
-                                <td className="px-4 py-3">{e.deptName}</td>
-                                <td className="px-4 py-3">{e.desigName}</td>
-                                <td className="px-4 py-3">{e.roleName}</td>
-                                <td className="px-4 py-3">{formatDate(e.dateOfJoining)}</td>
-                                <td className="px-4 py-3">{e.employmentStatus}</td>
+                            <tr key={`emp-${e.empId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-6 py-4 font-mono font-bold text-amber-600">{e.empCode}</td>
+                                <td className="px-6 py-4 font-bold text-slate-900">{e.fullName}</td>
+                                <td className="px-6 py-4">{e.deptName || "—"}</td>
+                                <td className="px-6 py-4">{e.desigName || "—"}</td>
+                                <td className="px-6 py-4"><span className="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wider">{e.roleName || "—"}</span></td>
+                                <td className="px-6 py-4">{formatDate(e.dateOfJoining)}</td>
+                                <td className="px-6 py-4">
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(e.employmentStatus)}`}>
+                                        {e.employmentStatus}
+                                    </span>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -464,30 +446,34 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
         if (activeTab === "attendance") {
             return (
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
+                    <thead className="bg-slate-50/80 border-b border-slate-200">
                         <tr>
-                            <th className="px-4 py-3 text-left">Emp Code</th>
-                            <th className="px-4 py-3 text-left">Name</th>
-                            <th className="px-4 py-3 text-left">Date</th>
-                            <th className="px-4 py-3 text-left">Check In</th>
-                            <th className="px-4 py-3 text-left">Check Out</th>
-                            <th className="px-4 py-3 text-left">Status</th>
-                            <th className="px-4 py-3 text-left">Late (min)</th>
-                            <th className="px-4 py-3 text-left">Overtime (hrs)</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Date</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Check In</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Check Out</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Late (min)</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Overtime (hrs)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                         {paginatedRecords.map((r, i) => (
-                            <tr key={`att-${r.attId}-${i}`} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">{r.empCode}</td>
-                                <td className="px-4 py-3 font-medium">{r.fullName}</td>
-                                <td className="px-4 py-3">{formatDate(r.attDate)}</td>
-                                <td className="px-4 py-3">{formatTime(r.checkIn)}</td>
-                                <td className="px-4 py-3">{formatTime(r.checkOut)}</td>
-                                <td className="px-4 py-3">{r.status}</td>
-                                <td className="px-4 py-3">{r.lateMinutes ?? "-"}</td>
-                                <td className="px-4 py-3">{r.overtimeHours ?? "-"}</td>
+                            <tr key={`att-${r.attId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-6 py-4 font-mono font-bold text-amber-600">{r.empCode}</td>
+                                <td className="px-6 py-4 font-bold text-slate-900">{r.fullName}</td>
+                                <td className="px-6 py-4">{formatDate(r.attDate)}</td>
+                                <td className="px-6 py-4 font-mono font-medium">{formatTime(r.checkIn)}</td>
+                                <td className="px-6 py-4 font-mono font-medium">{formatTime(r.checkOut)}</td>
+                                <td className="px-6 py-4">
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(r.status)}`}>
+                                        {r.status}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 font-mono font-semibold text-rose-500">{r.lateMinutes ? `${r.lateMinutes} min` : "-"}</td>
+                                <td className="px-6 py-4 font-mono font-semibold text-emerald-600">{r.overtimeHours ? `${r.overtimeHours} hrs` : "-"}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -497,32 +483,36 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
         if (activeTab === "leave") {
             return (
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
+                    <thead className="bg-slate-50/80 border-b border-slate-200">
                         <tr>
-                            <th className="px-4 py-3 text-left">Emp Code</th>
-                            <th className="px-4 py-3 text-left">Name</th>
-                            <th className="px-4 py-3 text-left">Department</th>
-                            <th className="px-4 py-3 text-left">Leave Type</th>
-                            <th className="px-4 py-3 text-left">From</th>
-                            <th className="px-4 py-3 text-left">To</th>
-                            <th className="px-4 py-3 text-left">Days</th>
-                            <th className="px-4 py-3 text-left">Status</th>
-                            <th className="px-4 py-3 text-left">Approved By</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Department</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Leave Type</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">From - To</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Days</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Approved By</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                         {paginatedRecords.map((r, i) => (
-                            <tr key={`leave-${r.leaveId}-${i}`} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">{r.empCode}</td>
-                                <td className="px-4 py-3 font-medium">{r.fullName}</td>
-                                <td className="px-4 py-3">{r.department}</td>
-                                <td className="px-4 py-3">{r.leaveName}</td>
-                                <td className="px-4 py-3">{formatDate(r.fromDate)}</td>
-                                <td className="px-4 py-3">{formatDate(r.toDate)}</td>
-                                <td className="px-4 py-3">{r.totalDays}</td>
-                                <td className="px-4 py-3">{r.status}</td>
-                                <td className="px-4 py-3">{r.approvedByName ?? "-"}</td>
+                            <tr key={`leave-${r.leaveId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-6 py-4 font-mono font-bold text-amber-600">{r.empCode}</td>
+                                <td className="px-6 py-4 font-bold text-slate-900">{r.fullName}</td>
+                                <td className="px-6 py-4">{r.department || "—"}</td>
+                                <td className="px-6 py-4 font-medium">{r.leaveName}</td>
+                                <td className="px-6 py-4 text-xs font-medium text-slate-500">
+                                    {formatDate(r.fromDate)} <span className="mx-1 text-slate-300">to</span> {formatDate(r.toDate)}
+                                </td>
+                                <td className="px-6 py-4 font-mono font-bold text-slate-800">{r.totalDays}</td>
+                                <td className="px-6 py-4">
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(r.status)}`}>
+                                        {r.status}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-xs font-semibold">{r.approvedByName ?? "-"}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -533,39 +523,43 @@ export default function ReportsPage({ initialTab = "employees" }) {
         if (activeTab === "payroll") {
             const totalNetSalary = filteredRecords.reduce((sum, r) => sum + (r.netSalary || 0), 0);
             return (
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1000px]">
+                    <thead className="bg-slate-50/80 border-b border-slate-200">
                         <tr>
-                            <th className="px-4 py-3 text-left">Emp Code</th>
-                            <th className="px-4 py-3 text-left">Name</th>
-                            <th className="px-4 py-3 text-left">Department</th>
-                            <th className="px-4 py-3 text-left">Present</th>
-                            <th className="px-4 py-3 text-left">Absent</th>
-                            <th className="px-4 py-3 text-right">Gross Earning</th>
-                            <th className="px-4 py-3 text-right">Total Deduction</th>
-                            <th className="px-4 py-3 text-right">Net Salary</th>
-                            <th className="px-4 py-3 text-left">Status</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Department</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Present</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Absent</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Gross Earning</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Total Deduction</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Net Salary</th>
+                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                         {paginatedRecords.map((r, i) => (
-                            <tr key={`payroll-${r.detailId}-${i}`} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">{r.empCode}</td>
-                                <td className="px-4 py-3 font-medium">{r.firstName} {r.lastName}</td>
-                                <td className="px-4 py-3">{r.deptName}</td>
-                                <td className="px-4 py-3">{r.presentDays}</td>
-                                <td className="px-4 py-3">{r.absentDays}</td>
-                                <td className="px-4 py-3 text-right">{formatCurrency(r.grossEarning)}</td>
-                                <td className="px-4 py-3 text-right">{formatCurrency(r.totalDeduction)}</td>
-                                <td className="px-4 py-3 text-right font-semibold">{formatCurrency(r.netSalary)}</td>
-                                <td className="px-4 py-3">{r.status}</td>
+                            <tr key={`payroll-${r.detailId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-6 py-4 font-mono font-bold text-amber-600">{r.empCode}</td>
+                                <td className="px-6 py-4 font-bold text-slate-900">{r.firstName} {r.lastName}</td>
+                                <td className="px-6 py-4">{r.deptName || "—"}</td>
+                                <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{r.presentDays}</td>
+                                <td className="px-6 py-4 font-mono text-rose-600 font-bold">{r.absentDays}</td>
+                                <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(r.grossEarning)}</td>
+                                <td className="px-6 py-4 text-right font-mono font-medium text-rose-500">{formatCurrency(r.totalDeduction)}</td>
+                                <td className="px-6 py-4 text-right font-mono font-black text-emerald-700 bg-emerald-50/30">{formatCurrency(r.netSalary)}</td>
+                                <td className="px-6 py-4">
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(r.status)}`}>
+                                        {r.status}
+                                    </span>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                     <tfoot>
-                        <tr className="border-t bg-gray-50 font-semibold">
-                            <td colSpan={7} className="px-4 py-3 text-right">Total Net Salary</td>
-                            <td className="px-4 py-3 text-right">{formatCurrency(totalNetSalary)}</td>
+                        <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-bold text-slate-900">
+                            <td colSpan={7} className="px-6 py-4 text-right uppercase tracking-wider text-xs">Total Net Salary (Filtered):</td>
+                            <td className="px-6 py-4 text-right font-mono text-base text-[#0b2836]">{formatCurrency(totalNetSalary)}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -579,164 +573,178 @@ export default function ReportsPage({ initialTab = "employees" }) {
     const hasData = !loading && !error && filteredRecords.length > 0;
 
     return (
-        <div className="p-6">
-            {/* Print-only styles: hide everything on the page except the
-                report table itself, so Export PDF / window.print() doesn't
-                produce a blank page caused by the surrounding layout's
-                fixed height / overflow (sidebar, tabs, filter bar, etc). */}
+        <div className="space-y-6 pb-10 font-sans relative z-0">
+            {/* Print-only styles */}
             <style>{`
                 @media print {
-                    body * {
-                        visibility: hidden;
-                    }
-                    #printable-report, #printable-report * {
-                        visibility: visible;
-                    }
+                    body * { visibility: hidden; }
+                    #printable-report, #printable-report * { visibility: visible; }
                     #printable-report {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        overflow: visible !important;
-                        height: auto !important;
-                        border: none !important;
+                        position: absolute; left: 0; top: 0; width: 100%;
+                        overflow: visible !important; height: auto !important; border: none !important;
                     }
-                    @page {
-                        size: auto;
-                        margin: 12mm;
-                    }
+                    @page { size: landscape; margin: 10mm; }
                 }
             `}</style>
 
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-900">Reports</h1>
-                <p className="text-sm text-gray-500 mt-1">
-                    View, filter, and export HR data across employees, attendance, leave, and payroll.
-                </p>
+            {/* ── Premium Header Section ── */}
+            <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm relative overflow-hidden print:hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0 border border-white/5 backdrop-blur-sm">
+                        <i className="fa-solid fa-chart-line text-xl text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Reports & Analytics</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">View, filter, and export HR data across modules.</p>
+                    </div>
+                </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-1 border-b border-gray-200 mb-6">
-                {TABS.map((tab) => (
-                    <button
-                        key={tab.key}
-                        onClick={() => handleTabChange(tab.key)}
-                        className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
-                            ? "border-blue-600 text-blue-600"
-                            : "border-transparent text-gray-500 hover:text-gray-700"
-                            }`}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            {/* ── Main Container ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden print:border-none print:shadow-none">
 
-            {/* Search Bar */}
-            <div className="mb-4 print:hidden">
-                <div className="relative max-w-sm">
-                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search this report..."
-                        className="w-full border border-gray-300 rounded-md pl-9 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-                    />
-                    {searchQuery && (
+                {/* ── Tabs Navigation ── */}
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50 print:hidden">
+                    {TABS.map((tab) => (
                         <button
-                            onClick={() => setSearchQuery("")}
-                            aria-label="Clear search"
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            key={tab.key}
+                            onClick={() => handleTabChange(tab.key)}
+                            className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === tab.key
+                                    ? "border-amber-500 text-amber-600 bg-white"
+                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                }`}
                         >
-                            <i className="fa-solid fa-xmark text-sm" />
+                            {tab.icon && <i className={`${tab.icon} text-[13px]`} />}
+                            {tab.label}
                         </button>
+                    ))}
+                </div>
+
+                <div className="p-5 sm:p-6 min-h-[400px]">
+
+                    {/* ── Controls Row: Search + Filters + Apply + Exports ── */}
+                    <div className="flex flex-col xl:flex-row gap-5 mb-6 print:hidden">
+
+                        {/* Left: Search & Filters */}
+                        <div className="flex-1 flex flex-wrap gap-4 items-end bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+
+                            {/* Search */}
+                            <div className="flex-1 min-w-[220px]">
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">
+                                    Search Records
+                                </label>
+                                <div className="relative group">
+                                    <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder={`Search ${TABS.find(t => t.key === activeTab)?.label.toLowerCase()}...`}
+                                        className="w-full pl-11 pr-10 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-white transition-all shadow-sm"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery("")}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center transition-colors"
+                                        >
+                                            <i className="fa-solid fa-xmark text-xs" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Filters */}
+                            {renderFilters()}
+
+                            {/* Apply Button */}
+                            <button
+                                onClick={fetchReport}
+                                className="px-6 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md shadow-[#0b2836]/20 hover:bg-[#0f3345] transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 h-[42px] whitespace-nowrap w-full sm:w-auto"
+                            >
+                                <i className="fa-solid fa-filter" /> Apply Filters
+                            </button>
+                        </div>
+
+                        {/* Right: Exports */}
+                        <div className="flex flex-row xl:flex-col gap-3 justify-end w-full xl:w-auto">
+                            <button
+                                onClick={handleExportExcel}
+                                disabled={!hasData}
+                                className="flex-1 xl:flex-none px-5 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200/50 hover:bg-emerald-100 font-bold rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm h-[42px] whitespace-nowrap"
+                            >
+                                <i className="fa-solid fa-file-excel" /> Export Excel
+                            </button>
+                            <button
+                                onClick={handleExportPDF}
+                                disabled={!hasData}
+                                className="flex-1 xl:flex-none px-5 py-2.5 bg-rose-50 text-rose-700 border border-rose-200/50 hover:bg-rose-100 font-bold rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm h-[42px] whitespace-nowrap"
+                            >
+                                <i className="fa-solid fa-file-pdf" /> Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Table Area ── */}
+                    <div id="printable-report" className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                        {renderTable()}
+                    </div>
+
+                    {/* ── Pagination ── */}
+                    {!loading && !error && filteredRecords.length > 0 && (
+                        <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border border-slate-200 text-sm text-slate-500 gap-4 mt-5 rounded-2xl print:hidden">
+                            <div>
+                                Showing <span className="font-bold text-slate-800">{(safePage - 1) * PAGE_SIZE + 1}</span> to{" "}
+                                <span className="font-bold text-slate-800">{Math.min(safePage * PAGE_SIZE, filteredRecords.length)}</span> of{" "}
+                                <span className="font-bold text-slate-800">{filteredRecords.length}</span> entries
+                            </div>
+                            <div className="flex gap-1.5">
+                                <button
+                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    disabled={safePage === 1}
+                                    className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1.5"
+                                >
+                                    <i className="fa-solid fa-chevron-left text-[10px]" /> Prev
+                                </button>
+
+                                <div className="hidden sm:flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                                        .reduce((acc, p, idx, arr) => {
+                                            if (idx > 0 && p - arr[idx - 1] > 1) acc.push("ellipsis-" + p);
+                                            acc.push(p);
+                                            return acc;
+                                        }, [])
+                                        .map((p) =>
+                                            typeof p === "string" ? (
+                                                <span key={p} className="px-2 text-xs text-slate-400 font-bold">…</span>
+                                            ) : (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => setCurrentPage(p)}
+                                                    className={`w-9 h-9 flex items-center justify-center rounded-xl border text-sm font-bold transition-all shadow-sm ${p === safePage
+                                                            ? "bg-amber-500 border-amber-500 text-white"
+                                                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                        }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            )
+                                        )}
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={safePage === totalPages}
+                                    className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-1.5"
+                                >
+                                    Next <i className="fa-solid fa-chevron-right text-[10px]" />
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
-
-            {/* Filter Bar */}
-            <div className="flex flex-wrap gap-3 mb-5 items-end bg-white border border-gray-200 rounded-lg p-4">
-                {renderFilters()}
-
-                <button
-                    onClick={fetchReport}
-                    className="bg-amber-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                    Apply Filters
-                </button>
-
-                <div className="ml-auto flex gap-2">
-                    <button
-                        onClick={handleExportExcel}
-                        disabled={!hasData}
-                        className="bg-green hover:bg-green disabled:bg-green disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                        Export Excel
-                    </button>
-                    <button
-                        onClick={handleExportPDF}
-                        disabled={!hasData}
-                        className="bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                        Export PDF
-                    </button>
-                </div>
-            </div>
-
-            {/* Table */}
-            <div id="printable-report" className="overflow-x-auto border border-gray-200 rounded-lg bg-white">
-                {renderTable()}
-            </div>
-
-            {/* Pagination */}
-            {filteredRecords.length > 0 && (
-                <div className="flex items-center justify-between mt-4 print:hidden">
-                    <p className="text-sm text-gray-500">
-                        Showing {(safePage - 1) * PAGE_SIZE + 1}
-                        {"\u2013"}
-                        {Math.min(safePage * PAGE_SIZE, filteredRecords.length)} of {filteredRecords.length}
-                    </p>
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                            disabled={safePage === 1}
-                            className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
-                        >
-                            Prev
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                            .reduce((acc, p, idx, arr) => {
-                                if (idx > 0 && p - arr[idx - 1] > 1) acc.push("ellipsis-" + p);
-                                acc.push(p);
-                                return acc;
-                            }, [])
-                            .map((p) =>
-                                typeof p === "string" ? (
-                                    <span key={p} className="px-2 text-gray-400 text-sm">…</span>
-                                ) : (
-                                    <button
-                                        key={p}
-                                        onClick={() => setCurrentPage(p)}
-                                        className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${p === safePage
-                                            ? "bg-blue-600 border-blue-600 text-white"
-                                            : "border-gray-300 text-gray-600 hover:bg-gray-50"
-                                            }`}
-                                    >
-                                        {p}
-                                    </button>
-                                )
-                            )}
-                        <button
-                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={safePage === totalPages}
-                            className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

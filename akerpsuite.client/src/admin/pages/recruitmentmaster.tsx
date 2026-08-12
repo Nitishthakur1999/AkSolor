@@ -1,15 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import CandidateManagement from "./candidatemanagement";
-import { adminService } from "../../services/adminService"; // adjust path to your project structure
+import { adminService } from "@/services/adminService";
 
 const TABS = [
-    { id: "candidates", label: "Candidate Tracking" },
-    { id: "report", label: "Recruitment Report" },
+    { id: "candidates", label: "Candidate Tracking", icon: "fa-solid fa-user-tie" },
+    { id: "report", label: "Recruitment Report", icon: "fa-solid fa-chart-pie" },
 ];
 
-// .NET's default JSON serializer returns camelCase property names
-// (RequisitionTitle -> requisitionTitle). If your API returns PascalCase
-// instead, change the values below to match.
 const FIELD = {
     requisitionId: "requisitionId",
     requisitionTitle: "requisitionTitle",
@@ -29,32 +26,59 @@ const FIELD = {
 };
 
 const STATUS_STYLES = {
-    Pending: "bg-slate-100 text-slate-600",
-    ApprovedByManager: "bg-amber-50 text-amber-700",
-    ApprovedByHR: "bg-amber-50 text-amber-700",
-    ApprovedByMgmt: "bg-emerald-50 text-emerald-700",
-    Rejected: "bg-rose-50 text-rose-700",
-    Open: "bg-emerald-50 text-emerald-700",
-    Closed: "bg-slate-100 text-slate-600",
-    Draft: "bg-slate-100 text-slate-600",
-    Published: "bg-emerald-50 text-emerald-700",
+    Pending: "bg-amber-50 text-amber-700 border-amber-200/50",
+    ApprovedByManager: "bg-blue-50 text-blue-700 border-blue-200/50",
+    ApprovedByHR: "bg-amber-50 text-amber-700 border-amber-200/50",
+    ApprovedByMgmt: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+    Rejected: "bg-rose-50 text-rose-700 border-rose-200/50",
+    Open: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+    Closed: "bg-slate-50 text-slate-600 border-slate-200",
+    Draft: "bg-slate-50 text-slate-600 border-slate-200",
+    Published: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+};
+
+const DOT_STYLES = {
+    Pending: "bg-amber-500",
+    ApprovedByManager: "bg-blue-500",
+    ApprovedByHR: "bg-amber-500",
+    ApprovedByMgmt: "bg-emerald-500",
+    Rejected: "bg-rose-500",
+    Open: "bg-emerald-500",
+    Closed: "bg-slate-400",
+    Draft: "bg-slate-400",
+    Published: "bg-emerald-500",
 };
 
 function StatusBadge({ value }) {
-    if (!value) return <span className="text-slate-400 text-xs">-</span>;
-    const cls = STATUS_STYLES[value] || "bg-slate-100 text-slate-600";
+    if (!value) return <span className="text-slate-400 text-xs">—</span>;
+    const cls = STATUS_STYLES[value] || "bg-slate-50 text-slate-600 border-slate-200";
+    const dotCls = DOT_STYLES[value] || "bg-slate-400";
     return (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${cls}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${cls}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`}></span>
             {value}
         </span>
     );
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, icon, bgColor, iconColor }) {
     return (
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-center">
-            <div className="text-xl font-bold text-slate-900">{value}</div>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mt-0.5">{label}</div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+                <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                    {label}
+                </p>
+                {icon && (
+                    <div className={`w-9 h-9 rounded-xl ${bgColor || "bg-amber-50"} flex items-center justify-center shrink-0`}>
+                        <i className={`fa-solid ${icon} ${iconColor || "text-amber-600"} text-xs`} />
+                    </div>
+                )}
+            </div>
+            <div className="mt-2">
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight tabular-nums">
+                    {value}
+                </h2>
+            </div>
         </div>
     );
 }
@@ -150,182 +174,192 @@ function RecruitmentReportTab() {
     const rangeEnd = Math.min(currentPage * pageSize, rows.length);
 
     return (
-        <div className="space-y-5">
-            <form onSubmit={handleApply} className="flex flex-wrap gap-3 items-end">
+        <div className="space-y-6">
+            <form onSubmit={handleApply} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-wrap gap-4 items-end">
                 <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">From Date</label>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">From Date</label>
                     <input
                         type="date"
                         value={filters.fromDate}
                         onChange={(e) => setFilters((f) => ({ ...f, fromDate: e.target.value }))}
-                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">To Date</label>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">To Date</label>
                     <input
                         type="date"
                         value={filters.toDate}
                         onChange={(e) => setFilters((f) => ({ ...f, toDate: e.target.value }))}
-                        className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
                     />
                 </div>
-                <button
-                    type="submit"
-                    className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors"
-                >
-                    Apply Filter
-                </button>
-                <button
-                    type="button"
-                    onClick={handleClear}
-                    className="text-slate-500 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors"
-                >
-                    Clear
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        type="submit"
+                        className="px-5 py-2.5 bg-[#0b2836] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#0f3345] transition-all shadow-md shadow-[#0b2836]/20"
+                    >
+                        Apply Filter
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleClear}
+                        className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                        Clear
+                    </button>
+                </div>
             </form>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                <StatCard label="Applied" value={totals.applied} />
-                <StatCard label="Shortlisted" value={totals.shortlisted} />
-                <StatCard label="Interview" value={totals.interview} />
-                <StatCard label="Selected" value={totals.selected} />
-                <StatCard label="Offer" value={totals.offer} />
-                <StatCard label="Joined" value={totals.joined} />
-                <StatCard label="Rejected" value={totals.rejected} />
+                <StatCard label="Applied" value={totals.applied} icon="fa-user-plus" bgColor="bg-blue-50" iconColor="text-blue-600" />
+                <StatCard label="Shortlisted" value={totals.shortlisted} icon="fa-filter" bgColor="bg-amber-50" iconColor="text-amber-600" />
+                <StatCard label="Interview" value={totals.interview} icon="fa-comments" bgColor="bg-purple-50" iconColor="text-purple-600" />
+                <StatCard label="Selected" value={totals.selected} icon="fa-user-check" bgColor="bg-emerald-50" iconColor="text-emerald-600" />
+                <StatCard label="Offer" value={totals.offer} icon="fa-file-contract" bgColor="bg-blue-50" iconColor="text-blue-600" />
+                <StatCard label="Joined" value={totals.joined} icon="fa-handshake" bgColor="bg-green-50" iconColor="text-green-600" />
+                <StatCard label="Rejected" value={totals.rejected} icon="fa-user-xmark" bgColor="bg-rose-50" iconColor="text-rose-600" />
             </div>
 
             {error && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg px-4 py-3">
-                    {error}
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl px-5 py-3.5 font-semibold flex items-center gap-2">
+                    <i className="fa-solid fa-triangle-exclamation" /> {error}
                 </div>
             )}
 
-            <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-slate-100 text-slate-600 text-[11px] uppercase tracking-wide">
-                        <tr>
-                            <th className="px-3 py-2.5 text-left">Requisition</th>
-                            <th className="px-3 py-2.5 text-left">Dept</th>
-                            <th className="px-3 py-2.5 text-left">Designation</th>
-                            <th className="px-3 py-2.5 text-center">Vacancies</th>
-                            <th className="px-3 py-2.5 text-left">Req Status</th>
-                            <th className="px-3 py-2.5 text-left">Posting Status</th>
-                            <th className="px-3 py-2.5 text-left">Job Link</th>
-                            <th className="px-3 py-2.5 text-center">Applied</th>
-                            <th className="px-3 py-2.5 text-center">Shortlisted</th>
-                            <th className="px-3 py-2.5 text-center">Interview</th>
-                            <th className="px-3 py-2.5 text-center">Selected</th>
-                            <th className="px-3 py-2.5 text-center">Offer</th>
-                            <th className="px-3 py-2.5 text-center">Joined</th>
-                            <th className="px-3 py-2.5 text-center">Rejected</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading && (
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div className="overflow-x-auto min-h-[300px]">
+                    <table className="w-full text-sm border-collapse whitespace-nowrap min-w-[1200px]">
+                        <thead className="bg-slate-50/80 text-[10px] uppercase tracking-widest text-slate-500 font-bold border-b border-slate-200">
                             <tr>
-                                <td colSpan={14} className="text-center py-8 text-slate-400">
-                                    Loading report...
-                                </td>
+                                <th className="px-5 py-4 text-left">Requisition</th>
+                                <th className="px-5 py-4 text-left">Dept</th>
+                                <th className="px-5 py-4 text-left">Designation</th>
+                                <th className="px-5 py-4 text-center">Vacancies</th>
+                                <th className="px-5 py-4 text-left">Req Status</th>
+                                <th className="px-5 py-4 text-left">Posting Status</th>
+                                <th className="px-5 py-4 text-left">Job Link</th>
+                                <th className="px-5 py-4 text-center">Applied</th>
+                                <th className="px-5 py-4 text-center">Shortlisted</th>
+                                <th className="px-5 py-4 text-center">Interview</th>
+                                <th className="px-5 py-4 text-center">Selected</th>
+                                <th className="px-5 py-4 text-center">Offer</th>
+                                <th className="px-5 py-4 text-center">Joined</th>
+                                <th className="px-5 py-4 text-center">Rejected</th>
                             </tr>
-                        )}
-
-                        {!loading && rows.length === 0 && (
-                            <tr>
-                                <td colSpan={14} className="text-center py-8 text-slate-400">
-                                    No requisitions found for the selected range.
-                                </td>
-                            </tr>
-                        )}
-
-                        {!loading &&
-                            paginatedRows.map((r) => (
-                                <tr key={r[FIELD.requisitionId]} className="border-t border-slate-100 hover:bg-slate-50">
-                                    <td className="px-3 py-2.5 font-medium text-slate-800">
-                                        {r[FIELD.requisitionTitle]}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {loading && (
+                                <tr>
+                                    <td colSpan={14} className="py-24 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-3">
+                                            <i className="fa-solid fa-spinner text-3xl text-amber-500 animate-spin" />
+                                            <div className="text-sm font-medium text-slate-500 animate-pulse">Loading report data...</div>
+                                        </div>
                                     </td>
-                                    <td className="px-3 py-2.5 text-slate-600">{r[FIELD.departmentName] || "-"}</td>
-                                    <td className="px-3 py-2.5 text-slate-600">{r[FIELD.designationName] || "-"}</td>
-                                    <td className="px-3 py-2.5 text-center text-slate-600">{r[FIELD.vacancies]}</td>
-                                    <td className="px-3 py-2.5">
-                                        <StatusBadge value={r[FIELD.requisitionStatus]} />
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        <StatusBadge value={r[FIELD.postingStatus]} />
-                                    </td>
-                                    <td className="px-3 py-2.5">
-                                        {r[FIELD.shareableLink] ? (
-                                            <a
-                                                href={r[FIELD.shareableLink]}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-amber-600 hover:underline text-xs font-medium"
-                                            >
-                                                View link
-                                            </a>
-                                        ) : (
-                                            <span className="text-slate-300 text-xs">-</span>
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-2.5 text-center text-slate-700">{r[FIELD.totalApplied]}</td>
-                                    <td className="px-3 py-2.5 text-center text-slate-700">{r[FIELD.totalShortlisted]}</td>
-                                    <td className="px-3 py-2.5 text-center text-slate-700">{r[FIELD.totalInterview]}</td>
-                                    <td className="px-3 py-2.5 text-center text-slate-700">{r[FIELD.totalSelected]}</td>
-                                    <td className="px-3 py-2.5 text-center text-slate-700">{r[FIELD.totalOffer]}</td>
-                                    <td className="px-3 py-2.5 text-center text-emerald-700 font-semibold">
-                                        {r[FIELD.totalJoined]}
-                                    </td>
-                                    <td className="px-3 py-2.5 text-center text-rose-600">{r[FIELD.totalRejected]}</td>
                                 </tr>
-                            ))}
-                    </tbody>
-                </table>
-            </div>
+                            )}
 
-            {!loading && rows.length > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                    <div className="text-xs text-slate-500">
-                        Showing {rangeStart} to {rangeEnd} of {rows.length}
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => goToPage(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors"
-                        >
-                            Previous
-                        </button>
+                            {!loading && rows.length === 0 && (
+                                <tr>
+                                    <td colSpan={14} className="py-24 text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 text-2xl shadow-sm mb-4 border border-slate-100">
+                                            <i className="fa-solid fa-folder-open" />
+                                        </div>
+                                        <p className="text-base font-bold text-slate-700">No Requisitions Found</p>
+                                        <p className="text-sm text-slate-400 mt-1 font-medium">No requisitions found for the selected range.</p>
+                                    </td>
+                                </tr>
+                            )}
 
-                        {pageNumbers.map((item) =>
-                            item.type === "ellipsis" ? (
-                                <span key={item.key} className="px-2 text-xs text-slate-400">
-                                    ...
-                                </span>
-                            ) : (
-                                <button
-                                    key={item.key}
-                                    onClick={() => goToPage(item.value)}
-                                    className={
-                                        item.value === currentPage
-                                            ? "w-8 h-8 text-xs font-semibold rounded-lg bg-amber-600 text-white transition-colors"
-                                            : "w-8 h-8 text-xs font-semibold rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-                                    }
-                                >
-                                    {item.value}
-                                </button>
-                            )
-                        )}
-
-                        <button
-                            onClick={() => goToPage(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors"
-                        >
-                            Next
-                        </button>
-                    </div>
+                            {!loading &&
+                                paginatedRows.map((r, i) => (
+                                    <tr key={r[FIELD.requisitionId] ?? i} className="hover:bg-slate-50/60 transition-colors">
+                                        <td className="px-5 py-4 font-bold text-slate-900">
+                                            {r[FIELD.requisitionTitle]}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-600 font-medium">{r[FIELD.departmentName] || "—"}</td>
+                                        <td className="px-5 py-4 text-slate-600 font-medium">{r[FIELD.designationName] || "—"}</td>
+                                        <td className="px-5 py-4 text-center font-mono font-bold text-slate-700">{r[FIELD.vacancies]}</td>
+                                        <td className="px-5 py-4">
+                                            <StatusBadge value={r[FIELD.requisitionStatus]} />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <StatusBadge value={r[FIELD.postingStatus]} />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            {r[FIELD.shareableLink] ? (
+                                                <a
+                                                    href={r[FIELD.shareableLink]}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="px-3 py-1 bg-amber-50 text-amber-600 hover:bg-amber-100 font-bold rounded-lg text-xs transition-colors border border-amber-200/50 inline-block"
+                                                >
+                                                    View Link
+                                                </a>
+                                            ) : (
+                                                <span className="text-slate-300 text-xs font-bold">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-5 py-4 text-center font-mono font-semibold text-slate-700">{r[FIELD.totalApplied]}</td>
+                                        <td className="px-5 py-4 text-center font-mono font-semibold text-amber-600">{r[FIELD.totalShortlisted]}</td>
+                                        <td className="px-5 py-4 text-center font-mono font-semibold text-purple-600">{r[FIELD.totalInterview]}</td>
+                                        <td className="px-5 py-4 text-center font-mono font-semibold text-emerald-600">{r[FIELD.totalSelected]}</td>
+                                        <td className="px-5 py-4 text-center font-mono font-semibold text-blue-600">{r[FIELD.totalOffer]}</td>
+                                        <td className="px-5 py-4 text-center font-mono font-bold text-green-700 bg-green-50/30">
+                                            {r[FIELD.totalJoined]}
+                                        </td>
+                                        <td className="px-5 py-4 text-center font-mono font-semibold text-rose-600">{r[FIELD.totalRejected]}</td>
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </table>
                 </div>
-            )}
+
+                {!loading && rows.length > 0 && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border-t border-slate-200 text-sm text-slate-500 gap-4 mt-auto">
+                        <div>
+                            Showing <span className="font-bold text-slate-800">{rangeStart}</span> to{" "}
+                            <span className="font-bold text-slate-800">{rangeEnd}</span> of{" "}
+                            <span className="font-bold text-slate-800">{rows.length}</span> entries
+                        </div>
+                        <div className="flex gap-1.5">
+                            <button
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+                            >
+                                <i className="fa-solid fa-chevron-left text-[10px]" /> Prev
+                            </button>
+                            <div className="hidden sm:flex items-center gap-1">
+                                {pageNumbers.map((item) =>
+                                    item.type === "ellipsis" ? (
+                                        <span key={item.key} className="px-2 text-xs text-slate-400 font-bold">…</span>
+                                    ) : (
+                                        <button
+                                            key={item.key}
+                                            onClick={() => goToPage(item.value)}
+                                            className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-bold transition-all shadow-sm ${item.value === currentPage
+                                                    ? "bg-amber-500 border-amber-500 text-white"
+                                                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                }`}
+                                        >
+                                            {item.value}
+                                        </button>
+                                    )
+                                )}
+                            </div>
+                            <button
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+                            >
+                                Next <i className="fa-solid fa-chevron-right text-[10px]" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -334,31 +368,45 @@ export default function RecruitmentMaster() {
     const [activeTab, setActiveTab] = useState("candidates");
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-900">Recruitment & Hiring</h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                    Track candidates from application to joining, and view the overall recruitment pipeline report.
-                </p>
+        <div className="space-y-5 pb-10 font-sans relative z-0">
+
+            {/* ── Premium Header Section ── */}
+            <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0 border border-white/5 backdrop-blur-sm">
+                        <i className="fa-solid fa-people-arrows text-xl text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Recruitment & Hiring</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            Track candidates from application to joining, and view the overall recruitment pipeline report.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
-                <div className="flex overflow-x-auto border-b border-slate-200 px-2 text-xs font-bold uppercase tracking-wider text-slate-400 hide-scrollbar">
+            {/* ── Main Container (Tabs + Content) ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+
+                {/* ── Tabs Navigation ── */}
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50">
                     {TABS.map((t) => (
                         <button
                             key={t.id}
                             onClick={() => setActiveTab(t.id)}
-                            className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === t.id
-                                    ? "border-amber-600 text-amber-600"
-                                    : "border-transparent hover:text-slate-600"
+                            className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === t.id
+                                    ? "border-amber-500 text-amber-600 bg-white"
+                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                                 }`}
                         >
+                            <i className={`${t.icon} text-[13px]`} />
                             {t.label}
                         </button>
                     ))}
                 </div>
 
-                <div className="p-6 min-h-[400px] bg-slate-50/50 rounded-b-2xl">
+                <div className="p-6 sm:p-8 min-h-[400px] bg-white">
                     {activeTab === "candidates" && <CandidateManagement />}
                     {activeTab === "report" && <RecruitmentReportTab />}
                 </div>

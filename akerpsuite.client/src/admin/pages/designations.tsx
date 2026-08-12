@@ -11,7 +11,7 @@ export default function Designations() {
 
     // 🔢 NEW: Pagination States
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Ek page par 5 records dikhenge
+    const itemsPerPage = 10; // Ek page par 10 records dikhenge
 
     // Modals Control Toggles
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -155,188 +155,208 @@ export default function Designations() {
     const currentItems = filteredDesignations.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5 pb-10 font-sans">
 
-            {/* Header Module Section */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Designations Management</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Manage hierarchical professional matrix settings and operational tiers.</p>
+            {/* ── Compact Header Section (Matched with Roles & Dept Theme) ── */}
+            <div className="bg-[#0b2532] rounded-2xl px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <i className="fa-solid fa-id-badge text-lg text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Designations Management</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            Manage hierarchical professional matrix settings and operational tiers.
+                        </p>
+                    </div>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm"
+                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2"
                 >
+                    <i className="fa-solid fa-plus" />
                     Add Designation
                 </button>
             </div>
 
-            {/* 🔍 Search Utilities Control Bar */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider pl-1">Search Designation:</span>
-                <input
-                    type="text"
-                    placeholder="Search by designation name, department, or tier level..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500 transition-colors"
-                />
-                {searchQuery && (
-                    <button
-                        onClick={() => setSearchQuery("")}
-                        className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-xs font-bold transition-colors"
-                    >
-                        Clear
-                    </button>
-                )}
+            {/* ── Live Search Utilities Bar ── */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Search Designation</label>
+                <div className="relative group flex items-center gap-3">
+                    <div className="relative flex-1">
+                        <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="Search by designation name, department, or tier level..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
+                        />
+                    </div>
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery("")}
+                            className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition-colors"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {/* Core Pipeline Records Grid Container Table */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                {loading ? (
-                    <div className="p-12 flex justify-center">
-                        <div className="text-sm font-semibold text-amber-600 animate-pulse">Syncing matrix data...</div>
-                    </div>
-                ) : (
-                    <div className="flex flex-col justify-between">
-                        <table className="w-full text-left border-collapse">
+            {/* ── Core Pipeline Records Grid Container Table ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+                <div className="overflow-x-auto">
+                    {loading ? (
+                        <div className="py-20 flex flex-col items-center justify-center gap-3">
+                            <i className="fa-solid fa-spinner text-3xl text-amber-500 animate-spin" />
+                            <div className="text-sm font-medium text-slate-500 animate-pulse">Syncing matrix data...</div>
+                        </div>
+                    ) : currentItems.length === 0 ? (
+                        <div className="py-20 flex flex-col items-center justify-center text-center">
+                            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-slate-100">
+                                <i className="fa-solid fa-magnifying-glass-minus text-xl text-slate-400" />
+                            </div>
+                            <p className="text-base text-slate-700 font-bold">No results found</p>
+                            <p className="text-sm text-slate-400 mt-1">Try adjusting your search query.</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left border-collapse whitespace-nowrap">
                             <thead>
-                                <tr className="bg-slate-50 text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200">
-                                    <th className="px-6 py-4">Designation Name</th>
-                                    <th className="px-6 py-4">Department Target</th>
-                                    <th className="px-6 py-4">Hierarchical Level</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-center">Actions Operations</th>
+                                <tr className="bg-slate-50/80 border-b border-slate-200">
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Designation Name</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Department Target</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Hierarchical Level</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions Operations</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                            <tbody className="divide-y divide-slate-100 text-sm">
                                 {currentItems.map((desig) => (
                                     <tr key={desig.desigId} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4 font-semibold text-slate-900">
-                                            {desig.designationName}
+                                        <td className="px-6 py-4">
+                                            <span className="font-bold text-slate-800">{desig.designationName}</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 rounded bg-slate-100 font-sans text-xs font-bold border border-slate-200/60 text-slate-600">
+                                            <span className="px-2.5 py-1 rounded-md bg-slate-100 font-sans text-xs font-bold border border-slate-200/60 text-slate-600">
                                                 {getDepartmentName(desig.deptId)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-lg">
+                                            <span className="text-xs font-semibold text-amber-700 bg-amber-50/60 border border-amber-200/50 px-2.5 py-1 rounded-md">
                                                 Tier Level {desig.designationLevel}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${desig.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${desig.isActive ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${desig.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                                                <span className={`h-1.5 w-1.5 rounded-full ${desig.isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
                                                 {desig.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center space-x-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => openEditModal(desig)}
-                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors border border-amber-100/50 focus:outline-none"
-                                                title="Edit Designation"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDelete(desig.desigId)}
-                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors border border-rose-100/50 focus:outline-none"
-                                                title="Delete Designation"
-                                            >
-                                                Delete
-                                            </button>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEditModal(desig)}
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-colors"
+                                                    title="Edit Designation"
+                                                >
+                                                    <i className="fa-solid fa-pen text-[13px]" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(desig.desigId)}
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-colors"
+                                                    title="Delete Designation"
+                                                >
+                                                    <i className="fa-solid fa-trash-can text-[13px]" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
-                                {totalItems === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="text-center py-10 text-slate-400 italic">
-                                            No designation records matched the filter criteria.
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
+                    )}
+                </div>
 
-                        {/* 🔢 PAGINATION WIDGET BAR */}
-                        {totalItems > 0 && (
-                            <div className="flex justify-between items-center px-6 py-4 bg-slate-50 border-t border-slate-100 text-xs font-semibold text-slate-500">
-                                <div>
-                                    Showing <span className="text-slate-800">{indexOfFirstItem + 1}</span> to{" "}
-                                    <span className="text-slate-800">{Math.min(indexOfLastItem, totalItems)}</span> of{" "}
-                                    <span className="text-slate-800">{totalItems}</span> entries
-                                </div>
-                                <div className="flex gap-1">
+                {/* 🔢 PAGINATION WIDGET BAR */}
+                {!loading && totalItems > 0 && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border-t border-slate-200 text-sm text-slate-500 gap-4">
+                        <div>
+                            Showing <span className="font-bold text-slate-800">{indexOfFirstItem + 1}</span> to{" "}
+                            <span className="font-bold text-slate-800">{Math.min(indexOfLastItem, totalItems)}</span> of{" "}
+                            <span className="font-bold text-slate-800">{totalItems}</span> entries
+                        </div>
+                        <div className="flex gap-1.5">
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+                            >
+                                <i className="fa-solid fa-chevron-left text-[10px]" /> Prev
+                            </button>
+                            <div className="hidden sm:flex gap-1.5">
+                                {[...Array(totalPages)].map((_, index) => (
                                     <button
-                                        disabled={currentPage === 1}
-                                        onClick={() => setCurrentPage(prev => prev - 1)}
-                                        className="px-2.5 py-1.5 rounded-lg border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        key={index}
+                                        onClick={() => setCurrentPage(index + 1)}
+                                        className={`w-8 h-8 rounded-lg border text-sm font-bold transition-all shadow-sm flex items-center justify-center ${currentPage === index + 1
+                                                ? "bg-amber-500 border-amber-500 text-white"
+                                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            }`}
                                     >
-                                        Previous
+                                        {index + 1}
                                     </button>
-                                    {[...Array(totalPages)].map((_, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => setCurrentPage(index + 1)}
-                                            className={`px-3 py-1.5 rounded-lg border transition-all ${currentPage === index + 1 ? "bg-amber-600 border-amber-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-                                        >
-                                            {index + 1}
-                                        </button>
-                                    ))}
-                                    <button
-                                        disabled={currentPage === totalPages}
-                                        onClick={() => setCurrentPage(prev => prev + 1)}
-                                        className="px-2.5 py-1.5 rounded-lg border bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
+                                ))}
                             </div>
-                        )}
+                            <button
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+                            >
+                                Next <i className="fa-solid fa-chevron-right text-[10px]" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Modals structure exactly same as provided */}
             {/* ➕ Modal popup: ADD NEW DESIGNATION */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
-                        <div className="flex justify-between items-center">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl">
+                        <div className="flex justify-between items-center mb-5">
                             <h3 className="text-lg font-bold text-slate-900">Create System Designation</h3>
                             <button
                                 type="button"
                                 onClick={() => setShowCreateModal(false)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 text-xl font-bold transition-all focus:outline-none"
-                                aria-label="Close Modal"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             >
-                                ×
+                                <i className="fa-solid fa-xmark text-lg" />
                             </button>
                         </div>
 
                         <form onSubmit={handleCreate} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation Name</label>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Designation Name</label>
                                 <input
                                     type="text"
                                     required
                                     placeholder="e.g., Senior Developer"
                                     value={createForm.designationName}
                                     onChange={e => setCreateForm({ ...createForm, designationName: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Assign Corporate Department</label>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Assign Corporate Department</label>
                                 <select
                                     required
                                     value={createForm.deptId}
                                     onChange={e => setCreateForm({ ...createForm, deptId: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500 transition-colors"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
                                 >
                                     <option value="">-- Choose department map segment --</option>
                                     {departments
@@ -348,25 +368,28 @@ export default function Designations() {
                                         ))}
                                 </select>
                             </div>
+
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hierarchy Level Tier</label>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Hierarchy Level Tier</label>
                                 <input
                                     type="number"
                                     required
                                     min="1"
                                     value={createForm.designationLevel}
                                     onChange={e => setCreateForm({ ...createForm, designationLevel: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                                 />
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={actionLoading}
-                                className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-md shadow-amber-600/10 flex items-center justify-center gap-2"
-                            >
-                                Save System Designation
-                            </button>
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="w-full py-2.5 bg-[#0b2836] text-white rounded-xl text-sm font-bold hover:bg-[#0f3345] disabled:opacity-50 transition-colors"
+                                >
+                                    {actionLoading ? "Saving..." : "Save System Designation"}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -374,39 +397,38 @@ export default function Designations() {
 
             {/* ✏️ Modal popup: EDIT/UPDATE DESIGNATION */}
             {showEditModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl space-y-4">
-                        <div className="flex justify-between items-center">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl">
+                        <div className="flex justify-between items-center mb-5">
                             <h3 className="text-lg font-bold text-slate-900">Edit System Designation</h3>
                             <button
                                 type="button"
                                 onClick={() => setShowEditModal(false)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 text-xl font-bold transition-all focus:outline-none"
-                                aria-label="Close Modal"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             >
-                                ×
+                                <i className="fa-solid fa-xmark text-lg" />
                             </button>
                         </div>
 
                         <form onSubmit={handleUpdate} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation Name</label>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Designation Name</label>
                                 <input
                                     type="text"
                                     required
                                     value={editForm.designationName}
                                     onChange={e => setEditForm({ ...editForm, designationName: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Assign Corporate Department</label>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Assign Corporate Department</label>
                                 <select
                                     required
                                     value={editForm.deptId}
                                     onChange={e => setEditForm({ ...editForm, deptId: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-amber-500 transition-colors"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
                                 >
                                     {departments
                                         .filter(dep => dep.isActive)
@@ -419,24 +441,33 @@ export default function Designations() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hierarchy Level Tier</label>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Hierarchy Level Tier</label>
                                 <input
                                     type="number"
                                     required
                                     min="1"
                                     value={editForm.designationLevel}
                                     onChange={e => setEditForm({ ...editForm, designationLevel: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                                 />
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={actionLoading}
-                                className="w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-md shadow-amber-600/10 flex items-center justify-center gap-2"
-                            >
-                                Update Designation
-                            </button>
+                            <div className="pt-2 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="flex-1 py-2.5 bg-white text-slate-600 border border-slate-300 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="flex-1 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                >
+                                    {actionLoading ? "Updating..." : "Update Designation"}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>

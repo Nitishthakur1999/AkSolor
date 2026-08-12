@@ -20,9 +20,6 @@ namespace AkerpSuite.Server.Controllers
     {
         private readonly IAdminService _service;
 
-        // ── Super Admin only: Role/Permission/Page-Master management ──
-        // Critical: these control who can access what. Only CMD/Admin should touch them.
-
         //   private const string SuperAdminRoles = Roles.CMD + "," + Roles.Admin;
         private const string SuperAdminRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
         // ── HR Core management (Employee, Department, Designation, Attendance, Leave, Payroll) ──

@@ -1,6 +1,74 @@
 // pages/Dashboard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { adminService } from "@/services/adminService";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+
+const SNAPSHOT_TITLES = ["Total Employees", "Departments", "Designations", "Roles", "Total Users"];
+const PENDING_TITLES = [
+    "Pending Leaves",
+    "Monthly Leave Requests",
+    "Pending Payroll",
+    "Pending Payments",
+    "Pending Overtime",
+    "Low Stock Items",
+];
+
+const CHART_BAR_COLOR = "#d97706"; // amber-600, matches the accent used across the app
+const CHART_GRID_COLOR = "#e2e8f0"; // slate-200
+const CHART_TEXT_COLOR = "#64748b"; // slate-500
+
+function CardBarChart({ title, icon, data }) {
+    if (data.length === 0) return null;
+
+    return (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+                <i className={`fa-solid ${icon} text-amber-500 text-sm`} />
+                <h3 className="text-slate-700 text-xs sm:text-sm font-sans font-bold uppercase tracking-wider">
+                    {title}
+                </h3>
+            </div>
+            <div className="h-64 sm:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 8 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} vertical={false} />
+                        <XAxis
+                            dataKey="name"
+                            tick={{ fill: CHART_TEXT_COLOR, fontSize: 10 }}
+                            axisLine={{ stroke: CHART_GRID_COLOR }}
+                            tickLine={false}
+                            interval={0}
+                            angle={-35}
+                            textAnchor="end"
+                            height={64}
+                        />
+                        <YAxis
+                            tick={{ fill: CHART_TEXT_COLOR, fontSize: 11 }}
+                            axisLine={false}
+                            tickLine={false}
+                            allowDecimals={false}
+                        />
+                        <Tooltip
+                            cursor={{ fill: "rgba(217, 119, 6, 0.08)" }}
+                            contentStyle={{
+                                borderRadius: 10,
+                                border: "1px solid #e2e8f0",
+                                fontSize: 12,
+                                fontFamily: "inherit",
+                            }}
+                            formatter={(value, _name, item) => [
+                                item?.payload?.prefix === "₹" ? `₹${Number(value).toLocaleString("en-IN")}` : value,
+                                "",
+                            ]}
+                        />
+                        <Bar dataKey="value" fill={CHART_BAR_COLOR} radius={[6, 6, 0, 0]} maxBarSize={44} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
 
 export default function Dashboard() {
     const [cards, setCards] = useState([]);
@@ -30,6 +98,27 @@ export default function Dashboard() {
             .catch(() => setError("Server se connection fail hua."))
             .finally(() => setLoading(false));
     }, []);
+
+    // Split the flat card list into "chart" groups (rendered as bars) and
+    // everything else (still rendered as the original number tiles), so
+    // existing cards aren't duplicated between the grid and the charts.
+    const { snapshotData, pendingData, tileCards } = useMemo(() => {
+        const toChartPoint = (card) => ({
+            name: card.cardTitle,
+            value: Number(card.cardValue) || 0,
+            prefix: card.prefix,
+        });
+
+        const snapshot = cards.filter((c) => SNAPSHOT_TITLES.includes(c.cardTitle));
+        const pending = cards.filter((c) => PENDING_TITLES.includes(c.cardTitle));
+        const chartedTitles = new Set([...SNAPSHOT_TITLES, ...PENDING_TITLES]);
+
+        return {
+            snapshotData: snapshot.map(toChartPoint),
+            pendingData: pending.map(toChartPoint),
+            tileCards: cards.filter((c) => !chartedTitles.has(c.cardTitle)),
+        };
+    }, [cards]);
 
     // ─── Loading State ────────────────────────────────────────────────────────
     if (loading) {
@@ -83,18 +172,30 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ── Cards Grid ── */}
+            {/* ── Cards Grid (everything not pulled into a chart below) ── */}
             {cards.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[160px] gap-2 bg-white border border-slate-200 rounded-2xl">
                     <i className="fa-solid fa-table-columns text-3xl text-slate-300" />
                     <p className="text-slate-400 text-sm font-sans">No dashboard cards configured for your role.</p>
                 </div>
             ) : (
-                <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                    {cards.map((card) => (
-                        <DashboardCard key={card.cardKey} card={card} />
-                    ))}
-                </div>
+                <>
+                    {tileCards.length > 0 && (
+                        <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                            {tileCards.map((card) => (
+                                <DashboardCard key={card.cardKey} card={card} />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* ── Chart panels ── */}
+                    {(snapshotData.length > 0 || pendingData.length > 0) && (
+                        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+                            <CardBarChart title="Organisation Snapshot" icon="fa-building" data={snapshotData} />
+                            <CardBarChart title="Pending & Actionable" icon="fa-triangle-exclamation" data={pendingData} />
+                        </div>
+                    )}
+                </>
             )}
 
         </div>

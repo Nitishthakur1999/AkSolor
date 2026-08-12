@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import logo from "@/assets/logo.png";
 
 const API_BASE = "/api";
-
-// Departments as planets orbiting a shared sun — solar system / solar energy motif
 const SUN = { x: 220, y: 320 };
 
-function polar(radius, angleDeg) {
+function polar(radius: number, angleDeg: number) {
     const a = (angleDeg * Math.PI) / 180;
     return { x: SUN.x + radius * Math.cos(a), y: SUN.y + radius * Math.sin(a) };
 }
@@ -39,12 +37,12 @@ export default function LoginPage() {
         return () => clearTimeout(t);
     }, []);
 
-    const handleChange = (e) => {
+    const handleChange = (e: any) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
         setError("");
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: any) => {
         e.preventDefault();
         if (!form.username || !form.password) {
             setError("Username and password are required.");
@@ -83,61 +81,12 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="bp-root">
+        <div className="min-h-screen flex font-sans bg-[#F2F5F9] overflow-hidden relative">
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
- 
-                .bp-root {
-                    --bp-bg: #F2F5F9;
-                    --bp-ink: #10233B;
-                    --bp-dim: #64748B;
-                    --bp-line: #0D9488;
-                    --bp-line-soft: rgba(13, 148, 136, 0.18);
-                    --bp-accent: #FF6A3D;
-                    --bp-accent-soft: rgba(255, 106, 61, 0.16);
-                    --bp-rose: #DC2626;
-                    position: fixed;
-                    inset: 0;
-                    min-height: 100vh;
-                    display: flex;
-                    background: var(--bp-bg);
-                    font-family: 'Inter', sans-serif;
-                    color: var(--bp-ink);
-                    overflow: hidden;
-                }
- 
-                .bp-display { font-family: 'Space Grotesk', sans-serif; }
-                .bp-mono { font-family: 'JetBrains Mono', monospace; }
- 
-                /* ---- Left: deep space to solar-flare gradient ---- */
-                .bp-panel-left {
-                    position: relative;
-                    width: 46%;
-                    max-width: 620px;
-                    flex-shrink: 0;
-                    background: linear-gradient(165deg, #080B18 0%, #1B1436 38%, #7C2D12 78%, #F59E0B 140%);
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                    padding: 3rem 3rem;
-                    z-index: 2;
-                    overflow: hidden;
-                }
-                .bp-glow {
-                    position: absolute;
-                    border-radius: 50%;
-                    filter: blur(80px);
-                    pointer-events: none;
-                }
-                .bp-glow.one { width: 340px; height: 340px; background: rgba(245, 158, 11, 0.4); top: -90px; right: -110px; }
-                .bp-glow.two { width: 300px; height: 300px; background: rgba(124, 58, 237, 0.28); bottom: -70px; left: -90px; }
- 
-                .bp-star {
-                    fill: #FFFFFF;
-                    animation: bpTwinkle 3.2s ease-in-out infinite;
-                }
+                @keyframes bpOrbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 @keyframes bpTwinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.9; } }
- 
+                @keyframes bpPulse { 0% { opacity: 0.6; transform: scale(0.4); } 100% { opacity: 0; transform: scale(2.2); } }
+                
                 .bp-orbit-ring {
                     fill: none;
                     stroke: rgba(255, 255, 255, 0.16);
@@ -146,8 +95,6 @@ export default function LoginPage() {
                     transform-origin: 220px 320px;
                     animation: bpOrbitSpin linear infinite;
                 }
-                @keyframes bpOrbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
- 
                 .bp-ray {
                     stroke: rgba(255, 214, 120, 0.55);
                     stroke-width: 1.5;
@@ -155,212 +102,25 @@ export default function LoginPage() {
                     transform-origin: 220px 320px;
                     animation: bpOrbitSpin 46s linear infinite;
                 }
- 
-                .bp-planet { stroke: rgba(8, 11, 24, 0.5); stroke-width: 1; }
-                .bp-planet-ring { fill: none; stroke-width: 1.2; opacity: 0.75; }
-                .bp-sun-pulse {
-                    fill: none;
-                    stroke: #FDE68A;
-                    stroke-width: 1;
-                    opacity: 0;
-                    transform-origin: center;
-                    animation: bpPulse 3s ease-out infinite;
-                }
- 
-                .bp-status-dot {
-                    width: 6px; height: 6px; border-radius: 50%;
-                    background: var(--bp-accent);
-                    box-shadow: 0 0 8px var(--bp-accent);
-                    animation: bpBlink 2.4s ease-in-out infinite;
-                }
-                @keyframes bpBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
- 
-                .bp-schematic-line {
-                    stroke: rgba(255, 255, 255, 0.4);
-                    stroke-width: 1.25;
-                    fill: none;
-                    stroke-dasharray: 6 5;
-                }
-                .bp-schematic-line.animate {
-                    stroke-dashoffset: 0;
-                    transition: stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1);
-                }
-                .bp-node-dot {
-                    fill: #0F2942;
-                    stroke: #FFFFFF;
-                    stroke-width: 1.5;
-                }
-                .bp-hub-dot { fill: var(--bp-accent); }
-                .bp-node-pulse {
-                    fill: none;
-                    stroke: #FFFFFF;
-                    stroke-width: 1;
-                    opacity: 0;
-                    transform-origin: center;
-                    animation: bpPulse 3s ease-out infinite;
-                }
-                @keyframes bpPulse {
-                    0% { opacity: 0.6; transform: scale(0.4); }
-                    100% { opacity: 0; transform: scale(2.2); }
-                }
- 
-                .bp-fade {
-                    opacity: 0;
-                    transform: translateY(8px);
-                    transition: opacity 0.6s ease, transform 0.6s ease;
-                }
-                .bp-fade.in { opacity: 1; transform: translateY(0); }
- 
-                /* ---- Right: clean white access card ---- */
-                .bp-right-blob {
-                    position: absolute;
-                    border-radius: 50%;
-                    filter: blur(90px);
-                    pointer-events: none;
-                    z-index: 0;
-                }
-                .bp-right-blob.a { width: 380px; height: 380px; background: var(--bp-line-soft); top: -120px; right: 10%; }
-                .bp-right-blob.b { width: 320px; height: 320px; background: var(--bp-accent-soft); bottom: -100px; left: 5%; }
- 
-                .bp-card {
-                    position: relative;
-                    width: 100%;
-                    max-width: 26rem;
-                    background: #FFFFFF;
-                    border: 1px solid rgba(16, 35, 59, 0.08);
-                    box-shadow: 0 24px 60px -20px rgba(16, 35, 59, 0.22), 0 4px 16px -4px rgba(16, 35, 59, 0.08);
-                    padding: 2.75rem 2.5rem;
-                    z-index: 1;
-                }
-                .bp-card::before, .bp-card::after {
-                    content: "";
-                    position: absolute;
-                    width: 16px;
-                    height: 16px;
-                    border-color: var(--bp-line);
-                    border-style: solid;
-                }
-                .bp-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-                .bp-card::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
- 
-                .bp-stamp {
-                    position: absolute;
-                    top: -22px;
-                    right: 28px;
-                    width: 88px;
-                    height: 88px;
-                    border-radius: 50%;
-                    border: 1.5px dashed var(--bp-accent);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transform: rotate(-9deg);
-                    background: #FFFFFF;
-                    box-shadow: 0 8px 20px -6px rgba(255, 106, 61, 0.35);
-                    z-index: 4;
-                }
-                .bp-stamp-text {
-                    font-size: 0.5rem;
-                    letter-spacing: 0.14em;
-                    color: var(--bp-accent);
-                    text-align: center;
-                    line-height: 1.5;
-                    font-weight: 700;
-                }
- 
-                .bp-field-wrap {
-                    position: relative;
-                }
-                .bp-field-icon {
-                    position: absolute;
-                    left: 0;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: var(--bp-dim);
-                    pointer-events: none;
-                }
- 
-                .bp-field-input {
-                    background: transparent;
-                    border: none;
-                    border-bottom: 1.5px solid rgba(16, 35, 59, 0.15);
-                    color: var(--bp-ink);
-                    width: 100%;
-                    padding: 0.6rem 1.75rem 0.6rem 1.6rem;
-                    font-size: 0.9rem;
-                    transition: border-color 0.2s ease;
-                }
-                .bp-field-input:focus {
-                    outline: none;
-                    border-bottom-color: var(--bp-line);
-                }
-                .bp-field-input::placeholder { color: #A6B2C2; }
-                .bp-field-input:disabled { opacity: 0.5; cursor: not-allowed; }
- 
-                .bp-btn {
-                    position: relative;
-                    width: 100%;
-                    padding: 0.9rem 1rem;
-                    background: linear-gradient(135deg, #FF7A45 0%, var(--bp-accent) 100%);
-                    color: #FFFFFF;
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                    letter-spacing: 0.02em;
-                    border: none;
-                    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
-                    box-shadow: 0 12px 28px -10px rgba(255, 106, 61, 0.55);
-                    transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
-                }
-                .bp-btn:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 14px 32px -8px rgba(255, 106, 61, 0.65); }
-                .bp-btn:active:not(:disabled) { transform: scale(0.99); }
-                .bp-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
-                .bp-btn:focus-visible { outline: 2px solid var(--bp-line); outline-offset: 2px; }
- 
-                .bp-title-gradient {
-                    background: linear-gradient(90deg, var(--bp-ink) 0%, var(--bp-line) 100%);
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    color: transparent;
-                }
- 
-                @media (prefers-reduced-motion: reduce) {
-                    .bp-status-dot, .bp-node-pulse, .bp-sun-pulse, .bp-fade, .bp-star, .bp-orbit-ring, .bp-ray {
-                        animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important;
-                    }
-                }
- 
-                @media (max-width: 1023px) {
-                    .bp-panel-left { display: none; }
-                }
+                .bp-star { fill: #FFFFFF; animation: bpTwinkle 3.2s ease-in-out infinite; }
+                .bp-node-pulse { fill: none; stroke: #FFFFFF; stroke-width: 1; opacity: 0; transform-origin: center; animation: bpPulse 3s ease-out infinite; }
+                .bp-sun-pulse { fill: none; stroke: #FDE68A; stroke-width: 1; opacity: 0; transform-origin: center; animation: bpPulse 3s ease-out infinite; }
             `}</style>
 
-            <div className="bp-right-blob a" />
-            <div className="bp-right-blob b" />
+            {/* ---- Left Panel: Deep Teal Gradient with Solar System ---- */}
+            <div className="hidden lg:flex flex-col w-[45%] max-w-[620px] relative z-10" style={{ background: "linear-gradient(165deg, #0b2532 0%, #0f3345 60%, #15455c 100%)" }}>
 
-            {/* Left — the living schematic, bold color block */}
-            <div className="bp-panel-left">
-                <div className="bp-glow one" />
-                <div className="bp-glow two" />
-
-                <div className="relative flex items-center gap-3">
-                    <div className="w-12 h-12 flex items-center justify-center bg-white/20 rounded-full ">
-                        <img
-                            src={logo}
-                            alt="AkerpSuite logo"
-                            className="w-full h-full object-contain"
-                        />
+                {/* Header Logo */}
+                <div className="absolute top-12 left-12 z-20 flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white rounded-[10px] flex items-center justify-center shadow-lg border border-white/10">
+                        <img src={logo} alt="AKS Solar" className="w-8 h-8 object-contain" />
                     </div>
-
-                    <span className="bp-display text-lg font-semibold tracking-tight text-white">AKS Solar</span>
-                   
+                    <span className="text-2xl font-bold tracking-tight text-white">AKS Solar</span>
                 </div>
 
-                <div className="relative flex-1 flex items-center justify-center py-8">
-                    <svg viewBox="0 0 440 640" className="w-full max-w-[380px]">
+                {/* Animated Solar System SVG */}
+                <div className="flex-1 flex items-center justify-center w-full h-full p-8 relative mt-16">
+                    <svg viewBox="0 0 440 640" className="w-full max-w-[400px]">
                         <defs>
                             <radialGradient id="sunGradient" cx="35%" cy="30%" r="70%">
                                 <stop offset="0%" stopColor="#FFF7D6" />
@@ -369,12 +129,12 @@ export default function LoginPage() {
                             </radialGradient>
                         </defs>
 
-                        {/* starfield */}
+                        {/* Stars */}
                         {STARS.map((s, i) => (
-                            <circle key={i} cx={s.x} cy={s.y} r={s.r} className="bp-star" style={{ animationDelay: `${s.delay}s` }} />
+                            <circle key={`star-${i}`} cx={s.x} cy={s.y} r={s.r} className="bp-star" style={{ animationDelay: `${s.delay}s` }} />
                         ))}
 
-                        {/* orbit rings, each spinning at a slightly different speed */}
+                        {/* Orbit rings */}
                         {PLANETS.map((p) => (
                             <circle
                                 key={`ring-${p.id}`}
@@ -384,15 +144,14 @@ export default function LoginPage() {
                             />
                         ))}
 
-                        {/* sunburst rays, slowly rotating */}
-                        <g className="bp-ray" style={{ transform: mounted ? undefined : "rotate(0deg)" }}>
+                        {/* Sunburst rays */}
+                        <g className="bp-ray">
                             {Array.from({ length: 8 }).map((_, i) => {
                                 const a = (i * 45 * Math.PI) / 180;
                                 const r1 = 30, r2 = 42;
                                 return (
                                     <line
-                                        key={i}
-                                        className="bp-ray"
+                                        key={`ray-${i}`}
                                         x1={SUN.x + r1 * Math.cos(a)} y1={SUN.y + r1 * Math.sin(a)}
                                         x2={SUN.x + r2 * Math.cos(a)} y2={SUN.y + r2 * Math.sin(a)}
                                     />
@@ -400,179 +159,141 @@ export default function LoginPage() {
                             })}
                         </g>
 
-                        {/* the sun */}
+                        {/* The Sun */}
                         <circle cx={SUN.x} cy={SUN.y} r="26" fill="url(#sunGradient)" />
                         <circle cx={SUN.x} cy={SUN.y} r="26" className="bp-sun-pulse" style={{ animationDelay: "0s" }} />
                         <circle cx={SUN.x} cy={SUN.y} r="26" className="bp-sun-pulse" style={{ animationDelay: "1.5s" }} />
 
-                        {/* orbiting planets */}
+                        {/* Orbiting planets */}
                         {PLANETS.map((p, i) => (
-                            <g key={p.id}>
+                            <g key={`planet-${p.id}`}>
                                 {p.ring && (
                                     <ellipse
                                         cx={p.x} cy={p.y} rx={p.size + 5} ry={(p.size + 5) * 0.35}
-                                        className="bp-planet-ring" stroke={p.color}
+                                        fill="none" stroke={p.color} strokeWidth="1.2" opacity="0.75"
                                         transform={`rotate(-20 ${p.x} ${p.y})`}
                                     />
                                 )}
-                                <circle cx={p.x} cy={p.y} r={p.size} fill={p.color} className="bp-planet" />
+                                <circle cx={p.x} cy={p.y} r={p.size} fill={p.color} stroke="rgba(8, 11, 24, 0.5)" strokeWidth="1" />
                                 <circle cx={p.x} cy={p.y} r={p.size} className="bp-node-pulse" style={{ animationDelay: `${i * 0.5 + 0.3}s` }} />
-                                <text x={p.x} y={p.y - p.size - 8} textAnchor="middle" className="bp-mono" fontSize="9" fill="rgba(255,255,255,0.55)" letterSpacing="0.5">
+                                <text x={p.x} y={p.y - p.size - 8} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.6)" letterSpacing="0.5" className="font-mono font-bold">
                                     {p.id}
                                 </text>
-                                <text x={p.x} y={p.y + p.size + 14} textAnchor="middle" className="bp-mono" fontSize="8.5" fill="#FFFFFF" letterSpacing="1">
+                                <text x={p.x} y={p.y + p.size + 14} textAnchor="middle" fontSize="8.5" fill="#FFFFFF" letterSpacing="1" className="font-bold">
                                     {p.label}
                                 </text>
                             </g>
                         ))}
                     </svg>
                 </div>
-
-                <div className="relative space-y-4">
-                    <div className="flex items-center gap-2">
-                        <span className="bp-status-dot" />
-                        <span className="bp-mono text-[0.65rem] text-white/60 tracking-widest uppercase">Solar core — stable output</span>
-                    </div>
-                    <h2 className="bp-display text-[1.8rem] font-semibold leading-[1.25] max-w-sm text-white">
-                        Every department, orbiting one core.
-                    </h2>
-                    <p className="text-sm leading-relaxed max-w-sm text-white/70">
-                        Projects, records, and access — all circling a single source of truth, kept in sync like planets around a shared sun.
-                    </p>
-                    <p className="bp-mono text-[0.65rem] text-white/50 pt-4 border-t border-white/15">
-                        © {new Date().getFullYear()} AKERPSUITE — ALL RIGHTS RESERVED
-                    </p>
-                </div>
             </div>
 
-            {/* Right — clean white access console */}
-            <div className="flex-1 flex items-center justify-center relative z-10 px-6 py-12 overflow-y-auto">
-                <div className={`w-full max-w-md flex flex-col items-center bp-fade ${mounted ? "in" : ""}`}>
+            {/* ---- Right Panel: Clean White Access Console ---- */}
+            <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative z-0">
+                <div className={`w-full max-w-[420px] transition-all duration-700 ease-out transform ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"} z-10`}>
 
+                    {/* Mobile Logo Header */}
                     <div className="flex lg:hidden items-center gap-3 mb-8">
-                        <div className="w-8 h-8 flex items-center justify-center border border-[color:var(--bp-line)]">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#0D9488">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4h16v16H4z M4 12h16 M12 4v16" />
-                            </svg>
+                        <div className="w-10 h-10 flex items-center justify-center bg-white rounded-[10px] shadow-sm border border-slate-200">
+                            <img src={logo} alt="AKS Solar" className="w-6 h-6 object-contain" />
                         </div>
-                        <span className="bp-display text-lg font-semibold tracking-tight">AkerpSuite</span>
+                        <span className="text-2xl font-bold tracking-tight text-[#0b2532]">AKS Solar</span>
                     </div>
 
-                    <div className="bp-card">
-                        <div className="bp-stamp">
-                            <span className="bp-stamp-text">ACCESS<br />SECURED</span>
-                        </div>
+                    {/* Login Card */}
+                    <div className="w-full bg-white rounded-[24px] p-8 sm:p-10 relative shadow-[0_24px_60px_-20px_rgba(16,35,59,0.22),_0_4px_16px_-4px_rgba(16,35,59,0.08)] border border-slate-200/50">
 
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="bp-status-dot" />
-                            <span className="bp-mono text-[0.65rem] tracking-[0.15em] uppercase" style={{ color: "var(--bp-line)" }}>
-                                Enterprise access terminal
+                        {/* Stamp (Absolute Top Right) */}
+                        <div className="absolute -top-6 -right-6 w-[88px] h-[88px] rounded-full border-[1.5px] border-dashed border-amber-500 flex items-center justify-center rotate-[-9deg] bg-white shadow-[0_8px_20px_-6px_rgba(245,158,11,0.35)] z-20">
+                            <span className="text-[10px] font-bold text-amber-500 text-center tracking-[0.14em] leading-tight uppercase">
+                                SECURE<br />ACCESS
                             </span>
                         </div>
 
-                        <h1 className="bp-display bp-title-gradient text-[2rem] font-semibold tracking-tight mb-1">Sign in</h1>
-                        <p className="text-sm text-[color:var(--bp-dim)] mb-8">Enter your workspace credentials to continue.</p>
+                       
 
-                        <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                        <h1 className="text-[2rem] font-bold text-[#0b2532] tracking-tight mb-2">Sign in</h1>
+                        <p className="text-sm font-medium text-black-500 mb-8">Enter your workspace credentials to continue.</p>
+
+                        {error && (
+                            <div className="mb-6 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2 animate-in fade-in">
+                                <i className="fa-solid fa-triangle-exclamation text-base" /> {error}
+                            </div>
+                        )}
+
+                        {/* Login Form */}
+                        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+
+                            {/* Username Field */}
                             <div>
-                                <label htmlFor="username" className="bp-mono block text-[0.65rem] tracking-widest uppercase text-[color:var(--bp-dim)] mb-2">
+                                <label htmlFor="username" className="block text-[10px] font-bold uppercase tracking-widest text-black-500 mb-2 ml-1">
                                     Username
                                 </label>
-                                <div className="bp-field-wrap">
-                                    <span className="bp-field-icon">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                        </svg>
-                                    </span>
+                                <div className="relative group">
+                                    <i className="fa-regular fa-user absolute left-4 top-1/2 -translate-y-1/2 text-black-400 group-focus-within:text-[#0b2532] transition-colors" />
                                     <input
                                         id="username"
                                         name="username"
                                         type="text"
                                         autoComplete="username"
-                                        placeholder="Enter a username"
+                                        placeholder="username"
                                         value={form.username}
                                         onChange={handleChange}
                                         disabled={loading}
-                                        className="bp-field-input px-6"
+                                        className="w-full bg-[#f4f7fb] border border-transparent focus:border-[#0b2532]/20 focus:bg-white focus:ring-4 focus:ring-[#0b2532]/5 rounded-xl py-3.5 pl-11 pr-4 text-sm font-bold text-slate-800 transition-all outline-none"
                                     />
                                 </div>
                             </div>
 
+                            {/* Password Field */}
                             <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label htmlFor="password" className="bp-mono block text-[0.65rem] tracking-widest uppercase text-[color:var(--bp-dim)]">
-                                        Password
-                                    </label>
-                                  
-                                </div>
-                                <div className="bp-field-wrap relative">
-                                    <span className="bp-field-icon">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                                        </svg>
-                                    </span>
+                                <label htmlFor="password" className="block text-[10px] font-bold uppercase tracking-widest text-black-500 mb-2 ml-1">
+                                    Password
+                                </label>
+                                <div className="relative group">
+                                    <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-black-400 group-focus-within:text-[#0b2532] transition-colors" />
                                     <input
                                         id="password"
                                         name="password"
                                         type={showPass ? "text" : "password"}
                                         autoComplete="current-password"
-                                        placeholder="••••••••"
+                                        placeholder="password"
                                         value={form.password}
                                         onChange={handleChange}
                                         disabled={loading}
-                                        className="bp-field-input"
+                                        className="w-full bg-[#f4f7fb] border border-transparent focus:border-[#0b2532]/20 focus:bg-white focus:ring-4 focus:ring-[#0b2532]/5 rounded-xl py-3.5 pl-11 pr-10 text-sm font-bold text-slate-800 transition-all outline-none"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPass((v) => !v)}
-                                        aria-label={showPass ? "Hide password" : "Show password"}
-                                        className="absolute right-0 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity p-1 focus:outline-none"
-                                        style={{ color: "var(--bp-dim)" }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-black-400 hover:text-slate-600 transition-colors focus:outline-none"
+                                        title={showPass ? "Hide password" : "Show password"}
                                     >
-                                        {showPass ? (
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        )}
+                                        <i className={`fa-regular ${showPass ? 'fa-eye-slash' : 'fa-eye'}`} />
                                     </button>
                                 </div>
                             </div>
 
-                            {error && (
-                                <div className="flex items-start gap-2.5 border-l-2 pl-3 py-1" style={{ borderColor: "var(--bp-rose)" }}>
-                                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="var(--bp-rose)">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span className="bp-mono text-[0.75rem] leading-tight" style={{ color: "var(--bp-rose)" }}>{error}</span>
-                                </div>
-                            )}
-
-                            <button type="submit" disabled={loading} className="bp-btn">
-                                {loading ? (
-                                    <>
-                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                        Authenticating…
-                                    </>
-                                ) : (
-                                    "Sign in"
-                                )}
-                            </button>
+                            {/* Submit Button */}
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-4 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-[0_8px_20px_-6px_rgba(11,40,54,0.4)] hover:bg-[#0f3345] hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <i className="fa-solid fa-spinner animate-spin" /> Authenticating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Sign In <i className="fa-solid fa-arrow-right-to-bracket text-amber-400 ml-1" />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </form>
                     </div>
-
-                    <p className="text-center text-sm text-[color:var(--bp-dim)] mt-8">
-                        Don't have an account?{" "}
-                        <a href="/register" className="font-semibold transition-all focus:outline-none focus:underline" style={{ color: "var(--bp-line)" }}>
-                            Contact corporate team
-                        </a>
-                    </p>
                 </div>
             </div>
         </div>

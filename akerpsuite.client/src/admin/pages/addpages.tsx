@@ -20,8 +20,7 @@ export default function PageManagement() {
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
-    // 🆕 Non-blocking toast state (alert() ki jagah — alert() UI thread ko block
-    // karta hai jisse page "freeze" jaisa feel hota hai jab tak user OK na dabaye)
+    // 🆕 Non-blocking toast state (alert() ki jagah)
     const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
     useEffect(() => {
@@ -43,13 +42,12 @@ export default function PageManagement() {
     const [selectedRole, setSelectedRole] = useState("");
     const [assignedPageIds, setAssignedPageIds] = useState([]);
 
-    // 🔒 Current logged-in user's role (taaki khud apna role dropdown mein na dikhe — self-lockout se bachne ke liye)
+    // 🔒 Current logged-in user's role
     const currentUserRole = useMemo(() => {
         try {
             const token = localStorage.getItem("token");
             if (!token) return "";
             const payload = JSON.parse(atob(token.split(".")[1]));
-            // Alag-alag backend claim naming conventions cover karne ke liye
             return (
                 payload.role ||
                 payload.Role ||
@@ -120,7 +118,7 @@ export default function PageManagement() {
     }, [allPages, searchTerm]);
 
     const totalItems = filteredPages.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
     const currentPages = filteredPages.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     // Pagination Calculations
@@ -145,16 +143,16 @@ export default function PageManagement() {
             }
 
             if (res.Success || res.success) {
-                alert(`Page ${editingPageId ? 'updated' : 'added'} successfully!`);
+                setToast({ type: "success", message: `Page ${editingPageId ? 'updated' : 'added'} successfully!` });
                 resetForm();
                 setShowPageModal(false);
                 loadInitialData();
             } else {
-                alert(res.Message || "Failed to save page");
+                setToast({ type: "error", message: res.Message || "Failed to save page" });
             }
         } catch (err) {
             console.error(err);
-            alert("API Error: Please check console.");
+            setToast({ type: "error", message: "API Error: Please check console." });
         } finally {
             setActionLoading(false);
         }
@@ -181,7 +179,7 @@ export default function PageManagement() {
             try {
                 const res = await adminService.deletePage(id);
                 if (res.Success || res.success) loadInitialData();
-                else alert(res.Message || "Failed to delete page");
+                else setToast({ type: "error", message: res.Message || "Failed to delete page" });
             } catch (err) { console.error(err); }
         }
     };
@@ -207,16 +205,12 @@ export default function PageManagement() {
         setAssignedPageIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    // 🆕 Select All / Deselect All toggle
     const allPageIds = useMemo(() => allPages.map(p => Number(p.pageId || p.PageId || p.id || p.Id)), [allPages]);
     const isAllSelected = allPageIds.length > 0 && allPageIds.every(id => assignedPageIds.includes(id));
 
     const handleSelectAllChange = () => {
-        if (isAllSelected) {
-            setAssignedPageIds([]); // sab uncheck kar do
-        } else {
-            setAssignedPageIds(allPageIds); // sab check kar do
-        }
+        if (isAllSelected) setAssignedPageIds([]);
+        else setAssignedPageIds(allPageIds);
     };
 
     const handleSaveAssignment = async () => {
@@ -233,8 +227,6 @@ export default function PageManagement() {
             const res = await adminService.updateRolePages(payload);
             if (res.Success || res.success) {
                 setToast({ type: "success", message: "Pages assigned successfully!" });
-
-                // 🆕 Reset role selection + checkboxes after successful save
                 setSelectedRole("");
                 setAssignedPageIds([]);
             } else {
@@ -256,62 +248,105 @@ export default function PageManagement() {
     }, {} as Record<string, any[]>);
 
     return (
-        <div className="space-y-6">
-            {/* 🆕 TOAST NOTIFICATION (non-blocking, alert() ki jagah) */}
+        <div className="space-y-5 pb-10 font-sans relative">
+
+            {/* 🆕 TOAST NOTIFICATION */}
             {toast && (
-                <div
-                    className={`fixed top-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all ${toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"
-                        }`}
-                >
+                <div className={`fixed top-8 right-8 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-sm font-bold text-white transition-all animate-in slide-in-from-top-5 duration-300 ${toast.type === "success" ? "bg-emerald-600 border border-emerald-500" : "bg-rose-600 border border-rose-500"}`}>
+                    <i className={`fa-solid ${toast.type === "success" ? "fa-circle-check" : "fa-triangle-exclamation"} text-lg`} />
                     {toast.message}
                 </div>
             )}
 
-            {/* HEADER */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-900">Page Master & Assignment</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Manage system pages and assign them to roles for dynamic sidebar access.</p>
+            {/* ── Compact Header Section ── */}
+            <div className="bg-[#0b2532] rounded-2xl px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
+                        <i className="fa-solid fa-file-shield text-lg text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Page Access Control</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            Manage system pages and map module permissions dynamically.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            {/* MAIN CONTAINER */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
+            {/* ── Main Container With Tabs ── */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
 
-                {/* 2 TABS */}
-                <div className="flex overflow-x-auto border-b border-slate-200 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    <button onClick={() => setActiveTab("table")} className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === "table" ? "border-slate-800 text-slate-800" : "border-transparent hover:text-slate-600"}`}>All Pages</button>
-                    <button onClick={() => setActiveTab("assign")} className={`px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === "assign" ? "border-slate-800 text-slate-800" : "border-transparent hover:text-slate-600"}`}>Assign Roles</button>
+                {/* ── Tabs Navigation ── */}
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50">
+                    <button
+                        onClick={() => setActiveTab("table")}
+                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "table" ? "border-amber-500 text-amber-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                            }`}
+                    >
+                        <i className="fa-solid fa-list-ul"></i> All Master Pages
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("assign")}
+                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "assign" ? "border-amber-500 text-amber-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                            }`}
+                    >
+                        <i className="fa-solid fa-user-check"></i> Assign Page Roles
+                    </button>
                 </div>
 
-                <div className="p-6 min-h-[400px]">
+                <div className="min-h-[400px]">
                     {loading ? (
-                        <div className="text-center text-amber-600 py-10 font-medium animate-pulse">Loading Data...</div>
+                        <div className="py-24 flex flex-col items-center justify-center gap-3">
+                            <i className="fa-solid fa-spinner text-3xl text-amber-500 animate-spin" />
+                            <div className="text-sm font-medium text-slate-500 animate-pulse">Loading system structure...</div>
+                        </div>
                     ) : (
                         <>
-                            {/* TAB 1: TABLE VIEW */}
+                            {/* ── TAB 1: ALL PAGES TABLE ── */}
                             {activeTab === "table" && (
-                                <div className="space-y-4">
-                                    <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4">
-                                        <input type="text" placeholder="Search pages..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-full sm:w-64 px-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-slate-400 transition-all" />
+                                <div className="flex flex-col h-full">
+                                    <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white">
+                                        <div className="relative group w-full sm:flex-1 max-w-md">
+                                            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search by page name, link, or module..."
+                                                value={searchTerm}
+                                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                                className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
+                                            />
+                                        </div>
                                         <button
                                             onClick={handleAddClick}
-                                            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all shadow-sm whitespace-nowrap"
+                                            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center justify-center gap-2 shadow-sm"
                                         >
-                                            + Add Page
+                                            <i className="fa-solid fa-plus" /> Add Master Page
                                         </button>
                                     </div>
-                                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wide">
-                                                <tr>
-                                                    <th className="px-6 py-4">Page Name</th>
-                                                    <th className="px-6 py-4">Link (URL)</th>
-                                                    <th className="px-6 py-4">Module Type</th>
-                                                    <th className="px-6 py-4 text-center">Actions</th>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse whitespace-nowrap">
+                                            <thead>
+                                                <tr className="bg-slate-50/80 border-b border-slate-200">
+                                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Page Name</th>
+                                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Link (URL)</th>
+                                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Module Group</th>
+                                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions Operations</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
+                                            <tbody className="divide-y divide-slate-100 text-sm">
                                                 {currentPages.length === 0 ? (
-                                                    <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400 font-medium">No pages found.</td></tr>
+                                                    <tr>
+                                                        <td colSpan={4} className="py-20 text-center">
+                                                            <div className="flex flex-col items-center justify-center">
+                                                                <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-slate-100">
+                                                                    <i className="fa-solid fa-folder-open text-xl text-slate-400" />
+                                                                </div>
+                                                                <p className="text-base text-slate-700 font-bold">No pages found</p>
+                                                                <p className="text-sm text-slate-400 mt-1">Try adjusting your search criteria.</p>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
                                                 ) : currentPages.map((page, idx) => {
                                                     const pId = page.pageId || page.PageId || page.id || page.Id;
                                                     const pName = page.pageName || page.PageName || page.name || page.Name || page.title;
@@ -321,22 +356,40 @@ export default function PageManagement() {
 
                                                     return (
                                                         <tr key={pId || idx} className="hover:bg-slate-50/50 transition-colors">
-                                                            <td className="px-6 py-4 font-semibold text-slate-800 flex items-center gap-2">
-                                                                <i className={`${pIcon || "fa-solid fa-file"} text-slate-400 text-lg w-5 text-center`} />
-                                                                {pName || "Unknown Page"}
-                                                            </td>
-                                                            <td className="px-6 py-4 font-mono text-xs text-slate-500">
-                                                                {pLink || "-"}
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
+                                                                        <i className={`${pIcon || "fa-solid fa-file"} text-slate-400 text-sm`} />
+                                                                    </div>
+                                                                    <span className="font-bold text-slate-800">{pName || "Unknown Page"}</span>
+                                                                </div>
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-wider">
+                                                                <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-md font-mono text-[11px] text-slate-600 font-semibold">
+                                                                    {pLink || "-"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="px-3 py-1 bg-amber-50/60 border border-amber-100 text-amber-700 rounded-full text-[11px] font-bold uppercase tracking-wider">
                                                                     {pType || "General"}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4 text-center">
-                                                                <div className="flex justify-center gap-3">
-                                                                    <button onClick={() => handleEditClick(page)} className="px-4 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold rounded-2xl text-xs transition-colors">Edit</button>
-                                                                    <button onClick={() => handleDeleteClick(pId)} className="px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-2xl text-xs transition-colors">Delete</button>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => handleEditClick(page)}
+                                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-colors"
+                                                                        title="Edit Page"
+                                                                    >
+                                                                        <i className="fa-solid fa-pen text-[13px]" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteClick(pId)}
+                                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-colors"
+                                                                        title="Delete Page"
+                                                                    >
+                                                                        <i className="fa-solid fa-trash-can text-[13px]" />
+                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -346,40 +399,42 @@ export default function PageManagement() {
                                         </table>
                                     </div>
 
-                                    {/* 🚀 PAGINATION UI */}
+                                    {/* 🔢 PAGINATION WIDGET */}
                                     {!loading && totalItems > 0 && (
-                                        <div className="flex flex-col sm:flex-row justify-between items-center pt-6 mt-2 gap-4">
-                                            <div className="text-sm text-slate-500 font-medium">
-                                                Showing <span className="font-bold text-slate-700">{startEntry}</span> to <span className="font-bold text-slate-700">{endEntry}</span> of <span className="font-bold text-slate-700">{totalItems}</span> entries
+                                        <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border-t border-slate-200 text-sm text-slate-500 gap-4 mt-auto">
+                                            <div>
+                                                Showing <span className="font-bold text-slate-800">{startEntry}</span> to{" "}
+                                                <span className="font-bold text-slate-800">{endEntry}</span> of{" "}
+                                                <span className="font-bold text-slate-800">{totalItems}</span> entries
                                             </div>
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex gap-1.5">
                                                 <button
-                                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                                     disabled={currentPage === 1}
-                                                    className="px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-all"
+                                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
                                                 >
-                                                    Previous
+                                                    <i className="fa-solid fa-chevron-left text-[10px]" /> Prev
                                                 </button>
-
-                                                {pageNumbers.map(number => (
-                                                    <button
-                                                        key={number}
-                                                        onClick={() => setCurrentPage(number)}
-                                                        className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${currentPage === number
-                                                            ? "bg-amber-600 text-white shadow-md border-amber-600"
-                                                            : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                                                            }`}
-                                                    >
-                                                        {number}
-                                                    </button>
-                                                ))}
-
+                                                <div className="hidden sm:flex gap-1.5">
+                                                    {pageNumbers.map(number => (
+                                                        <button
+                                                            key={number}
+                                                            onClick={() => setCurrentPage(number)}
+                                                            className={`w-8 h-8 rounded-lg border text-sm font-bold transition-all shadow-sm flex items-center justify-center ${currentPage === number
+                                                                    ? "bg-amber-500 border-amber-500 text-white"
+                                                                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                                }`}
+                                                        >
+                                                            {number}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                                 <button
-                                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                                     disabled={currentPage === totalPages}
-                                                    className="px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-all"
+                                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
                                                 >
-                                                    Next
+                                                    Next <i className="fa-solid fa-chevron-right text-[10px]" />
                                                 </button>
                                             </div>
                                         </div>
@@ -387,72 +442,85 @@ export default function PageManagement() {
                                 </div>
                             )}
 
-                            {/* TAB 2: ASSIGN VIEW */}
+                            {/* ── TAB 2: ASSIGN VIEW ── */}
                             {activeTab === "assign" && (
-                                <div className="space-y-6 max-w-5xl mx-auto">
+                                <div className="p-6 sm:p-8 space-y-6 bg-slate-50/30">
                                     <div className="max-w-md">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Select Role *</label>
-                                        <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-amber-400 bg-white transition-all">
-                                            <option value="" disabled>-- Choose Role --</option>
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Select Target Role *</label>
+                                        <select
+                                            value={selectedRole}
+                                            onChange={(e) => setSelectedRole(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-white transition-all cursor-pointer shadow-sm text-slate-700"
+                                        >
+                                            <option value="" disabled>-- Choose a Role to Manage Permissions --</option>
                                             {roles
                                                 .filter(r => {
                                                     const roleName = (r.roleName || r.RoleName || "").toLowerCase();
                                                     const currentRole = currentUserRole?.toLowerCase();
-
-                                                    // Apna khud ka exact role kabhi mat dikhao
                                                     if (roleName === currentRole) return false;
-
                                                     const currentLevel = getLevel(currentRole);
                                                     const targetLevel = getLevel(roleName);
-
-                                                    // Backend jaisa hi logic: target level >= apna level (barabar ya neeche wale)
                                                     return targetLevel >= currentLevel;
                                                 })
                                                 .map(r => (
                                                     <option key={r.roleId || r.RoleId} value={r.roleId || r.RoleId}>{r.roleName || r.RoleName}</option>
-                                                ))}
+                                                ))
+                                            }
                                         </select>
                                     </div>
 
                                     {selectedRole && (
-                                        <div className="pt-6 border-t border-slate-100">
+                                        <div className="pt-6 border-t border-slate-200 animate-in fade-in duration-300">
 
-                                            {/* 🆕 Select All / Deselect All */}
-                                            <div className="flex items-center justify-between mb-4">
-                                                <label className="flex items-center gap-2.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-all">
+                                            {/* Action Bar */}
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                                <label className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 transition-all shadow-sm w-max group">
                                                     <input
                                                         type="checkbox"
-                                                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer border-slate-300"
                                                         checked={isAllSelected}
                                                         onChange={handleSelectAllChange}
                                                     />
-                                                    <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">
-                                                        {isAllSelected ? "Deselect All Pages" : "Select All Pages"}
+                                                    <span className="text-[11px] font-bold text-slate-600 group-hover:text-amber-700 uppercase tracking-wider transition-colors">
+                                                        {isAllSelected ? "Uncheck All Pages" : "Select All Pages"}
                                                     </span>
                                                 </label>
-                                                <span className="text-xs text-slate-400 font-medium">
-                                                    {assignedPageIds.length} of {allPageIds.length} selected
+                                                <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+                                                    <span className="text-amber-600 text-sm">{assignedPageIds.length}</span> / {allPageIds.length} Mapped
                                                 </span>
                                             </div>
 
-                                            <div className="grid grid-cols-1 gap-6">
+                                            {/* Modules Grid */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                                                 {(Object.entries(groupedPages) as [string, any[]][]).map(([group, pages]) => (
-                                                    <div key={group} className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                                                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider border-b border-slate-200 pb-2">{group} Module</h4>
+                                                    <div key={group} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                                                        <h4 className="text-[11px] font-bold text-slate-400 uppercase mb-4 tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+                                                            <i className="fa-solid fa-layer-group text-slate-300"></i> {group} Module
+                                                        </h4>
 
-                                                        <div className="flex flex-wrap gap-3">
+                                                        <div className="flex flex-col gap-2 flex-1">
                                                             {pages.map(page => {
                                                                 const pId = page.pageId || page.PageId || page.id || page.Id;
                                                                 const pName = page.pageName || page.PageName || page.name || page.Name || page.title || "Unnamed Page";
                                                                 const pIcon = page.pageIcon || page.PageIcon || page.icon || page.Icon || "fa-solid fa-circle";
+                                                                const isChecked = assignedPageIds.includes(Number(pId));
 
                                                                 return (
-                                                                    <label key={pId} className="flex items-center gap-2.5 px-3 py-2 bg-white border border-slate-200 rounded-xl hover:border-amber-300 hover:shadow-sm cursor-pointer transition-all">
-                                                                        <input type="checkbox" className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer" checked={assignedPageIds.includes(Number(pId))} onChange={() => handleCheckboxChange(pId)} />
-                                                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                                                                            <i className={`${pIcon} text-slate-400 text-sm`} />
-                                                                            {pName}
+                                                                    <label key={pId} className={`flex items-center justify-between px-4 py-3 border rounded-xl cursor-pointer transition-all group ${isChecked ? 'bg-amber-50/40 border-amber-200 shadow-sm' : 'bg-slate-50/50 border-transparent hover:border-slate-200 hover:bg-slate-50'}`}>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isChecked ? 'bg-amber-100 text-amber-600' : 'bg-white text-slate-400 border border-slate-200 group-hover:text-slate-500'}`}>
+                                                                                <i className={`${pIcon} text-[13px]`} />
+                                                                            </div>
+                                                                            <span className={`text-sm font-semibold transition-colors ${isChecked ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-800'}`}>
+                                                                                {pName}
+                                                                            </span>
                                                                         </div>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer border-slate-300"
+                                                                            checked={isChecked}
+                                                                            onChange={() => handleCheckboxChange(pId)}
+                                                                        />
                                                                     </label>
                                                                 );
                                                             })}
@@ -460,8 +528,16 @@ export default function PageManagement() {
                                                     </div>
                                                 ))}
                                             </div>
+
                                             <div className="mt-8 flex justify-end">
-                                                <button onClick={handleSaveAssignment} disabled={actionLoading} className="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">{actionLoading ? "Saving..." : "Save Assignments"}</button>
+                                                <button
+                                                    onClick={handleSaveAssignment}
+                                                    disabled={actionLoading}
+                                                    className="px-6 py-3 bg-[#0b2532] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#0b2532]/20 hover:bg-[#0f3345] disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2"
+                                                >
+                                                    {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-floppy-disk" />}
+                                                    {actionLoading ? "Processing..." : "Save Page Assignments"}
+                                                </button>
                                             </div>
                                         </div>
                                     )}
@@ -474,46 +550,82 @@ export default function PageManagement() {
 
             {/* ➕/✏️ MODAL: ADD OR EDIT PAGE */}
             {showPageModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-5">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-slate-900">{editingPageId ? "Edit Page" : "Add New Page"}</h3>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl p-6 shadow-xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-slate-900">{editingPageId ? "Edit Master Page" : "Add New Page"}</h3>
                             <button
                                 type="button"
                                 onClick={() => { setShowPageModal(false); resetForm(); }}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 text-xl font-bold transition-all focus:outline-none"
-                                aria-label="Close Modal"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             >
-                                ×
+                                <i className="fa-solid fa-xmark text-lg" />
                             </button>
                         </div>
 
                         <form onSubmit={handleSavePage} className="space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Page Name *</label>
-                                    <input type="text" required placeholder="e.g. Leave Management" value={pageForm.pageName} onChange={e => setPageForm({ ...pageForm, pageName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Page Name *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. Leave Management"
+                                        value={pageForm.pageName}
+                                        onChange={e => setPageForm({ ...pageForm, pageName: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Page Link (URL) *</label>
-                                    <input type="text" required placeholder="e.g. /leave" value={pageForm.pageLink} onChange={e => setPageForm({ ...pageForm, pageLink: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Page Link (URL) *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. /leave"
+                                        value={pageForm.pageLink}
+                                        onChange={e => setPageForm({ ...pageForm, pageLink: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
+                                    />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Module Group (Type) *</label>
-                                    <input type="text" required placeholder="e.g. HR, Payroll" value={pageForm.pageType} onChange={e => setPageForm({ ...pageForm, pageType: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Module Group (Type) *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. HR, Payroll"
+                                        value={pageForm.pageType}
+                                        onChange={e => setPageForm({ ...pageForm, pageType: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Font Awesome Icon *</label>
-                                    <input type="text" required placeholder="e.g. fa-solid fa-users" value={pageForm.pageIcon} onChange={e => setPageForm({ ...pageForm, pageIcon: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all" />
-                                    <p className="text-[10px] text-slate-400 mt-1">Visit fontawesome.com for names</p>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Font Awesome Icon *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. fa-solid fa-users"
+                                        value={pageForm.pageIcon}
+                                        onChange={e => setPageForm({ ...pageForm, pageIcon: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
+                                    />
                                 </div>
                             </div>
-                            <div className="pt-4 flex justify-end gap-3 border-t border-slate-200/60 mt-4">
-                                <button type="button" onClick={() => { setShowPageModal(false); resetForm(); }} className="px-6 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-100 transition-all">Cancel</button>
-                                <button type="submit" disabled={actionLoading} className="px-8 py-3 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md hover:bg-amber-700 disabled:opacity-60 transition-all">
-                                    {actionLoading ? "Saving..." : (editingPageId ? "Update Page" : "Add New Page")}
+                            <div className="pt-4 flex gap-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowPageModal(false); resetForm(); }}
+                                    className="flex-1 py-2.5 bg-white text-slate-600 border border-slate-300 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="flex-1 py-2.5 bg-[#0b2836] text-white rounded-xl text-sm font-bold hover:bg-[#0f3345] transition-colors"
+                                >
+                                    {actionLoading ? "Processing..." : (editingPageId ? "Update Page" : "Save Page")}
                                 </button>
                             </div>
                         </form>
