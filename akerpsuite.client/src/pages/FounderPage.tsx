@@ -54,9 +54,18 @@ export default function FounderMessage() {
                     <Reveal delay={2} className="order-1 md:order-2">
                         <div className="relative mx-auto w-fit">
                             <div className="relative h-[190px] w-[190px] sm:h-[240px] sm:w-[240px] md:h-[280px] md:w-[280px]">
-                                <div className="group h-full w-full overflow-hidden rounded-full bg-chalk shadow-[0_18px_40px_-20px_rgba(33,29,23,0.4)]">
+                                {/* rotating dashed ring accent — matches Director section */}
+                                <svg
+                                    className="pointer-events-none absolute -inset-3 animate-[spin_30s_linear_infinite] text-gold-deep/25"
+                                    viewBox="0 0 100 100"
+                                    fill="none"
+                                >
+                                    <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="1" strokeDasharray="3 7" />
+                                </svg>
+
+                                <div className="group relative h-full w-full overflow-hidden rounded-full bg-chalk shadow-[0_18px_40px_-20px_rgba(33,29,23,0.4)]">
                                     <img
-                                        className="h-full w-full object-contain [filter:grayscale(0.15)] transition-[filter,transform] duration-300 group-hover:[filter:grayscale(0)] group-hover:scale-[1.06]"
+                                        className="h-full w-full object-cover [filter:grayscale(0.15)] transition-[filter,transform] duration-300 group-hover:[filter:grayscale(0)] group-hover:scale-[1.06]"
                                         src={founderPhoto}
                                         alt="Mrs. Asha Sharma, Founder of AKS Solar Systems Private Limited"
                                         loading="lazy"

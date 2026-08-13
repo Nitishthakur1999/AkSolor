@@ -1,4 +1,6 @@
 import Reveal from '../components/Reveal'
+import directorPhoto from '../assets/director_1.jpg'
+
 export default function DirectorMessage() {
     return (
         <section
@@ -47,24 +49,13 @@ export default function DirectorMessage() {
                                     <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="1" strokeDasharray="3 7" />
                                 </svg>
 
-                                {/*
-                                    Empty portrait placeholder — replace with:
+                                <div className="group relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-chalk shadow-[0_18px_40px_-20px_rgba(33,29,23,0.4)]">
                                     <img
-                                        className="h-full w-full object-contain [filter:grayscale(0.15)] transition-[filter,transform] duration-300 group-hover:[filter:grayscale(0)] group-hover:scale-[1.06]"
+                                        className="h-full w-full object-cover [filter:grayscale(0.15)] transition-[filter,transform] duration-300 group-hover:[filter:grayscale(0)] group-hover:scale-[1.06]"
                                         src={directorPhoto}
                                         alt="Vivek Grovar, Director of AKS Solar Systems Private Limited"
                                         loading="lazy"
                                     />
-                                */}
-                                <div className="group relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-chalk shadow-[0_18px_40px_-20px_rgba(33,29,23,0.4)]">
-                                    <svg
-                                        className="h-1/2 w-1/2 text-charcoal-soft/30"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                    >
-                                        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
-                                        <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                    </svg>
                                 </div>
                             </div>
                             <div className="mt-5 text-center">
