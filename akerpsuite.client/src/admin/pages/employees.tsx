@@ -18,8 +18,6 @@ export default function Employees() {
         }
     })();
 
-    // 🆕 Logged-in employee's own empId — used as approvedBy/createdBy for
-    // Promote / Increment / Mark-sent actions instead of hardcoding a user id.
     const loggedInEmpId = (() => {
         try {
             const token = localStorage.getItem("token");
@@ -142,10 +140,12 @@ export default function Employees() {
     };
 
     const [createForm, setCreateForm] = useState(initialFormState);
-    const [editForm, setEditForm] = useState({ empId: "", ...initialFormState });
+    const [editForm, setEditForm] = useState({ empId: "", empCode: "", ...initialFormState });
+   // const [editForm, setEditForm] = useState({ empId: "", ...initialFormState });
 
     // ✅ Real-time duplicate-field check state
     const emptyFieldCheckMessages = {
+        empCode: { type: "", text: "" },
         mobile: { type: "", text: "" },
         personalEmail: { type: "", text: "" },
         aadharNo: { type: "", text: "" },
@@ -363,6 +363,7 @@ export default function Employees() {
     const openEditModal = (emp) => {
         setEditForm({
             empId: emp.empId,
+            empCode: emp.empCode || "",
             firstName: emp.firstName || "",
             lastName: emp.lastName || "",
             fatherHusbandName: emp.fatherHusbandName || "",
@@ -385,18 +386,15 @@ export default function Employees() {
             passportNo: emp.passportNo || "",
             uanNo: emp.uanNo || "",
             esicNo: emp.esicNo || "",
-
             deptId: emp.deptId ? emp.deptId.toString() : "",
             desigId: emp.desigId ? emp.desigId.toString() : "",
             roleId: emp.roleId ? emp.roleId.toString() : "",
             reportingManager: emp.reportingManager ? emp.reportingManager.toString() : "",
-
             dateOfJoining: emp.dateOfJoining ? emp.dateOfJoining.split("T")[0] : "",
             employmentType: emp.employmentType || "Permanent",
             employmentStatus: emp.employmentStatus || "Active",
             category: emp.category || "",
             currentCtc: emp.currentCtc ? emp.currentCtc.toString() : "",
-
             probationEndDate: emp.probationEndDate ? emp.probationEndDate.split("T")[0] : "",
             confirmationDate: emp.confirmationDate ? emp.confirmationDate.split("T")[0] : ""
         });
@@ -406,7 +404,6 @@ export default function Employees() {
         setEditPhotoExtension(null);
         setEditPhotoError("");
         setEditPhotoPreview(emp.photoPath ? `${PHOTO_BASE_URL}${emp.photoPath}` : null);
-
         setActiveTab("personal");
         setShowEditModal(true);
     };
@@ -421,6 +418,7 @@ export default function Employees() {
         setActionLoading(true);
         try {
             const payload = {
+                empCode: editForm.empCode ? editForm.empCode.trim() : "",
                 firstName: editForm.firstName ? editForm.firstName.trim() : "",
                 lastName: editForm.lastName ? editForm.lastName.trim() : "",
                 fatherHusbandName: editForm.fatherHusbandName ? editForm.fatherHusbandName.trim() : null,
@@ -1341,6 +1339,39 @@ export default function Employees() {
 
                             {activeTab === "corporate" && (
                                 <div className="grid gap-5 sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Employee Code *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editForm.empCode}
+                                            onChange={e => {
+                                                const value = e.target.value.toUpperCase();
+                                                setEditForm({ ...editForm, empCode: value });
+                                                const isValidFormat = /^AKS-\d{3,}$/.test(value.trim());
+                                                const isDuplicate = employees.some(emp =>
+                                                    (emp.empCode || "").toUpperCase() === value.trim() &&
+                                                    emp.empId !== parseInt(editForm.empId, 10)
+                                                );
+                                                setFieldCheckMessages(prev => ({
+                                                    ...prev,
+                                                    empCode: !value.trim()
+                                                        ? { type: "", text: "" }
+                                                        : !isValidFormat
+                                                            ? { type: "error", text: "Format must be like AKS-001" }
+                                                            : isDuplicate
+                                                                ? { type: "error", text: "Employee code already in use!" }
+                                                                : { type: "success", text: "Available ✓" }
+                                                }));
+                                            }}
+                                            className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all focus:outline-none ${fieldCheckMessages.empCode?.type === "error" ? "border-rose-400 focus:ring-1 focus:ring-rose-400" : "border-slate-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"}`}
+                                        />
+                                        {fieldCheckMessages.empCode?.text && (
+                                            <p className={`text-[10px] mt-1.5 font-bold uppercase tracking-wide ${fieldCheckMessages.empCode.type === "error" ? "text-rose-600" : "text-emerald-600"}`}>
+                                                {fieldCheckMessages.empCode.text}
+                                            </p>
+                                        )}
+                                    </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Official Corporate Email *</label>
                                         <input

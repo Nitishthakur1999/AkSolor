@@ -37,12 +37,11 @@ namespace AkerpSuite.Server.Repositories
         Task<EmployeeResponseDto?> GetEmployeeByIdAsync(int employeeId);
         Task<bool> DeleteEmployeeAsync(int employeeId);
         Task<bool> ToggleEmployeeStatusAsync(int employeeId, string status);
-
-        //new methods
         Task<bool> EmailExistsAsync(string email);
         Task<int> GetNextEmpCodeNumberAsync();
         Task<string> GenerateUniqueUsernameAsync(string baseUsername);
         Task InitializeLeaveBalancesAsync(int empId, int year);
+        Task<bool> EmpCodeExistsAsync(string empCode, int excludeEmpId);
 
         #endregion
 
@@ -225,6 +224,7 @@ namespace AkerpSuite.Server.Repositories
         #region Issue offer latter and appointemt latter
         Task<dynamic?> GetCandidateLetterDataAsync(int candidateId);
         Task<dynamic?> GetEmployeeLetterDataByCandidateAsync(int candidateId);
+        Task<dynamic?> GetEmployeeLetterDataByEmployeeIdAsync(int employeeId);
 
         #endregion
 

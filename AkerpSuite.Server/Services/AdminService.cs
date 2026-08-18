@@ -23,7 +23,7 @@ namespace AkerpSuite.Server.Services
         private const string OfferTemplatePath = "Templates/Offer_Letter_Template.docx";
         private const string AppointmentTemplatePath = "Templates/Appointment_Letter_Template.docx";
         private const string RegularizationTemplatePath = "Templates/Regularization_of_Service_Template.docx";
-
+        private const string RelievingTemplatePath = "Templates/Relieving_Letter_Template.docx";
 
         public AdminService(
             IAdminRepositories repository,
@@ -278,20 +278,21 @@ namespace AkerpSuite.Server.Services
             if (employee == null)
                 throw new InvalidOperationException("Employee record target not identified.");
 
+            // ✅ NEW: EmpCode duplicate check (khud ko chhod ke)
+            if (!string.IsNullOrWhiteSpace(request.EmpCode) &&
+                await _repository.EmpCodeExistsAsync(request.EmpCode, employeeId))
+                throw new InvalidOperationException($"Employee code '{request.EmpCode}' already in use.");
+
             // ✅ FIX: Purane request.Photo ki jagah naya Base64 logic laga diya hai
             string updatedPhotoPath = currentPhotoPath;
 
             if (!string.IsNullOrWhiteSpace(request.PhotoBase64))
             {
                 string ext = !string.IsNullOrWhiteSpace(request.PhotoExtension) ? request.PhotoExtension : ".jpg";
-
-                // Naye overloaded method ka use karke file secure save karein
                 var resultPath = await _fileUploadHelper.SaveBase64FileAsync(request.PhotoBase64, ext, "employee-profile");
-
                 updatedPhotoPath = resultPath != null ? $"/{resultPath}" : currentPhotoPath;
             }
 
-            // Pass the parameters downstream safely to Dapper pipeline
             return await _repository.UpdateEmployeeAsync(employeeId, request, updatedPhotoPath);
         }
 
@@ -438,7 +439,6 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Designation Management
-
         public async Task<DesignationResponseDto> CreateDesignationAsync(DesignationRequestDto request)
         {
             var existing = await _repository.GetDesignationsAsync();
@@ -450,14 +450,6 @@ namespace AkerpSuite.Server.Services
             if (duplicateName)
                 throw new InvalidOperationException(
                     $"Designation '{request.DesignationName}' already exists.");
-
-            bool duplicateLevel = existing.Any(d =>
-                d.DeptId == request.DeptId &&
-                d.DesignationLevel == request.DesignationLevel);
-
-            if (duplicateLevel)
-                throw new InvalidOperationException(
-                    $"Designation level '{request.DesignationLevel}' already exists in this department.");
 
             var desigId = await _repository.CreateDesignationAsync(request);
 
@@ -482,22 +474,13 @@ namespace AkerpSuite.Server.Services
 
             bool duplicateName = existing.Any(d =>
                 d.DesigId != desigId &&
-                d.DeptId == request.DeptId &&                      // ✅ department-scoped check
+                d.DeptId == request.DeptId &&
                 string.Equals(d.DesignationName, request.DesignationName,
                     StringComparison.OrdinalIgnoreCase));
 
             if (duplicateName)
                 throw new InvalidOperationException(
                     $"Designation '{request.DesignationName}' already exists in this department.");
-
-            bool duplicateLevel = existing.Any(d =>
-                d.DesigId != desigId &&
-                d.DeptId == request.DeptId &&
-                d.DesignationLevel == request.DesignationLevel);
-
-            if (duplicateLevel)
-                throw new InvalidOperationException(
-                    $"Designation level '{request.DesignationLevel}' already exists in this department.");
 
             return await _repository.UpdateDesignationAsync(desigId, request);
         }
@@ -1453,6 +1436,30 @@ namespace AkerpSuite.Server.Services
 
             return _letterMerge.Merge(RegularizationTemplatePath, fields);
         }
+        public async Task<byte[]?> GenerateRelievingLetterAsync(int candidateId)
+        {
+            var emp = await _repository.GetEmployeeLetterDataByCandidateAsync(candidateId);
+            if (emp == null) return null;
+            if (emp.LastWorkingDate == null) return null;  
+
+            var fields = new Dictionary<string, string>
+            {
+                ["RelievingNumber"] = $"AKS/HR/{FiscalYear()}/{emp.EmpId:D3}",
+                ["RelievingDate"] = DateTime.Now.ToString("dd-MM-yyyy"),
+                ["EmployeeName"] = $"{emp.FirstName} {emp.LastName}",
+                ["FatherName"] = emp.FatherName ?? "",
+                ["AddressLine1"] = emp.AddressLine1 ?? "",
+                ["AddressLine2"] = emp.AddressLine2 ?? "",
+                ["Designation"] = emp.DesignationName ?? "",
+                ["JoiningDate"] = SafeDate(emp.DateOfJoining, "dd-MM-yyyy"),
+                ["LastWorkingDate"] = SafeDate(emp.LastWorkingDate, "dd-MM-yyyy"),
+                ["ResignationDate"] = SafeDate(emp.ResignationDate, "dd-MM-yyyy"),
+                ["ExitReason"] = emp.ExitReason ?? "",
+            };
+
+            return _letterMerge.Merge(RelievingTemplatePath, fields);
+        }
+
         #endregion
 
         #region Sunday work

@@ -19,7 +19,6 @@ namespace AkerpSuite.Server.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _service;
-
         //   private const string SuperAdminRoles = Roles.CMD + "," + Roles.Admin;
         private const string SuperAdminRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
         // ── HR Core management (Employee, Department, Designation, Attendance, Leave, Payroll) ──
@@ -65,8 +64,6 @@ namespace AkerpSuite.Server.Controllers
         #endregion
 
         #region Role Management (CRUD)
-        // 🔒 SECURITY FIX: pehle in endpoints pe koi Roles= restriction nahi thi —
-        // koi bhi logged-in user (Employee tak) roles bana/edit/delete kar sakta tha.
 
         [HttpPost("creteroles")]
         [Authorize(Roles = SuperAdminRoles)]
@@ -581,7 +578,7 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
-     
+
         [HttpGet("sunday-holiday-status/pdf")]
         [Authorize(Roles = HrManageRoles)]
         public async Task<IActionResult> DownloadSundayHolidayStatusPdf([FromQuery] int month, [FromQuery] int year)
@@ -1348,9 +1345,22 @@ namespace AkerpSuite.Server.Controllers
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 $"Regularization_Letter_{candidateId}.docx");
         }
+
+        // GET api/admin/candidates/5/relieving-letter
+        [HttpGet("candidates/{candidateId}/relieving-letter")]
+        [Authorize(Roles = HrManageRoles)]
+        public async Task<IActionResult> GetRelievingLetter(int candidateId)
+        {
+            var bytes = await _service.GenerateRelievingLetterAsync(candidateId);
+            if (bytes == null)
+                return NotFound(new { Success = false, Message = "Employee not found or exit details missing" });
+
+            return File(bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                $"Relieving_Letter_{candidateId}.docx");
+        }
+
         #endregion
-
-
 
     }
 }

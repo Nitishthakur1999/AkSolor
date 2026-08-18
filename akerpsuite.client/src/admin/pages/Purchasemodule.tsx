@@ -29,7 +29,6 @@ function StatusStamp({ status }) {
     );
 }
 
-// Draft -> Approved -> PartiallyReceived -> Completed, or -> Cancelled
 const NEXT_STATUS = {
     Draft: ["Approved", "Cancelled"],
     Approved: ["PartiallyReceived", "Completed", "Cancelled"],
@@ -338,11 +337,7 @@ function PrintableDocument({ doc, companyName = "AKS SOLAR SYSTEMS PRIVATE LIMIT
     );
 }
 
-// ---------------------------------------------------------------------------
-// Word (.doc) export — inline-styled HTML so MS Word renders it correctly.
-// Tailwind classes don't survive into Word, so this builds a parallel,
-// fully inline-styled HTML string from the same `doc` shape.
-// ---------------------------------------------------------------------------
+
 function docToWordHtml(doc, companyName = "AKS SOLAR SYSTEMS PRIVATE LIMITED") {
     const shipToFirst = doc.partyOrder === "shipTo-first";
     const middleParty = shipToFirst
@@ -417,6 +412,9 @@ function docToWordHtml(doc, companyName = "AKS SOLAR SYSTEMS PRIVATE LIMITED") {
 <style>
   body { font-family: Calibri, Arial, sans-serif; font-size: 11px; color:#1e293b; }
   table { border-collapse: collapse; width: 100%; }
+  @media print {
+    @page { margin: 12mm; }
+  }
 </style>
 </head>
 <body>
@@ -513,6 +511,42 @@ function downloadAsWord(doc, companyName = "AKS SOLAR SYSTEMS PRIVATE LIMITED") 
     }
 }
 
+
+function printDocInNewWindow(doc, companyName = "AKS SOLAR SYSTEMS PRIVATE LIMITED") {
+    if (!doc) {
+        alert("Document data not available yet — please try again.");
+        return;
+    }
+    const html = docToWordHtml(doc, companyName);
+
+    // Hidden iframe — no new tab, no visible switch. Print dialog opens on current page.
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc_ = iframe.contentWindow.document;
+    doc_.open();
+    doc_.write(html);
+    doc_.close();
+
+    iframe.onload = () => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    };
+
+    // cleanup after print dialog closes (or after a delay as fallback)
+    const cleanup = () => {
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+    };
+    iframe.contentWindow.onafterprint = cleanup;
+    setTimeout(cleanup, 10000); // fallback safety
+}
+
 function PrintDocumentModal({ doc, onClose }) {
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto p-4 animate-in fade-in duration-200">
@@ -527,7 +561,7 @@ function PrintDocumentModal({ doc, onClose }) {
                             <i className="fa-solid fa-file-word" /> Download Word
                         </button>
                         <button
-                            onClick={() => window.print()}
+                            onClick={() => printDocInNewWindow(doc)}
                             className="bg-[#0b2836] text-white rounded-xl px-5 py-2 text-xs font-bold hover:bg-[#0f3345] shadow-lg shadow-[#0b2836]/20 transition-all flex items-center gap-2"
                         >
                             <i className="fa-solid fa-print" /> Print / Save PDF
@@ -827,7 +861,7 @@ function PurchaseOrdersTab() {
         try {
             const res = await adminService.getPurchaseOrderById(poId);
             const po = one(res);
-            setPrintDoc(poToPrintDoc(po));
+            printDocInNewWindow(poToPrintDoc(po));   // seedha print dialog, preview modal nahi
         } catch (err) {
             console.error("Failed to load PO for printing", err);
         } finally {
@@ -1559,12 +1593,9 @@ export default function PurchaseModule() {
                         </button>
                     ))}
                 </div>
-
-                {/* ── Tab Content ── */}
                 <ActiveComponent />
             </div>
         </div>
     );
 }
-
 export { PrintableDocument, PrintDocumentModal, amountInWords, docToWordHtml, downloadAsWord };

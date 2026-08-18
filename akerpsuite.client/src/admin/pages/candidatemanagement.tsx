@@ -176,10 +176,10 @@ function RowActions({ primary, secondary, busy }) {
                     disabled={busy}
                     title={primary.fullLabel || primary.label}
                     className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-[11px] font-bold uppercase tracking-wider rounded-lg px-3 py-2 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${primary.danger
-                            ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100"
-                            : primary.subtle
-                                ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
-                                : "bg-[#0b2836] text-white hover:bg-[#0f3345] shadow-[#0b2836]/20"
+                        ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100"
+                        : primary.subtle
+                            ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                            : "bg-[#0b2836] text-white hover:bg-[#0f3345] shadow-[#0b2836]/20"
                         }`}
                 >
                     {primary.icon}
@@ -261,8 +261,8 @@ function ToastStack({ toasts, onDismiss }) {
                 <div key={t.id}
                     onClick={() => onDismiss(t.id)}
                     className={`cursor-pointer rounded-xl shadow-2xl border px-5 py-3.5 text-sm font-bold pointer-events-auto transition-all animate-in slide-in-from-right-8 duration-300 flex items-center gap-3 ${t.type === "error"
-                            ? "bg-rose-600 border-rose-500 text-white"
-                            : "bg-emerald-600 border-emerald-500 text-white"
+                        ? "bg-rose-600 border-rose-500 text-white"
+                        : "bg-emerald-600 border-emerald-500 text-white"
                         }`}>
                     <i className={`fa-solid ${t.type === "error" ? "fa-circle-exclamation" : "fa-circle-check"} text-lg`} />
                     {t.message}
@@ -475,6 +475,19 @@ export default function CandidateManagement() {
             setBusyCandidateId(null);
         }
     };
+    // 🆕 Relieving letter — pulled by employeeId (candidate.employeeId / candidate.empId),
+    // since backend resolves candidateId -> linked employee via source_candidate_id.
+    const handleDownloadRelievingLetter = async (candidate) => {
+        setBusyCandidateId(candidate.candidateId);
+        try {
+            await adminService.downloadRelievingLetter(candidate.candidateId);
+        } catch (err) {
+            console.error(err);
+            notify("error", "Couldn't generate the relieving letter. Please try again.");
+        } finally {
+            setBusyCandidateId(null);
+        }
+    };
     const openModal = async (type, candidate) => {
         setSelectedCandidate(candidate);
         setFormData(
@@ -683,6 +696,8 @@ export default function CandidateManagement() {
                 onClick: () => handleDownloadAppointmentLetter(c),
             };
             secondary.push({ label: "Regularization of Service", icon: <Icon.Calendar />, onClick: () => openModal("regularization", c) });
+            // 🆕 Relieving Letter — only meaningful once the candidate has become an employee
+            secondary.push({ label: "Relieving Letter", icon: <Icon.Download />, onClick: () => handleDownloadRelievingLetter(c) });
         }
         if (!["Rejected", "Joined", "Offer"].includes(c.status)) {
             secondary.push({ label: "Reject Candidate", icon: <i className="fa-solid fa-ban" />, onClick: () => handleSimpleStatusUpdate(c.candidateId, "Rejected"), danger: true });

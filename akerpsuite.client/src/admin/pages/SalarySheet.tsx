@@ -172,9 +172,8 @@ export default function SalarySheet() {
             </div>
         );
     }
-
     return (
-        <div className="space-y-5 pb-10 font-sans relative z-0">
+        <>
 
             {/* ── Premium Header Section ── */}
             <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm relative overflow-hidden print:hidden">
@@ -478,7 +477,7 @@ export default function SalarySheet() {
                     <div className="border-t border-slate-400 pt-1 font-semibold text-slate-700">Authorized Signatory</div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 

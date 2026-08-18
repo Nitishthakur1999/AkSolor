@@ -315,6 +315,7 @@ namespace AkerpSuite.Server.Repositories
             var parameters = new DynamicParameters();
 
             parameters.Add("p_emp_id", employeeId);
+            parameters.Add("p_emp_code", request.EmpCode);
             parameters.Add("p_first_name", request.FirstName);
             parameters.Add("p_last_name", request.LastName);
             parameters.Add("p_father_husband_name", request.FatherHusbandName);   // ✅ NEW
@@ -392,9 +393,9 @@ namespace AkerpSuite.Server.Repositories
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-SELECT COALESCE(MAX(CAST(SUBSTRING(emp_code, 5) AS UNSIGNED)), 0) + 1 
-FROM employees 
-WHERE emp_code LIKE 'AKS-%'";
+            SELECT COALESCE(MAX(CAST(SUBSTRING(emp_code, 5) AS UNSIGNED)), 0) + 1 
+            FROM employees 
+            WHERE emp_code LIKE 'AKS-%'";
             return await connection.ExecuteScalarAsync<int>(sql);
         }
 
@@ -421,10 +422,10 @@ WHERE emp_code LIKE 'AKS-%'";
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-INSERT INTO leave_balances (emp_id, leave_type_id, year, total_leaves, used_leaves, balance_leaves)
-SELECT @EmpId, leave_type_id, @Year, max_per_year, 0, max_per_year
-FROM leave_types
-WHERE is_active = 1";
+            INSERT INTO leave_balances (emp_id, leave_type_id, year, total_leaves, used_leaves, balance_leaves)
+            SELECT @EmpId, leave_type_id, @Year, max_per_year, 0, max_per_year
+            FROM leave_types
+            WHERE is_active = 1";
 
             await connection.ExecuteAsync(sql, new { EmpId = empId, Year = year });
         }
@@ -467,6 +468,14 @@ WHERE is_active = 1";
                 commandType: CommandType.StoredProcedure);
 
             return affectedRows > 0;
+        }
+
+        public async Task<bool> EmpCodeExistsAsync(string empCode, int excludeEmpId)
+        {
+            using var connection = _context.CreateConnection();
+            const string sql = "SELECT COUNT(1) FROM employees WHERE emp_code = @EmpCode AND emp_id != @ExcludeEmpId";
+            var count = await connection.ExecuteScalarAsync<int>(sql, new { EmpCode = empCode, ExcludeEmpId = excludeEmpId });
+            return count > 0;
         }
 
         #endregion
@@ -550,7 +559,6 @@ WHERE is_active = 1";
         #endregion
 
         #region Designation Management
-
         public async Task<int> CreateDesignationAsync(DesignationRequestDto request)
         {
             using var connection = _context.CreateConnection();
@@ -1804,6 +1812,14 @@ WHERE is_active = 1";
             return await conn.QueryFirstOrDefaultAsync(
                 "sp_GetEmployeeLetterDataByCandidate",
                 new { p_CandidateId = candidateId },
+                commandType: CommandType.StoredProcedure);
+        }
+        public async Task<dynamic?> GetEmployeeLetterDataByEmployeeIdAsync(int employeeId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync(
+                "sp_GetEmployeeLetterDataByEmployeeId",
+                new { p_EmployeeId = employeeId },
                 commandType: CommandType.StoredProcedure);
         }
 

@@ -215,6 +215,7 @@ namespace AkerpSuite.Server.Services
         Task<byte[]?> GenerateOfferLetterAsync(int candidateId);
         Task<byte[]?> GenerateAppointmentLetterAsync(int candidateId);
         Task<byte[]?> GenerateRegularizationLetterAsync(int candidateId, DateTime effectiveDate);
+        Task<byte[]?> GenerateRelievingLetterAsync(int candidateId);
 
         #endregion
 

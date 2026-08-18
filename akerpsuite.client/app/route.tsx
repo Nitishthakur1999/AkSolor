@@ -3,7 +3,6 @@ import { useState } from "react";
 import FoundersMessage from "@/pages/FounderPage";
 import CmdMessage from "@/pages/CmdmassagePage";
 import DirectorMessage from "@/pages/DirectormassagePage";
-
 import HomeLayout from "@/layout/HomeLayout";
 import HomePage from "@/pages/HomePage";
 import AboutPage from "@/pages/AboutPage";

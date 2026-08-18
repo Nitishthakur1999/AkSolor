@@ -185,10 +185,21 @@ namespace AkerpSuite.Server.Controllers
 
         #region Self-Service – Profile, Leave, Attendance, Payslip, Loans, Documents & HR Reports
 
+        //[HttpGet("profile")]
+        //public async Task<IActionResult> GetMyProfile()
+        //{
+        //    var empId = User.GetEmpId();
+        //    var result = await _service.GetMyProfileAsync(empId);
+
+        //    return Ok(ApiResponseDto<SelfProfileResponseDto>.Ok(result));
+        //}
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
-            var empId = User.GetEmpId();
+            if (!User.TryGetEmpId(out var empId))
+                return StatusCode(403, ApiResponseDto<SelfProfileResponseDto>.Fail(
+                    "This account is not linked to an employee record, so Self-Service is not available."));
+
             var result = await _service.GetMyProfileAsync(empId);
 
             return Ok(ApiResponseDto<SelfProfileResponseDto>.Ok(result));
@@ -479,8 +490,6 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Message = "Survey scheduled successfully", SurveyId = id });
         }
 
-        // Feasible -> lead auto-moves to Proposal stage.
-        // Not feasible -> lead reverted to master data with a red flag (per doc).
         [HttpPatch("surveys/feasibility")]
         [Authorize(Roles = SalesWriteRoles)]
         public async Task<IActionResult> UpdateSurveyFeasibility([FromBody] SalesSurveyFeasibilityRequestDto request)

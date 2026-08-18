@@ -51,6 +51,9 @@ export default function Attendance() {
     const [pdfDownloading, setPdfDownloading] = useState(false);
     const [activeTab, setActiveTab] = useState(isCMD ? "dashboard" : "logs");
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [dateFilter, setDateFilter] = useState("");
+
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
     const [showMarkModal, setShowMarkModal] = useState(false);
@@ -116,6 +119,10 @@ export default function Attendance() {
     useEffect(() => {
         setSearchTerm("");
         setCurrentPage(1);
+        if (activeTab !== "logs") {
+            setStatusFilter("");
+            setDateFilter("");
+        }
     }, [activeTab]);
 
     useEffect(() => {
@@ -625,7 +632,12 @@ export default function Attendance() {
         return list.filter((row) => Number(row.empId) === loggedInEmpId);
     };
 
-    const filteredLogs = filterBySearch(scopeToEmployee(attendanceLogs), ["fullName", "status", "source"]);
+    const filteredLogsBase = attendanceLogs.filter((log) => {
+        const statusMatch = !statusFilter || log.status === statusFilter;
+        const dateMatch = !dateFilter || (log.attDate || "").slice(0, 10) === dateFilter;
+        return statusMatch && dateMatch;
+    });
+    const filteredLogs = filterBySearch(scopeToEmployee(filteredLogsBase), ["fullName", "status", "source"]);
     const filteredRequests = filterBySearch(scopeToEmployee(regRequests), ["fullName", "reason", "status"]);
     const filteredSummaries = filterBySearch(scopeToEmployee(summaries), ["fullName"]);
     const sundayDateColumns = (
@@ -836,24 +848,56 @@ export default function Attendance() {
                 ) : activeTab === "dashboard" && isCMD ? (
                     <div className="p-6">
                         <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Executive Overview</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                            <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
-                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
-                                <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab("logs");
+                                        setStatusFilter("");
+                                        setDateFilter(new Date().toISOString().split("T")[0]);
+                                    }}
+                                    className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer"
+                                >
+                                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
+                                    <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab("logs");
+                                        setStatusFilter("Present");
+                                        setDateFilter(new Date().toISOString().split("T")[0]);
+                                    }}
+                                    className="p-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 shadow-sm hover:shadow-md hover:bg-emerald-50 transition-all text-left cursor-pointer"
+                                >
+                                    <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Present Today</p>
+                                    <p className="text-3xl font-black text-emerald-700">{dashboardStats?.presentToday || 0}</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab("logs");
+                                        setStatusFilter("Absent");
+                                        setDateFilter(new Date().toISOString().split("T")[0]);
+                                    }}
+                                    className="p-5 rounded-2xl border border-rose-100 bg-rose-50/50 shadow-sm hover:shadow-md hover:bg-rose-50 transition-all text-left cursor-pointer"
+                                >
+                                    <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider mb-1">Absent Today</p>
+                                    <p className="text-3xl font-black text-rose-700">{dashboardStats?.absentToday || 0}</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab("logs");
+                                        setStatusFilter("Late");
+                                        setDateFilter(new Date().toISOString().split("T")[0]);
+                                    }}
+                                    className="p-5 rounded-2xl border border-amber-100 bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer"
+                                >
+                                    <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
+                                    <p className="text-3xl font-black text-amber-700">{dashboardStats?.lateToday || 0}</p>
+                                </button>
                             </div>
-                            <div className="p-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 shadow-sm hover:shadow-md hover:bg-emerald-50 transition-all">
-                                <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Present Today</p>
-                                <p className="text-3xl font-black text-emerald-700">{dashboardStats?.presentToday || 0}</p>
-                            </div>
-                            <div className="p-5 rounded-2xl border border-rose-100 bg-rose-50/50 shadow-sm hover:shadow-md hover:bg-rose-50 transition-all">
-                                <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider mb-1">Absent Today</p>
-                                <p className="text-3xl font-black text-rose-700">{dashboardStats?.absentToday || 0}</p>
-                            </div>
-                            <div className="p-5 rounded-2xl border border-amber-100 bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all">
-                                <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
-                                <p className="text-3xl font-black text-amber-700">{dashboardStats?.lateToday || 0}</p>
-                            </div>
-                        </div>
                         <div className="p-10 text-center text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
                             <i className="fa-solid fa-chart-line text-2xl mb-2 text-slate-300"></i>
                             <p>More executive charts and operational trends will appear here...</p>

@@ -1,58 +1,58 @@
 import { useState, useEffect } from "react";
 import { adminService } from "@/services/adminService";
 
-// ── Small inline icon set (no external icon font dependency) ──
+// ── Small inline icon set ──
 const Icon = {
-    Plus: (p) => (
+    Plus: (p: any) => (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" {...p}>
             <path d="M12 5v14M5 12h14" />
         </svg>
     ),
-    Calendar: (p) => (
+    Calendar: (p: any) => (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
             <rect x="3" y="5" width="18" height="16" rx="2" />
             <path d="M8 3v4M16 3v4M3 10h18" />
         </svg>
     ),
-    Close: (p) => (
+    Close: (p: any) => (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" {...p}>
             <path d="M18 6 6 18M6 6l12 12" />
         </svg>
     ),
-    Inbox: (p) => (
+    Inbox: (p: any) => (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
             <path d="M22 12h-6l-2 3h-4l-2-3H2" />
             <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" />
         </svg>
     ),
-    Check: (p) => (
+    Check: (p: any) => (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}>
             <path d="M20 6 9 17l-5-5" />
         </svg>
     ),
 };
 
-const STATUS_DOT = {
+const STATUS_DOT: Record<string, string> = {
     Approved: "bg-emerald-500",
     Pending: "bg-amber-500",
-    Rejected: "bg-red-500",
+    Rejected: "bg-rose-500",
 };
 
-const STATUS_BADGE = {
-    Approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Pending: "bg-amber-50 text-amber-700 border-amber-200",
-    Rejected: "bg-red-50 text-red-700 border-red-200",
+const STATUS_BADGE: Record<string, string> = {
+    Approved: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+    Pending: "bg-amber-50 text-amber-700 border-amber-200/50",
+    Rejected: "bg-rose-50 text-rose-700 border-rose-200/50",
 };
 
 const LEAVE_ACCENTS = [
-    { ring: "#6366f1", wash: "bg-amber-50", text: "text-amber-600" },
-    { ring: "#0d9488", wash: "bg-teal-50", text: "text-teal-600" },
-    { ring: "#d946ef", wash: "bg-fuchsia-50", text: "text-fuchsia-600" },
     { ring: "#f59e0b", wash: "bg-amber-50", text: "text-amber-600" },
+    { ring: "#3b82f6", wash: "bg-blue-50", text: "text-blue-600" },
+    { ring: "#10b981", wash: "bg-emerald-50", text: "text-emerald-600" },
+    { ring: "#8b5cf6", wash: "bg-purple-50", text: "text-purple-600" },
 ];
 
-// Circular progress ring — encodes balance-used-of-total visually rather than decoratively
-function BalanceRing({ used, total, accent }) {
+// Circular progress ring
+function BalanceRing({ used, total, accent }: { used: number; total: number; accent: string }) {
     const size = 56;
     const stroke = 5;
     const radius = (size - stroke) / 2;
@@ -85,11 +85,7 @@ function BalanceCardSkeleton() {
     );
 }
 
-// A leave type counts as "inactive" if it's flagged that way with any of the
-// field names the backend might use (isActive boolean, or a status string).
-// Defensive on purpose — we only want to *hide*, never accidentally hide
-// everything just because a field name doesn't match what we expect.
-const isLeaveTypeActive = (t) => {
+const isLeaveTypeActive = (t: any) => {
     if (typeof t.isActive === "boolean") return t.isActive;
     if (typeof t.IsActive === "boolean") return t.IsActive;
     if (typeof t.status === "string") return t.status.toLowerCase() !== "inactive";
@@ -97,10 +93,14 @@ const isLeaveTypeActive = (t) => {
     return true;
 };
 
+// Common Input Styles
+const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm";
+const labelClass = "block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1.5 ml-1";
+
 export default function MyLeaves() {
-    const [balances, setBalances] = useState([]);
-    const [leaveTypes, setLeaveTypes] = useState([]); // NEW — independent source for the dropdown
-    const [requests, setRequests] = useState([]);
+    const [balances, setBalances] = useState<any[]>([]);
+    const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+    const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [requestsLoading, setRequestsLoading] = useState(false);
 
@@ -120,18 +120,17 @@ export default function MyLeaves() {
         reason: "",
     });
 
-    // Only the leave types HR has marked Active show up in the "your balances"
-    // cards above the table. Everything else about leaveTypes (e.g. the Apply
-    // Leave dropdown) still uses the full, unfiltered list.
     const activeLeaveTypes = leaveTypes.filter(isLeaveTypeActive);
 
     useEffect(() => {
         fetchLeaveData();
-        fetchLeaveTypes(); // NEW — runs once, does not depend on balance init
+        fetchLeaveTypes();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         fetchLeaveRequests();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filterYear, filterMonth, filterStatus]);
 
     const fetchLeaveData = async () => {
@@ -140,7 +139,6 @@ export default function MyLeaves() {
         setLoading(false);
     };
 
-    // 1. Balance API Bind
     const fetchLeaveBalance = async () => {
         try {
             const res = await adminService.getMyLeaveBalance(filterYear);
@@ -152,11 +150,6 @@ export default function MyLeaves() {
         }
     };
 
-    // NEW — Leave Types API Bind (GET /api/leave/types)
-    // This is what actually drives the "Apply Leave" dropdown. It's independent
-    // of whether an admin has "Initialize Balance"'d this employee for the
-    // selected year — so the dropdown is never empty just because balance
-    // setup hasn't happened yet.
     const fetchLeaveTypes = async () => {
         try {
             const res = await adminService.getLeaveTypes();
@@ -168,10 +161,10 @@ export default function MyLeaves() {
         }
     };
 
-    // 2. Requests API Bind
     const fetchLeaveRequests = async () => {
         setRequestsLoading(true);
         try {
+            // FIXED: Explicitly typed queryParams to allow adding arbitrary keys
             const queryParams: Record<string, any> = { year: filterYear };
             if (filterMonth) queryParams.month = filterMonth;
             if (filterStatus) queryParams.status = filterStatus;
@@ -187,8 +180,7 @@ export default function MyLeaves() {
         }
     };
 
-    // 3. Apply Leave submit
-    const handleApplyLeave = async (e) => {
+    const handleApplyLeave = async (e: React.FormEvent) => {
         e.preventDefault();
         setApplyError("");
 
@@ -197,8 +189,6 @@ export default function MyLeaves() {
             return;
         }
 
-        // TotalDays is a required decimal on SelfLeaveRequestDto — compute it
-        // from the date range (inclusive) since the form doesn't collect it directly.
         const msPerDay = 1000 * 60 * 60 * 24;
         const from = new Date(form.fromDate);
         const to = new Date(form.toDate);
@@ -223,9 +213,6 @@ export default function MyLeaves() {
 
             if (res.Success || res.success) {
                 const applied = res.Data || res.data;
-
-                // Bind the API response straight into the table — instant feedback,
-                // no need to wait for a full refetch.
                 setRequests((prev) => [applied, ...prev]);
 
                 setShowApplyModal(false);
@@ -233,12 +220,11 @@ export default function MyLeaves() {
                 setApplySuccess(`Leave request for ${applied.leaveName} submitted successfully.`);
                 setTimeout(() => setApplySuccess(""), 3000);
 
-                // Balance changed (usedLeaves/balanceLeaves) — refresh it in the background
                 fetchLeaveBalance();
             } else {
                 setApplyError(res.Message || res.message || "Failed to submit leave request.");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error applying leave:", error);
             setApplyError(error.message || "Something went wrong while submitting your leave request.");
         } finally {
@@ -246,7 +232,6 @@ export default function MyLeaves() {
         }
     };
 
-    // Live day-count preview shown inside the modal as dates are picked
     const previewDays = (() => {
         if (!form.fromDate || !form.toDate) return null;
         const msPerDay = 1000 * 60 * 60 * 24;
@@ -255,61 +240,57 @@ export default function MyLeaves() {
     })();
 
     return (
-        <div className="p-6 max-w-6xl mx-auto space-y-8">
-            {/* ── Header & Apply Button ── */}
-            <div className="flex justify-between items-end flex-wrap gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">My Leaves</h1>
-                    <p className="text-sm text-slate-500 mt-1">Manage your leave balances and request history.</p>
+        <div className="space-y-6 font-sans relative z-0 pb-10">
+
+            {/* ── Premium Header Section ── */}
+            <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-sm relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0 border border-white/5 backdrop-blur-sm">
+                        <i className="fa-solid fa-calendar-minus text-xl text-amber-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">My Leaves</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">Manage your leave balances and request history.</p>
+                    </div>
                 </div>
-                <button
-                    onClick={() => setShowApplyModal(true)}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-amber-200 transition-all active:scale-[0.98]"
-                >
-                    <Icon.Plus className="w-4 h-4" />
-                    Apply Leave
-                </button>
+                <div className="relative z-10 w-full sm:w-auto">
+                    <button
+                        onClick={() => setShowApplyModal(true)}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-amber-400 text-[#0b2836] font-bold rounded-xl text-xs shadow-md shadow-amber-400/20 hover:bg-amber-500 transition-all flex items-center justify-center gap-2"
+                    >
+                        <i className="fa-solid fa-plus" /> Apply Leave
+                    </button>
+                </div>
             </div>
 
             {applySuccess && (
-                <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium px-4 py-3 rounded-xl animate-in fade-in duration-300">
-                    <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                        <Icon.Check className="w-3 h-3" />
-                    </span>
-                    {applySuccess}
+                <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold px-5 py-3.5 rounded-xl shadow-sm animate-in fade-in duration-300">
+                    <i className="fa-solid fa-circle-check text-lg" /> {applySuccess}
                 </div>
             )}
 
             {/* ── Leave Balances (Cards with progress rings) ── */}
-            {/* Only Active leave types are shown here — Inactive ones (e.g. a leave
-                type HR turned off) are filtered out via activeLeaveTypes. */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {loading ? (
-                    Array.from({ length: 3 }).map((_, i) => <BalanceCardSkeleton key={i} />)
+                    Array.from({ length: 4 }).map((_, i) => <BalanceCardSkeleton key={i} />)
                 ) : activeLeaveTypes.length === 0 ? (
-                    <div className="md:col-span-3 bg-white rounded-2xl border border-dashed border-slate-200 py-8 text-center text-slate-400 text-sm">
-                        No leave types configured yet. Contact HR/Admin.
+                    <div className="lg:col-span-4 bg-white rounded-2xl border border-dashed border-slate-200 py-10 flex flex-col items-center justify-center text-center shadow-sm">
+                        <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                            <i className="fa-solid fa-calendar-xmark text-2xl text-slate-300" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-500">No leave types configured yet.</p>
+                        <p className="text-xs font-medium text-slate-400 mt-1">Please contact your HR or Administrator.</p>
                     </div>
                 ) : (
-                    // 🆕 Har active leaveType ke liye card dikhao — chahe balance initialize hua ho ya nahi.
-                    // Isse HR ke naye leave type add karte hi wo turant yahan dikhega. Inactive leave
-                    // types yahan bilkul nahi dikhaye jaate (activeLeaveTypes already filter kar chuka hai).
                     activeLeaveTypes.map((t, i) => {
                         const accent = LEAVE_ACCENTS[i % LEAVE_ACCENTS.length];
-                        const b = balances.find((bal) => bal.leaveTypeId === t.leaveTypeId);
+                        const b = balances.find((bal: any) => bal.leaveTypeId === t.leaveTypeId);
 
                         const pendingDays = requests
-                            .filter((r) => r.leaveTypeId === t.leaveTypeId && r.status === "Pending")
-                            .reduce((sum, r) => sum + Number(r.totalDays || 0), 0);
+                            .filter((r: any) => r.leaveTypeId === t.leaveTypeId && r.status === "Pending")
+                            .reduce((sum, r: any) => sum + Number(r.totalDays || 0), 0);
 
-                        // 🆕 Agar HR ne is employee ke liye is leave type ka balance abhi tak
-                        // "Initialize Balance" se initialize nahi kiya, to yahan ek default/synthetic
-                        // balance bana lo (poora quota available, 0 used) — leave type ke apne
-                        // maxPerYear se. Isse employee ko "contact HR" placeholder ki jagah turant
-                        // apna leave quota dikh jaata hai, chahe HR ne abhi tak record initialize
-                        // kiya ho ya nahi. Actual applied/approved leaves already `requests` se
-                        // pendingDays ke through reflect ho rahe hain upar; agar zaroorat pade to
-                        // yahan bhi approved requests ka totalDays minus kiya ja sakta hai.
                         const displayBalance = b ?? {
                             leaveName: t.leaveName,
                             totalLeaves: t.maxPerYear ?? 0,
@@ -318,25 +299,27 @@ export default function MyLeaves() {
                         };
 
                         return (
-                            <div key={`leave-${t.leaveTypeId}`} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all">
-                                <div className={`relative flex items-center justify-center rounded-full ${accent.wash}`}>
-                                    <BalanceRing used={displayBalance.usedLeaves} total={displayBalance.totalLeaves} accent={accent.ring} />
-                                    <span className={`absolute text-[13px] font-bold ${accent.text}`}>
-                                        {displayBalance.balanceLeaves}
-                                    </span>
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-bold text-slate-700 truncate">{displayBalance.leaveName}</p>
-                                    <p className="text-xs text-slate-400 mt-0.5">
-                                        {displayBalance.balanceLeaves} of {displayBalance.totalLeaves} left · {displayBalance.usedLeaves} used
-                                    </p>
-                                    {pendingDays > 0 && (
-                                        <p className="text-[11px] text-amber-600 font-semibold mt-1 inline-flex items-center gap-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                            {pendingDays} day(s) pending approval
+                            <div key={`leave-${t.leaveTypeId}`} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className={`relative flex items-center justify-center rounded-full ${accent.wash}`}>
+                                        <BalanceRing used={displayBalance.usedLeaves} total={displayBalance.totalLeaves} accent={accent.ring} />
+                                        <span className={`absolute text-[13px] font-bold ${accent.text}`}>
+                                            {displayBalance.balanceLeaves}
+                                        </span>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-slate-800 truncate">{displayBalance.leaveName}</p>
+                                        <p className="text-xs font-medium text-slate-400 mt-1">
+                                            {displayBalance.totalLeaves} total &middot; {displayBalance.usedLeaves} used
                                         </p>
-                                    )}
+                                    </div>
                                 </div>
+                                {pendingDays > 0 && (
+                                    <div className="bg-amber-50/50 border border-amber-100 rounded-lg py-1.5 px-3 flex items-center justify-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">{pendingDays} day(s) pending</span>
+                                    </div>
+                                )}
                             </div>
                         );
                     })
@@ -344,53 +327,60 @@ export default function MyLeaves() {
             </div>
 
             {/* ── Leave Requests Table Section ── */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap items-center gap-3">
-                    <select
-                        value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}
-                        className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
-                    >
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
-                    </select>
-                    <select
-                        value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
-                        className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
-                    >
-                        <option value="">All Months</option>
-                        <option value="1">January</option>
-                        <option value="2">February</option>
-                        <option value="3">March</option>
-                        <option value="4">April</option>
-                        <option value="5">May</option>
-                        <option value="6">June</option>
-                        <option value="7">July</option>
-                        <option value="8">August</option>
-                        <option value="9">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
-                    </select>
-
-                    {/* Status filter as pill toggle group instead of a plain select */}
-                    <div className="flex items-center gap-1.5 ml-auto bg-white border border-slate-200 rounded-lg p-1">
-                        {["", "Pending", "Approved", "Rejected"].map((s) => (
-                            <button
-                                key={s || "all"}
-                                onClick={() => setFilterStatus(s)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${filterStatus === s
-                                    ? "bg-amber-600 text-white shadow-sm"
-                                    : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                            >
-                                {s || "All"}
-                            </button>
-                        ))}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-end gap-4">
+                    <div className="w-32">
+                        <label className={labelClass}>Year</label>
+                        <select
+                            value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}
+                            className={`${inputClass} cursor-pointer appearance-none`}
+                        >
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                    <div className="w-36">
+                        <label className={labelClass}>Month</label>
+                        <select
+                            value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
+                            className={`${inputClass} cursor-pointer appearance-none`}
+                        >
+                            <option value="">All Months</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div className="flex-1 min-w-[200px] flex justify-end">
+                        <div className="bg-white border border-slate-200 rounded-xl p-1 flex shadow-sm w-full sm:w-auto">
+                            {["", "Pending", "Approved", "Rejected"].map((s) => (
+                                <button
+                                    key={s || "all"}
+                                    onClick={() => setFilterStatus(s)}
+                                    className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${filterStatus === s
+                                            ? "bg-amber-500 text-white shadow-md"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                        }`}
+                                >
+                                    {s || "All"}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+
+                <div className="overflow-x-auto min-h-[300px]">
+                    <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+                        <thead className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-4">Leave Type</th>
                                 <th className="px-6 py-4">Duration</th>
@@ -399,38 +389,42 @@ export default function MyLeaves() {
                                 <th className="px-6 py-4 text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                             {requestsLoading ? (
-                                Array.from({ length: 3 }).map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td className="px-6 py-4"><div className="h-3 w-24 bg-slate-100 rounded" /></td>
-                                        <td className="px-6 py-4"><div className="h-3 w-32 bg-slate-100 rounded" /></td>
-                                        <td className="px-6 py-4"><div className="h-3 w-10 bg-slate-100 rounded" /></td>
-                                        <td className="px-6 py-4"><div className="h-3 w-40 bg-slate-100 rounded" /></td>
-                                        <td className="px-6 py-4 text-right"><div className="h-3 w-16 bg-slate-100 rounded ml-auto" /></td>
-                                    </tr>
-                                ))
-                            ) : requests.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-14">
-                                        <div className="flex flex-col items-center gap-2 text-slate-400">
-                                            <Icon.Inbox className="w-8 h-8" />
-                                            <p className="text-sm font-medium text-slate-500">No leave requests found</p>
-                                            <p className="text-xs">Adjust the filters above, or apply for a new leave.</p>
+                                    <td colSpan={5} className="py-20 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-4">
+                                            <div className="relative w-10 h-10 flex items-center justify-center">
+                                                <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                                                <div className="absolute inset-0 border-4 border-amber-400 rounded-full border-t-transparent animate-spin"></div>
+                                            </div>
+                                            <div className="text-sm font-semibold text-slate-400 tracking-wide animate-pulse">Loading leave history...</div>
                                         </div>
                                     </td>
                                 </tr>
+                            ) : requests.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="py-20 text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 text-2xl shadow-sm mb-4 border border-slate-100">
+                                            <i className="fa-solid fa-inbox" />
+                                        </div>
+                                        <p className="text-base font-bold text-slate-700">No Leave Requests</p>
+                                        <p className="text-sm text-slate-400 mt-1 font-medium">Try adjusting your filters or apply for a new leave.</p>
+                                    </td>
+                                </tr>
                             ) : (
-                                requests.map(req => (
-                                    <tr key={req.leaveId} className="hover:bg-slate-50/70 transition-colors">
-                                        <td className="px-6 py-4 font-semibold text-slate-700">{req.leaveName}</td>
-                                        <td className="px-6 py-4 text-slate-500">
-                                            {new Date(req.fromDate).toLocaleDateString()} <span className="text-xs text-slate-400 mx-1">to</span> {new Date(req.toDate).toLocaleDateString()}
+                                requests.map((req: any) => (
+                                    <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-slate-900">{req.leaveName}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-600">
+                                            {new Date(req.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            <span className="text-xs text-slate-400 mx-2">to</span>
+                                            {new Date(req.toDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-slate-600">{req.totalDays} Day(s)</td>
-                                        <td className="px-6 py-4 text-slate-500 max-w-xs truncate">{req.reason}</td>
+                                        <td className="px-6 py-4 font-mono font-bold text-amber-600">{req.totalDays} Day(s)</td>
+                                        <td className="px-6 py-4 font-medium text-slate-500 max-w-xs truncate" title={req.reason}>{req.reason}</td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide ${STATUS_BADGE[req.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wide ${STATUS_BADGE[req.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[req.status] || "bg-slate-400"}`} />
                                                 {req.status}
                                             </span>
@@ -445,43 +439,32 @@ export default function MyLeaves() {
 
             {/* ── Apply Leave Modal ── */}
             {showApplyModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
-                        <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                                    <Icon.Calendar className="w-5 h-5" />
-                                </span>
-                                <div>
-                                    <h2 className="text-base font-bold text-slate-800">Apply Leave</h2>
-                                    <p className="text-xs text-slate-400">Submit a new leave request</p>
-                                </div>
-                            </div>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md relative animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i className="fa-solid fa-calendar-plus text-amber-500" /> Apply Leave
+                            </h3>
                             <button
                                 onClick={() => setShowApplyModal(false)}
-                                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg p-1.5 transition-colors"
+                                className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                             >
-                                <Icon.Close className="w-4 h-4" />
+                                <i className="fa-solid fa-xmark text-lg" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleApplyLeave} className="space-y-4">
+                        <form onSubmit={handleApplyLeave} className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                    Leave Type
-                                </label>
+                                <label className={labelClass}>Leave Type *</label>
                                 <select
                                     value={form.leaveTypeId}
                                     onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
-                                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
+                                    className={`${inputClass} cursor-pointer appearance-none`}
+                                    required
                                 >
-                                    <option value="">Select leave type</option>
-                                    {leaveTypes.map((t) => {
-                                        // Cross-reference with balances (if initialized) to show
-                                        // remaining days; falls back to a clear "not set" hint
-                                        // so the dropdown is never empty just because balance
-                                        // hasn't been initialized by HR yet.
-                                        const bal = balances.find((b) => b.leaveTypeId === t.leaveTypeId);
+                                    <option value="" disabled>-- Select leave type --</option>
+                                    {leaveTypes.map((t: any) => {
+                                        const bal: any = balances.find((b: any) => b.leaveTypeId === t.leaveTypeId);
                                         return (
                                             <option key={t.leaveTypeId} value={t.leaveTypeId}>
                                                 {t.leaveName}{bal ? ` (${bal.balanceLeaves} left)` : " (balance not set)"}
@@ -490,74 +473,75 @@ export default function MyLeaves() {
                                     })}
                                 </select>
                                 {leaveTypes.length === 0 && (
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        No leave types configured yet. Contact HR/Admin.
-                                    </p>
+                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">No leave types configured yet.</p>
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                        From Date
-                                    </label>
+                                    <label className={labelClass}>From Date *</label>
                                     <input
                                         type="date"
+                                        required
                                         value={form.fromDate}
                                         onChange={(e) => setForm({ ...form, fromDate: e.target.value })}
-                                        className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
+                                        className={inputClass}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                        To Date
-                                    </label>
+                                    <label className={labelClass}>To Date *</label>
                                     <input
                                         type="date"
+                                        required
                                         value={form.toDate}
                                         onChange={(e) => setForm({ ...form, toDate: e.target.value })}
-                                        className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
+                                        className={inputClass}
                                     />
                                 </div>
                             </div>
 
                             {previewDays && (
-                                <p className="text-xs text-amber-600 font-medium bg-amber-50 rounded-lg px-3 py-2">
-                                    This request covers {previewDays} day{previewDays > 1 ? "s" : ""}.
-                                </p>
+                                <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 flex items-center gap-2">
+                                    <i className="fa-solid fa-circle-info text-amber-500" />
+                                    <p className="text-xs font-bold text-amber-700">
+                                        This request covers {previewDays} day{previewDays > 1 ? "s" : ""}.
+                                    </p>
+                                </div>
                             )}
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                    Reason
-                                </label>
+                                <label className={labelClass}>Reason *</label>
                                 <textarea
                                     value={form.reason}
                                     onChange={(e) => setForm({ ...form, reason: e.target.value })}
                                     rows={3}
-                                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400"
-                                    placeholder="Reason for leave"
+                                    required
+                                    className={`${inputClass} resize-y`}
+                                    placeholder="Brief reason for your leave request..."
                                 />
                             </div>
 
                             {applyError && (
-                                <p className="text-sm text-red-600">{applyError}</p>
+                                <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
+                                    <i className="fa-solid fa-triangle-exclamation" /> {applyError}
+                                </div>
                             )}
 
-                            <div className="flex justify-end gap-3 pt-2">
+                            <div className="pt-6 flex justify-end gap-3 border-t border-slate-100 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setShowApplyModal(false)}
-                                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800"
+                                    className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl shadow-sm transition-all active:scale-[0.98]"
+                                    className="px-6 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-600/20 hover:bg-amber-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2"
                                 >
-                                    {submitting ? "Submitting..." : "Submit"}
+                                    {submitting ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-paper-plane" />}
+                                    {submitting ? "Submitting..." : "Submit Request"}
                                 </button>
                             </div>
                         </form>

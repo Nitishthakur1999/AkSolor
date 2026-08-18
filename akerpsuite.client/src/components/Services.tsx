@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import Reveal from './Reveal'
 import TiltCard from './TiltCard'
 import { services } from '../data/siteData'
 
 export default function Services() {
+    const [retailOpen, setRetailOpen] = useState(false)
+    const retail = services.find((s) => s.subItems)
+
     return (
         <section
             id="services"
@@ -82,11 +86,51 @@ export default function Services() {
                                     <span className="mb-3.5 block font-mono text-[0.68rem] uppercase tracking-[0.08em] text-slate">{s.tag}</span>
                                     <div className="mb-3 font-display text-[1.12rem] font-bold text-charcoal">{s.title}</div>
                                     <p className="text-[0.9rem] leading-[1.7] text-slate">{s.desc}</p>
+
+                                    {s.subItems && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setRetailOpen((v) => !v)}
+                                            aria-expanded={retailOpen}
+                                            className="mt-5 inline-flex items-center gap-1.5 border-b-2 border-gold-deep font-mono text-[0.72rem] font-bold uppercase tracking-[0.08em] text-gold-deep transition-colors hover:text-charcoal"
+                                        >
+                                            {retailOpen ? 'Hide Details' : 'View Details'}
+                                            <span className={`transition-transform duration-200 ${retailOpen ? 'rotate-180' : ''}`}>▾</span>
+                                        </button>
+                                    )}
                                 </div>
                             </TiltCard>
                         </Reveal>
                     ))}
                 </div>
+
+                {retailOpen && retail && (
+                    <Reveal className="mt-10 border-t border-dashed border-line pt-10">
+                        <p className="mb-6 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">
+                            Retail — Product Categories
+                        </p>
+                        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                            {retail.subItems.map((item) => (
+                                <div
+                                    key={item.name}
+                                    className="overflow-hidden rounded-xl border border-line bg-chalk transition-all duration-300 hover:-translate-y-1 hover:border-line-strong hover:shadow-card"
+                                >
+                                    <div className="h-[110px] w-full overflow-hidden bg-charcoal">
+                                        <img
+                                            src={item.img}
+                                            alt={item.name}
+                                            loading="lazy"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="p-3.5">
+                                        <p className="text-[0.85rem] font-semibold text-charcoal">{item.name}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Reveal>
+                )}
             </div>
         </section>
     )

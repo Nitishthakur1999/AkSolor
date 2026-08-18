@@ -17,11 +17,12 @@ export const messagesDropdown = [
 ];
 
 export const servicesDropdown = [
-    { label: 'Solar Power Plants', desc: 'On-grid & off-grid installs', href: '/services' },
-    { label: 'Roof Top Solar', desc: '1–10 kW rooftop systems', href: '/services' },
-    { label: 'Ground Mounted Solar', desc: '10 kW – 1 MW installs', href: '/services' },
-    { label: 'Off-Grid & Battery', desc: 'Full independence systems', href: '/services' },
-    { label: 'Solar Geysers & Street Lights', desc: 'Water heating & public lighting', href: '/services' },
+    { label: 'PM Surya Ghar Muft Bijli Yojna', desc: 'On Grid & Hybrid Rooftop Solar System', href: '/services' },
+    { label: 'Commercial and Industrial Solar Solutions', desc: 'High-capacity systems for business', href: '/services' },
+    { label: 'Ground Mounted Solar Projects', desc: 'Large-scale open-land installs', href: '/services' },
+    { label: 'Solar Street Lights', desc: 'CSR & community projects', href: '/services' },
+    { label: 'Repair & Maintenance Services', desc: 'Keep your system running at peak', href: '/services' },
+    { label: 'Retail', desc: 'Modules, inverters, ACDB, DCDB & more', href: '/services' },
     { label: 'How It Works', desc: 'Survey to switch-on, in 4 steps', href: '/services#process' },
 ]
 
@@ -44,11 +45,12 @@ export const footerLinks = {
         { label: 'Contact', href: '/contact' },
     ],
     Services: [
-        { label: 'Solar Power Plants', href: '/services' },
-        { label: 'Roof Top Solar', href: '/services' },
-        { label: 'Off Grid Solar', href: '/services' },
-        { label: 'Solar Geysers', href: '/services' },
+        { label: 'PM Surya Ghar Muft Bijli Yojna', href: '/services' },
+        { label: 'Commercial and Industrial Solar', href: '/services' },
+        { label: 'Ground Mounted Solar Projects', href: '/services' },
         { label: 'Solar Street Lights', href: '/services' },
+        { label: 'Repair & Maintenance', href: '/services' },
+        { label: 'Retail', href: '/services' },
     ],
     Explore: [
         { label: 'Our Projects', href: '/gallery' },
@@ -67,40 +69,50 @@ export const whyCards = [
 
 export const services = [
     {
-        tag: 'Power Generation', title: 'Solar Power Plants', icon: 'fa-solar-panel', iconBg: 'var(--gold)',
+        tag: 'Government Scheme', title: 'PM Surya Ghar Muft Bijli Yojna', icon: 'fa-solar-panel', iconBg: 'var(--gold)',
         img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/08/WhatsApp-Image-2023-08-27-at-21.30.30-300x224.jpg',
         fallback: 'linear-gradient(135deg,#E4FF4E,#FF4D2E)',
-        desc: 'On-grid and off-grid solar power plants designed, installed, and maintained for homes, institutions, and businesses.',
+        desc: 'Subsidised On Grid Rooftop Solar System and Hybrid Rooftop Solar System under the PM Surya Ghar Muft Bijli Yojna.',
     },
     {
-        tag: 'Water Heating', title: 'Solar Geysers', icon: 'fa-temperature-high', iconBg: 'var(--charcoal)',
+        tag: 'Business', title: 'Commercial and Industrial Solar Solutions', icon: 'fa-building', iconBg: 'var(--charcoal)',
         img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Good-morning-quotes-facebook-post-5.jpg',
         fallback: 'linear-gradient(135deg,#585B70,#08090D)',
-        desc: 'Solar water heating systems that cut electricity costs for households, hotels, and hostels year-round.',
+        desc: 'High-capacity solar systems designed for factories, offices, and commercial establishments to cut operational power costs.',
     },
     {
-        tag: 'Public Lighting', title: 'Solar Street Lights', icon: 'fa-lightbulb', iconBg: 'var(--green)',
-        img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Good-morning-quotes-facebook-post-4-1-300x251.jpg',
-        fallback: 'linear-gradient(135deg,#00F0C8,#00B79B)',
-        desc: 'Self-sufficient LED street lighting for roads, colonies, and institutions — no grid dependency, low upkeep.',
-    },
-    {
-        tag: 'Ground-Mounted', title: 'Ground Mounted Solar Power Project', icon: 'fa-layer-group', iconBg: 'var(--slate)',
+        tag: 'Ground-Mounted', title: 'Ground Mounted Solar Projects', icon: 'fa-layer-group', iconBg: 'var(--slate)',
         img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Ground-Mounted-Solar-Power-Plant-1024x766.jpg',
         fallback: 'linear-gradient(135deg,#94A3B8,#64748B)',
         desc: 'Large-scale ground-mounted solar arrays for institutions and businesses with available open land.',
     },
     {
-        tag: 'Off-Grid', title: 'Off Grid Solar Power Plant', icon: 'fa-battery-full', iconBg: 'var(--gold-deep)',
-        img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/08/WhatsApp-Image-2023-08-27-at-20.17.031-1.jpg',
-        fallback: 'linear-gradient(135deg,#E4FF4E,#FF4D2E)',
-        desc: 'Complete energy independence with battery backup — built for areas with limited or no grid connection.',
+        tag: 'Public Lighting', title: 'Solar Street Lights', icon: 'fa-lightbulb', iconBg: 'var(--green)',
+        img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Good-morning-quotes-facebook-post-4-1-300x251.jpg',
+        fallback: 'linear-gradient(135deg,#00F0C8,#00B79B)',
+        desc: 'Solar street lighting installations for CSR initiatives and community projects — self-sufficient, low upkeep public lighting.',
     },
     {
-        tag: 'Residential', title: 'Roof Top Solar Power Plant', icon: 'fa-home', iconBg: 'var(--charcoal-soft)',
+        tag: 'Service', title: 'Repair & Maintenance Services', icon: 'fa-tools', iconBg: 'var(--gold-deep)',
+        img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/08/WhatsApp-Image-2023-08-27-at-20.17.031-1.jpg',
+        fallback: 'linear-gradient(135deg,#E4FF4E,#FF4D2E)',
+        desc: 'Ongoing repair and maintenance support to keep your solar system running at peak performance year-round.',
+    },
+    {
+        tag: 'Retail', title: 'Retail', icon: 'fa-store', iconBg: 'var(--charcoal-soft)',
         img: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Off-Grid--1024x766.jpg',
         fallback: 'linear-gradient(135deg,#585B70,#08090D)',
-        desc: 'Rooftop systems for homes and commercial buildings — reduce your bill and earn through net metering.',
+        desc: 'Modules, inverters, structures, ACDB, DCDB, wires, and uni-directional tested meters — sold direct.',
+        subItems: [
+            { name: 'Modules', img: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&q=70&auto=format&fit=crop' },
+            { name: 'Inverters', img: 'https://images.unsplash.com/photo-1620207418302-439b387441b0?w=400&q=70&auto=format&fit=crop' },
+            { name: 'Structure — RCC, Tin Shed', img: 'https://images.unsplash.com/photo-1622708853896-aa3274d7e74c?w=400&q=70&auto=format&fit=crop' },
+            { name: 'ACDB', img: 'https://images.unsplash.com/photo-1581092160607-ee22731c9c8c?w=400&q=70&auto=format&fit=crop' },
+            { name: 'DCDB', img: 'https://images.unsplash.com/photo-1581092160607-ee22731c9c8c?w=400&q=70&auto=format&fit=crop' },
+            { name: 'Wires', img: 'https://images.unsplash.com/photo-1620206502141-63a5e2d38b40?w=400&q=70&auto=format&fit=crop' },
+            { name: 'Uni-Directional tested Meter', img: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400&q=70&auto=format&fit=crop' },
+        ],
+        detailImg: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Off-Grid--1024x766.jpg',
     },
 ]
 

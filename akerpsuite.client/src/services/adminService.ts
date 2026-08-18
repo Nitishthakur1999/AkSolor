@@ -193,6 +193,7 @@ export const adminService = {
     approveSelection: (data?: any) => apiCall(`${API_BASE}/interviews/selection-approval`, "PATCH", data),
 
     // F. Offer & Joining
+
     createOffer: (data?: any) => apiCall(`${API_BASE}/offers`, "POST", data),
     actionOffer: (data?: any) => apiCall(`${API_BASE}/offers/action`, "PATCH", data),
     getOfferByCandidate: (candidateId?: any) => apiCall(`${API_BASE}/offers/candidate/${candidateId}`),
@@ -203,6 +204,8 @@ export const adminService = {
         downloadFile(`${API_BASE}/candidates/${candidateId}/appointment-letter`, `Appointment_Letter_${candidateId}.docx`),
     downloadRegularizationLetter: (candidateId?: any, effectiveDate?: any) =>
         downloadFile(`${API_BASE}/candidates/${candidateId}/regularization-letter?effectiveDate=${effectiveDate}`,`Regularization_Letter_${candidateId}.docx`),
+    downloadRelievingLetter: (candidateId?: any) =>
+        downloadFile(`${API_BASE}/candidates/${candidateId}/relieving-letter`, `Relieving_Letter_${candidateId}.docx`),
 
     // 17. Self Service (Profile)
     getMyProfile: () => apiCall(`${BASE}/api/hr/profile`),

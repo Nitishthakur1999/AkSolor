@@ -13,8 +13,15 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddScoped<FileUploadHelper>();
+
+
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -55,8 +62,6 @@ builder.Services.AddSwaggerGen(c =>
 // Dapper
 builder.Services.AddScoped<DapperContext>();
 builder.Services.AddScoped<FileUploadHelper>();
-
-// Dependency Injection
 builder.Services.AddScoped<IAuthRepository, AuthRepositories>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminRepositories, AdminRepositories>();
@@ -124,35 +129,18 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Dapper — snake_case to PascalCase auto mapping
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 var app = builder.Build();
-
-// Global Exception Middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
-
-// Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
-
-// HTTPS
 app.UseHttpsRedirection();
-
-// ✅ ADDED FOR LIVE DEPLOYMENT: Ye React ki static files (JS, CSS, Images) ko serve karega
 app.UseStaticFiles();
-
-// CORS
 app.UseCors("AllowAll");
-
-// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
-// 🔔 Hangfire Dashboard (job status dekhne ke liye) — /hangfire pe khulega
 app.UseHangfireDashboard("/hangfire");
-
-// Controllers
 app.MapControllers();
 
 // 🔔 Recurring Job: roz subah 9:00 baje probation-completion emails HR ko bhejega
@@ -160,8 +148,6 @@ RecurringJob.AddOrUpdate<IHRService>(
     "probation-completion-reminder",
     service => service.SendProbationCompletionRemindersAsync(),
     Cron.Daily(9, 0));
-
-// ✅ ADDED FOR LIVE DEPLOYMENT: Ye React Router (Frontend routing) ko handle karega
 app.MapFallbackToFile("index.html");
 
 app.Run();
