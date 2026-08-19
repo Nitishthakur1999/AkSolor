@@ -4,6 +4,7 @@ import FoundersMessage from "@/pages/FounderPage";
 import CmdMessage from "@/pages/CmdmassagePage";
 import DirectorMessage from "@/pages/DirectormassagePage";
 import HomeLayout from "@/layout/HomeLayout";
+
 import HomePage from "@/pages/HomePage";
 import AboutPage from "@/pages/AboutPage";
 import ServicesPage from "@/pages/ServicesPage";
@@ -41,7 +42,6 @@ import PublicSitePage from "@/admin/pages/Publicsitepage";
 import SalarySheet from "@/admin/pages/SalarySheet";
 import PurchaseModule from "@/admin/pages/Purchasemodule";
 
-
 function ComingSoon({ title = "Page", icon = "fa-solid fa-circle" }) {
     return (
         <div className="space-y-6">
@@ -58,7 +58,6 @@ function ComingSoon({ title = "Page", icon = "fa-solid fa-circle" }) {
     );
 }
 
-//  Add new pages here as they get built.
 const COMPONENT_MAP = {
 
     // ── General ───────────────────────────────────────────────────────────
@@ -172,9 +171,6 @@ function Router() {
                 }>
                     {/* ── Dashboard — always accessible if logged in ── */}
                     <Route path="/dashboard" element={<Dashboard />} />
-
-                    {/* 🆕 LEAD DETAIL PIPELINE ROUTE */}
-                    {/* Ise map se bahar rakha hai kyunki ye direct DB list mein nahi hota */}
                     <Route path="/sales/leads/:id" element={<LeadDetail />} />
 
                     {/* ── Dynamic pages from DB ── */}

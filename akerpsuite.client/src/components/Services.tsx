@@ -109,24 +109,36 @@ export default function Services() {
                         <p className="mb-6 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">
                             Retail — Product Categories
                         </p>
-                        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             {retail.subItems.map((item) => (
-                                <div
+                                <TiltCard
                                     key={item.name}
-                                    className="overflow-hidden rounded-xl border border-line bg-chalk transition-all duration-300 hover:-translate-y-1 hover:border-line-strong hover:shadow-card"
+                                    maxTilt={7}
+                                    className="group relative h-full overflow-hidden border border-line bg-chalk transition-all duration-300 hover:-translate-y-1.5 hover:border-line-strong hover:shadow-card"
+                                    style={{ clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%)' }}
                                 >
-                                    <div className="h-[110px] w-full overflow-hidden bg-charcoal">
+                                    <span
+                                        className="absolute right-0 top-0 z-10 border-b-[24px] border-l-[24px] border-b-transparent border-l-gold/30 transition-colors duration-300 group-hover:border-l-gold"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    <div className="relative h-[168px] overflow-hidden bg-charcoal">
                                         <img
                                             src={item.img}
                                             alt={item.name}
                                             loading="lazy"
-                                            className="h-full w-full object-cover"
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                                            onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.background = 'linear-gradient(135deg,#585B70,#08090D)'; e.currentTarget.remove() }}
                                         />
+                                        <div
+                                            className="absolute inset-0"
+                                            style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%)' }}
+                                        ></div>
                                     </div>
-                                    <div className="p-3.5">
-                                        <p className="text-[0.85rem] font-semibold text-charcoal">{item.name}</p>
+                                    <div className="border-t border-dashed border-line p-9 pt-9 pb-8">
+                                        <div className="font-display text-[1.12rem] font-bold text-charcoal">{item.name}</div>
                                     </div>
-                                </div>
+                                </TiltCard>
                             ))}
                         </div>
                     </Reveal>

@@ -592,7 +592,6 @@
     // ============================================================
     // PURCHASE ORDER ITEM (line) — RESPONSE
     // ============================================================
-
     public class PurchaseOrderItemResponseDto
     {
         public int PoItemId { get; set; }
@@ -607,6 +606,7 @@
         public decimal Rate { get; set; }
         public decimal Amount { get; set; }
         public decimal ReceivedQty { get; set; }
+        public decimal InvoicedQty { get; set; }   // ← YE LINE MISSING HAI, ADD KARO
         public decimal PendingQty => Quantity - ReceivedQty;
     }
 
@@ -634,4 +634,45 @@
         public decimal ReceivedQty { get; set; }
         public decimal NewStockBalance { get; set; }
     }
+    public class PurchaseInvoiceItemResponseDto
+    {
+        public int InvoiceItemId { get; set; }
+        public int InvoiceId { get; set; }
+        public int PoItemId { get; set; }
+        public int ItemId { get; set; }
+        public string Description { get; set; }
+        public string HsnSac { get; set; }
+        public decimal GstRate { get; set; }
+        public DateTime? DueOn { get; set; }
+        public decimal InvoicedQty { get; set; }
+        public string Unit { get; set; }
+        public decimal Rate { get; set; }
+        public decimal DiscountPercent { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    public class PurchaseInvoiceResponseDto
+    {
+        public int InvoiceId { get; set; }
+        public int PoId { get; set; }
+        public string InvoiceNo { get; set; }
+        public DateTime? InvoiceDate { get; set; }
+        public DateTime? DueDate { get; set; }
+        public string DispatchedThrough { get; set; }
+        public string Destination { get; set; }
+        public string TermsOfDelivery { get; set; }
+        public string ModeOfPayment { get; set; }
+        public string Remarks { get; set; }
+        public string Status { get; set; }
+        public string SupplierName { get; set; }
+        public string SupplierGstin { get; set; }
+        public decimal TaxableAmount { get; set; }
+        public decimal SgstAmount { get; set; }
+        public decimal CgstAmount { get; set; }
+        public decimal IgstAmount { get; set; }
+        public decimal TotalAmount { get; set; }
+        public string AmountInWords { get; set; }
+        public List<PurchaseInvoiceItemResponseDto> Items { get; set; } = new();
+    }
+
 }

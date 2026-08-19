@@ -606,5 +606,55 @@ namespace AkerpSuite.Server.DTOs.Hr
         public int ItemId { get; set; }
         public decimal ReceivedQty { get; set; }
     }
+    public class PurchaseInvoiceRequestDto
+    {
+        public int PoId { get; set; }              
+        public string InvoiceNo { get; set; }     
+        public DateTime? InvoiceDate { get; set; }
+        public DateTime? DueDate { get; set; }
+        public string DispatchedThrough { get; set; }
+        public string Destination { get; set; }
+        public string TermsOfDelivery { get; set; }
+        public string ModeOfPayment { get; set; }
+        public string Remarks { get; set; }
+        public int? CreatedBy { get; set; }
+        public List<PurchaseInvoiceItemRequestDto> Items { get; set; }
+    }
 
+    public class PurchaseInvoiceItemRequestDto
+    {
+        public int PoItemId { get; set; }
+        public int ItemId { get; set; }
+        public string Description { get; set; }
+        public string HsnSac { get; set; }
+        public decimal GstRate { get; set; }
+        public DateTime? DueOn { get; set; }
+        public decimal InvoicedQty { get; set; }
+        public string Unit { get; set; }            // "per" column
+        public decimal Rate { get; set; }
+        public decimal DiscountPercent { get; set; } // "Disc. %" column
+    }
+    public class PurchaseInvoiceStatusUpdateDto
+    {
+        public int InvoiceId { get; set; }
+        public PurchaseInvoiceStatus Status { get; set; }
+    }
+
+    public class PurchaseInvoiceSearchRequestDto
+    {
+        public int? SupplierId { get; set; }
+        public int? PoId { get; set; }
+        public PurchaseInvoiceStatus? Status { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public string? Keyword { get; set; }
+    }
+
+    public enum PurchaseInvoiceStatus
+    {
+        Draft,
+        Approved,
+        Paid,
+        Cancelled
+    }
 }

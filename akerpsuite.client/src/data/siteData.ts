@@ -1,7 +1,3 @@
-// Centralized content for the site. Components read from here rather than
-// hardcoding copy inline, so content can be updated in one place.
-
-// Primary navbar routes — each maps to its own page (multi-page site, not a single scroll).
 export const mainNav = [
     { label: 'Home', href: '/' },
     { label: 'About', href: '/about' },
@@ -107,10 +103,10 @@ export const services = [
             { name: 'Modules', img: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&q=70&auto=format&fit=crop' },
             { name: 'Inverters', img: 'https://images.unsplash.com/photo-1620207418302-439b387441b0?w=400&q=70&auto=format&fit=crop' },
             { name: 'Structure — RCC, Tin Shed', img: 'https://images.unsplash.com/photo-1622708853896-aa3274d7e74c?w=400&q=70&auto=format&fit=crop' },
-            { name: 'ACDB', img: 'https://images.unsplash.com/photo-1581092160607-ee22731c9c8c?w=400&q=70&auto=format&fit=crop' },
-            { name: 'DCDB', img: 'https://images.unsplash.com/photo-1581092160607-ee22731c9c8c?w=400&q=70&auto=format&fit=crop' },
-            { name: 'Wires', img: 'https://images.unsplash.com/photo-1620206502141-63a5e2d38b40?w=400&q=70&auto=format&fit=crop' },
-            { name: 'Uni-Directional tested Meter', img: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400&q=70&auto=format&fit=crop' },
+            { name: 'ACDB', img: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&q=70&auto=format&fit=crop' },
+            { name: 'DCDB', img: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&q=70&auto=format&fit=crop' },
+            { name: 'Wires', img: 'https://images.unsplash.com/photo-1559302995-f1d6e557869f?w=400&q=70&auto=format&fit=crop' },
+            { name: 'Uni-Directional tested Meter', img: 'https://images.unsplash.com/photo-1610016302534-6f67f1c968d8?w=400&q=70&auto=format&fit=crop' },
         ],
         detailImg: 'https://akssolarsystemsprivatelimited.com/wp-content/uploads/2023/09/Off-Grid--1024x766.jpg',
     },

@@ -1192,6 +1192,74 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
+        #region Purchase Invoice
+
+        [HttpPost("invoices")]
+        [Authorize(Roles = PurchaseWriteRoles)]
+        public async Task<IActionResult> CreatePurchaseInvoice([FromBody] PurchaseInvoiceRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { Success = false, Message = "Invalid request" });
+
+            try
+            {
+                var invoiceId = await _service.CreatePurchaseInvoiceAsync(request);
+                return Ok(new { Success = true, Message = "Purchase Invoice created successfully", InvoiceId = invoiceId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpPatch("invoices/status")]
+        [Authorize(Roles = PurchaseApproveRoles)]
+        public async Task<IActionResult> UpdateInvoiceStatus([FromBody] PurchaseInvoiceStatusUpdateDto request)
+        {
+            try
+            {
+                var updated = await _service.UpdateInvoiceStatusAsync(request);
+                if (!updated)
+                    return NotFound(new { Success = false, Message = "Purchase Invoice not found" });
+
+                return Ok(new { Success = true, Message = $"Purchase Invoice marked as {request.Status}" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpGet("invoices/{id:int}")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> GetPurchaseInvoiceById(int id)
+        {
+            var data = await _service.GetPurchaseInvoiceByIdAsync(id);
+            if (data == null)
+                return NotFound(new { Success = false, Message = "Purchase Invoice not found" });
+
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // GET api/hr/invoices?supplierId=&poId=&status=&fromDate=&toDate=&keyword=
+        [HttpGet("invoices")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> SearchPurchaseInvoices([FromQuery] PurchaseInvoiceSearchRequestDto filter)
+        {
+            var data = await _service.SearchPurchaseInvoicesAsync(filter);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        [HttpGet("invoices/po/{poId:int}")]
+        [Authorize(Roles = PurchaseViewRoles)]
+        public async Task<IActionResult> GetInvoicesByPo(int poId)
+        {
+            var data = await _service.GetInvoicesByPoAsync(poId);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        #endregion
+
         #region GRN (Goods Receipt Note)
 
         [HttpPost("grn")]

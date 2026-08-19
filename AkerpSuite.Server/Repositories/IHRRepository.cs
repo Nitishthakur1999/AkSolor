@@ -226,6 +226,14 @@ namespace AkerpSuite.Server.Repositories
         Task<IEnumerable<PurchaseOrderResponseDto>> SearchPurchaseOrdersAsync(PurchaseOrderSearchRequestDto filter);
         #endregion
 
+        #region Purchase Invoice
+        Task<int> CreatePurchaseInvoiceAsync(PurchaseInvoiceRequestDto request);
+        Task<bool> UpdateInvoiceStatusAsync(int invoiceId, string status);
+        Task<PurchaseInvoiceResponseDto?> GetPurchaseInvoiceByIdAsync(int invoiceId);
+        Task<IEnumerable<PurchaseInvoiceResponseDto>> SearchPurchaseInvoicesAsync(PurchaseInvoiceSearchRequestDto filter);
+        Task<IEnumerable<PurchaseInvoiceResponseDto>> GetInvoicesByPoAsync(int poId);
+        #endregion
+
         #region GRN (Goods Receipt)
         Task<GrnResponseDto> CreateGrnAsync(GrnRequestDto request);
         Task<IEnumerable<GrnResponseDto>> GetGrnsByPoAsync(int poId);

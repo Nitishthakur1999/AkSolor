@@ -838,10 +838,15 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_month", month);
             parameters.Add("p_year", year);
 
-            return await connection.ExecuteScalarAsync<string>(
-                "sp_attendance_summary_generate_bulk", parameters,
-                commandType: CommandType.StoredProcedure,
-                commandTimeout: 120);
+            return await connection.ExecuteScalarAsync<string?>(
+            "sp_attendance_summary_generate_bulk", parameters,
+            commandType: CommandType.StoredProcedure,
+            commandTimeout: 120) ?? string.Empty;
+
+            //return await connection.ExecuteScalarAsync<string>(
+            //    "sp_attendance_summary_generate_bulk", parameters,
+            //    commandType: CommandType.StoredProcedure,
+            //    commandTimeout: 120);
         }
 
         public async Task<IEnumerable<AttendanceSummaryResponseDto>> GetSummaryAsync(

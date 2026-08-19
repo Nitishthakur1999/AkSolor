@@ -849,7 +849,6 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Suppliers
-
         public async Task<int> CreateSupplierAsync(SupplierRequestDto request)
         {
             if (request == null)
@@ -899,7 +898,6 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region PO Consignee
-
         public async Task<int> CreateConsigneeAsync(PoConsigneeRequestDto request)
         {
             if (request == null)
@@ -917,7 +915,6 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Purchase Order
-
         public async Task<int> CreatePurchaseOrderAsync(PurchaseOrderRequestDto request)
         {
             if (request == null)
@@ -980,8 +977,83 @@ namespace AkerpSuite.Server.Services
 
         #endregion
 
-        #region GRN (Goods Receipt)
+        #region Purchase Invoice
+        public async Task<int> CreatePurchaseInvoiceAsync(PurchaseInvoiceRequestDto request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
 
+            if (string.IsNullOrWhiteSpace(request.InvoiceNo))
+                throw new InvalidOperationException("Invoice number is required.");
+
+            var po = await _repository.GetPurchaseOrderByIdAsync(request.PoId);
+            if (po == null)
+                throw new KeyNotFoundException("Purchase Order not found.");
+
+            if (po.Status == "Cancelled")
+                throw new InvalidOperationException("Cannot invoice — PO is Cancelled.");
+
+            if (request.Items == null || request.Items.Count == 0)
+                throw new InvalidOperationException("At least one item must be invoiced.");
+
+            foreach (var item in request.Items)
+            {
+                var poItem = po.Items.FirstOrDefault(i => i.PoItemId == item.PoItemId);
+                if (poItem == null)
+                    throw new InvalidOperationException($"PO item {item.PoItemId} does not belong to this PO.");
+
+                if (item.InvoicedQty <= 0)
+                    throw new InvalidOperationException("Invoiced quantity must be greater than zero.");
+
+                if (item.Rate < 0)
+                    throw new InvalidOperationException($"Rate cannot be negative for '{poItem.Description}'.");
+
+                if (item.DiscountPercent < 0 || item.DiscountPercent > 100)
+                    throw new InvalidOperationException($"Discount % invalid for '{poItem.Description}'.");
+
+                // Bill sirf jo receive hua us tak jaa sakta
+                var alreadyInvoiced = poItem.InvoicedQty;
+                if (alreadyInvoiced + item.InvoicedQty > poItem.ReceivedQty)
+                    throw new InvalidOperationException(
+                        $"Invoiced quantity for '{poItem.Description}' exceeds received quantity " +
+                        $"(received {poItem.ReceivedQty}, already invoiced {alreadyInvoiced}).");
+            }
+
+            var invoiceId = await _repository.CreatePurchaseInvoiceAsync(request);
+
+            _logger.LogInformation("Purchase Invoice {InvoiceId} created for PO {PoId}.", invoiceId, request.PoId);
+
+            return invoiceId;
+        }
+
+        public async Task<bool> UpdateInvoiceStatusAsync(PurchaseInvoiceStatusUpdateDto request)
+        {
+            var existing = await _repository.GetPurchaseInvoiceByIdAsync(request.InvoiceId);
+            if (existing == null)
+                throw new KeyNotFoundException("Purchase Invoice not found.");
+
+            if (existing.Status == "Cancelled")
+                throw new InvalidOperationException("Cannot change status of a Cancelled invoice.");
+
+            var statusText = request.Status.ToString();
+            var result = await _repository.UpdateInvoiceStatusAsync(request.InvoiceId, statusText);
+
+            _logger.LogInformation("Invoice {InvoiceId} status changed to {Status}.", request.InvoiceId, statusText);
+
+            return result;
+        }
+        public Task<PurchaseInvoiceResponseDto?> GetPurchaseInvoiceByIdAsync(int invoiceId) =>
+            _repository.GetPurchaseInvoiceByIdAsync(invoiceId);
+
+        public Task<IEnumerable<PurchaseInvoiceResponseDto>> SearchPurchaseInvoicesAsync(PurchaseInvoiceSearchRequestDto filter) =>
+            _repository.SearchPurchaseInvoicesAsync(filter);
+
+        public Task<IEnumerable<PurchaseInvoiceResponseDto>> GetInvoicesByPoAsync(int poId) =>
+            _repository.GetInvoicesByPoAsync(poId);
+
+        #endregion
+
+        #region GRN (Goods Receipt)
         public async Task<GrnResponseDto> CreateGrnAsync(GrnRequestDto request)
         {
             if (request == null)

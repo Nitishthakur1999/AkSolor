@@ -57,6 +57,7 @@ const downloadFile = async (url: string, filename: string): Promise<void> => {
     a.click();
     window.URL.revokeObjectURL(objUrl);
 };
+
 export const adminService = {
 
     // 1. Dashboard
@@ -193,19 +194,14 @@ export const adminService = {
     approveSelection: (data?: any) => apiCall(`${API_BASE}/interviews/selection-approval`, "PATCH", data),
 
     // F. Offer & Joining
-
     createOffer: (data?: any) => apiCall(`${API_BASE}/offers`, "POST", data),
     actionOffer: (data?: any) => apiCall(`${API_BASE}/offers/action`, "PATCH", data),
     getOfferByCandidate: (candidateId?: any) => apiCall(`${API_BASE}/offers/candidate/${candidateId}`),
     confirmJoining: (data?: any) => apiCall(`${API_BASE}/joining/confirm`, "POST", data),
-    downloadOfferLetter: (candidateId?: any) =>
-        downloadFile(`${API_BASE}/candidates/${candidateId}/offer-letter`, `Offer_Letter_${candidateId}.docx`),
-    downloadAppointmentLetter: (candidateId?: any) =>
-        downloadFile(`${API_BASE}/candidates/${candidateId}/appointment-letter`, `Appointment_Letter_${candidateId}.docx`),
-    downloadRegularizationLetter: (candidateId?: any, effectiveDate?: any) =>
-        downloadFile(`${API_BASE}/candidates/${candidateId}/regularization-letter?effectiveDate=${effectiveDate}`,`Regularization_Letter_${candidateId}.docx`),
-    downloadRelievingLetter: (candidateId?: any) =>
-        downloadFile(`${API_BASE}/candidates/${candidateId}/relieving-letter`, `Relieving_Letter_${candidateId}.docx`),
+    downloadOfferLetter: (candidateId?: any) => downloadFile(`${API_BASE}/candidates/${candidateId}/offer-letter`, `Offer_Letter_${candidateId}.docx`),
+    downloadAppointmentLetter: (candidateId?: any) => downloadFile(`${API_BASE}/candidates/${candidateId}/appointment-letter`, `Appointment_Letter_${candidateId}.docx`),
+    downloadRegularizationLetter: (candidateId?: any, effectiveDate?: any) => downloadFile(`${API_BASE}/candidates/${candidateId}/regularization-letter?effectiveDate=${effectiveDate}`,`Regularization_Letter_${candidateId}.docx`),
+    downloadRelievingLetter: (candidateId?: any) => downloadFile(`${API_BASE}/candidates/${candidateId}/relieving-letter`, `Relieving_Letter_${candidateId}.docx`),
 
     // 17. Self Service (Profile)
     getMyProfile: () => apiCall(`${BASE}/api/hr/profile`),
@@ -289,7 +285,6 @@ export const adminService = {
     getPendingReminders: (assignedTo?: any) => apiCall(`${SALES_API_BASE}/reminders/pending${assignedTo ? `?assignedTo=${assignedTo}` : ''}`),
     markReminderDone: (id?: any) => apiCall(`${SALES_API_BASE}/reminders/${id}/done`, "PATCH"),
 
-
     // ── 23. Inventory Module (Exact Routes) ──────────────────────────────
 
     // 1-5: Item Master
@@ -350,9 +345,7 @@ export const adminService = {
     deleteBankDetail: (bankId?: any) => apiCall(`${SALES_API_BASE}/bank/delete/${bankId}`, "DELETE"),
 
     // ── Password ──
-    revealEmployeeCredentials: (empId?: any, secretKey?: any) =>
-        apiCall(`${API_BASE}/employees/${empId}/reveal-credentials`, "POST", { secretKey }),
-
+    revealEmployeeCredentials: (empId?: any, secretKey?: any) => apiCall(`${API_BASE}/employees/${empId}/reveal-credentials`, "POST", { secretKey }),
     // ── 28. Public Site  ──
 
     // Banners 
@@ -392,11 +385,9 @@ export const adminService = {
     deleteCareer: (id?: any) => apiCall(`${SITE_API_BASE}/career/${id}`, "DELETE"),
 
     // Contact Queries (read / mark-read / delete only — no create)
-    getContactQueries: (isRead?: any) =>
-        apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
+    getContactQueries: (isRead?: any) => apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
     markQueryRead: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}/mark-read`, "PATCH"),
     deleteContactQuery: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}`, "DELETE"),
-
 
     // SUPPLIY
     createSupplier: (data?: any) => apiCall(`${SALES_API_BASE}/suppliers`, "POST", data),
@@ -418,5 +409,14 @@ export const adminService = {
     // GRN (Goods Receipt Note)
     createGrn: (data?: any) => apiCall(`${SALES_API_BASE}/grn`, "POST", data),
     getGrnsByPo: (poId?: any) => apiCall(`${SALES_API_BASE}/grn/po/${poId}`),
+
+    // Purchase Invoices
+    createPurchaseInvoice: (data?: any) => apiCall(`${SALES_API_BASE}/invoices`, "POST", data),
+    updateInvoiceStatus: (data?: any) => apiCall(`${SALES_API_BASE}/invoices/status`, "PATCH", data), // { invoiceId, status }
+    getPurchaseInvoiceById: (id?: any) => apiCall(`${SALES_API_BASE}/invoices/${id}`),
+    searchPurchaseInvoices: (filters?: any) => apiCall(`${SALES_API_BASE}/invoices${buildQuery(filters)}`), // { supplierId, poId, status, fromDate, toDate, keyword }
+    getInvoicesByPo: (poId?: any) => apiCall(`${SALES_API_BASE}/invoices/po/${poId}`),
+
+
 };
 

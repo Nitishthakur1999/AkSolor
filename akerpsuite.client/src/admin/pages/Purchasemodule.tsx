@@ -37,6 +37,39 @@ const NEXT_STATUS = {
     Cancelled: [],
 };
 
+// ---------------------------------------------------------------------------
+// Purchase Invoice status (separate lifecycle from PO status)
+// ---------------------------------------------------------------------------
+const INVOICE_STAMP_STYLE = {
+    Draft: "text-slate-600 border-slate-200 bg-slate-100",
+    Approved: "text-emerald-700 border-emerald-200/50 bg-emerald-50",
+    Paid: "text-blue-700 border-blue-200/50 bg-blue-50",
+    Cancelled: "text-rose-700 border-rose-200/50 bg-rose-50",
+};
+const INVOICE_STAMP_LABEL = {
+    Draft: "DRAFT",
+    Approved: "APPROVED",
+    Paid: "PAID",
+    Cancelled: "VOID",
+};
+
+function InvoiceStatusStamp({ status }) {
+    return (
+        <span
+            className={`inline-block border rounded-md font-mono text-[10px] font-bold tracking-wider px-2.5 py-1 whitespace-nowrap ${INVOICE_STAMP_STYLE[status] || INVOICE_STAMP_STYLE.Draft}`}
+        >
+            {INVOICE_STAMP_LABEL[status] || status?.toUpperCase()}
+        </span>
+    );
+}
+
+const NEXT_INVOICE_STATUS = {
+    Draft: ["Approved", "Cancelled"],
+    Approved: ["Paid", "Cancelled"],
+    Paid: [],
+    Cancelled: [],
+};
+
 const fmtINR = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -641,6 +674,76 @@ function poToPrintDoc(po) {
     };
 }
 
+// ---------------------------------------------------------------------------
+// Purchase Invoice → printable document builder (uses the invoice header's
+// server-computed SGST/CGST/IGST split, unlike the PO builder above which
+// still computes a flat IGST client-side)
+// ---------------------------------------------------------------------------
+function invoiceToPrintDoc(inv, po) {
+    const items = (inv.items || []).map((it) => ({
+        description: it.description,
+        hsnSac: it.hsnSac,
+        gstRate: it.gstRate,
+        quantity: it.invoicedQty,
+        unit: it.unit,
+        rate: it.rate,
+        amount: it.amount,
+    }));
+
+    const taxLines = [];
+    if (Number(inv.sgstAmount)) taxLines.push({ label: "SGST", amount: inv.sgstAmount });
+    if (Number(inv.cgstAmount)) taxLines.push({ label: "CGST", amount: inv.cgstAmount });
+    if (Number(inv.igstAmount)) taxLines.push({ label: "IGST", amount: inv.igstAmount });
+
+    const rawTotal = Number(inv.totalAmount) || 0;
+    const grandTotal = Math.round(rawTotal);
+
+    return {
+        docTitle: "PURCHASE INVOICE",
+        voucherNo: inv.invoiceNo,
+        date: inv.invoiceDate,
+        referenceNo: po?.voucherNo,
+        referenceDate: po?.poDate,
+        dispatchedThrough: inv.dispatchedThrough,
+        destination: inv.destination,
+        termsOfDelivery: inv.termsOfDelivery,
+        modeOfPayment: inv.modeOfPayment,
+        invoiceTo: {
+            name: "AKS SOLAR SYSTEMS PRIVATE LIMITED",
+            address: "H.NO. 67-A/4, NH-21 VPO BHOJPUR, TEHSIL SUNDERNAGAR DISTT. MANDI",
+            gstin: "02AAYCA7897E1Z3",
+            panNo: "AAYCA7897E",
+            stateName: "Himachal Pradesh",
+            stateCode: "02",
+            contact: "9805763000",
+            email: "akssolarsystems@gmail.com",
+        },
+        billFromLabel: "Supplier (Bill from)",
+        billFrom: {
+            name: inv.supplierName || po?.supplierName,
+            gstin: inv.supplierGstin || po?.supplierGstin,
+            address: po?.supplierAddress,
+            panNo: po?.supplierPanNo,
+            stateName: po?.supplierStateName,
+            stateCode: po?.supplierStateCode,
+        },
+        shipToLabel: "Consignee (Ship to)",
+        shipTo: po?.consigneeName
+            ? {
+                name: po.consigneeName,
+                address: po.consigneeAddress,
+                gstin: po.consigneeGstin,
+                stateName: po.consigneeStateName,
+                stateCode: po.consigneeStateCode,
+            }
+            : null,
+        items,
+        taxLines,
+        roundOff: grandTotal - rawTotal,
+        grandTotal,
+    };
+}
+
 function emptyPoItem() {
     return {
         itemId: "",
@@ -774,6 +877,55 @@ function StatusMoveSelect({ po, onChanged }) {
         setUpdating(true);
         try {
             await adminService.updatePoStatus({ poId: po.poId, status });
+            await onChanged();
+        } catch (updateErr) {
+            setErr(updateErr.message || "Couldn't update status.");
+        } finally {
+            setValue("");
+            setUpdating(false);
+        }
+    };
+
+    return (
+        <div>
+            <select
+                value={value}
+                disabled={updating}
+                onChange={handleChange}
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            >
+                <option value="" disabled>
+                    {updating ? "Updating…" : "Update status"}
+                </option>
+                {options.map((s) => (
+                    <option key={s} value={s}>
+                        {s}
+                    </option>
+                ))}
+            </select>
+            {err && <div className="text-[10px] text-rose-600 mt-1 max-w-[140px] leading-tight font-semibold">{err}</div>}
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Purchase Invoice status move selector (separate lifecycle from PO)
+// ---------------------------------------------------------------------------
+function InvoiceStatusMoveSelect({ invoice, onChanged }) {
+    const [value, setValue] = useState("");
+    const [updating, setUpdating] = useState(false);
+    const [err, setErr] = useState("");
+    const options = NEXT_INVOICE_STATUS[invoice.status] || [];
+
+    if (!options.length) return <span className="text-slate-300 text-xs font-bold italic">—</span>;
+
+    const handleChange = async (e) => {
+        const status = e.target.value;
+        if (!status) return;
+        setErr("");
+        setUpdating(true);
+        try {
+            await adminService.updateInvoiceStatus({ invoiceId: invoice.invoiceId, status });
             await onChanged();
         } catch (updateErr) {
             setErr(updateErr.message || "Couldn't update status.");
@@ -1544,6 +1696,362 @@ function GrnTab() {
     );
 }
 
+function InvoicesTab() {
+    const [orders, setOrders] = useState([]);
+    const [selectedPoId, setSelectedPoId] = useState("");
+    const [selectedPo, setSelectedPo] = useState(null);
+    const [invoices, setInvoices] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [printingId, setPrintingId] = useState(null);
+    // per poItemId: { qty, rate, discount }
+    const [lineInputs, setLineInputs] = useState({});
+
+    useEffect(() => {
+        adminService
+            .searchPurchaseOrders({})
+            .then((res) => {
+                const eligible = rows(res).filter((o) =>
+                    ["Approved", "PartiallyReceived", "Completed"].includes(o.status)
+                );
+                setOrders(eligible);
+            })
+            .catch((err) => console.error("Failed to load purchase orders", err));
+    }, []);
+
+    const loadInvoices = (poId) => {
+        if (!poId) {
+            setInvoices([]);
+            return;
+        }
+        setLoading(true);
+        adminService
+            .getInvoicesByPo(poId)
+            .then((res) => setInvoices(rows(res)))
+            .catch((err) => console.error("Failed to load invoices", err))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        loadInvoices(selectedPoId);
+        setSuccess("");
+        if (selectedPoId) {
+            adminService
+                .getPurchaseOrderById(selectedPoId)
+                .then((res) => setSelectedPo(one(res)))
+                .catch((err) => console.error("Failed to load PO detail", err));
+        } else {
+            setSelectedPo(null);
+        }
+    }, [selectedPoId]);
+
+    // items still waiting to be billed: received but not (fully) invoiced yet
+    const billableItems = (selectedPo?.items || [])
+        .map((it) => ({ ...it, pendingInvoiceQty: (Number(it.receivedQty) || 0) - (Number(it.invoicedQty) || 0) }))
+        .filter((it) => it.pendingInvoiceQty > 0);
+
+    const canRecordInvoice = Boolean(selectedPoId) && billableItems.length > 0;
+
+    const openModal = () => {
+        if (!canRecordInvoice) return;
+        const defaults = {};
+        billableItems.forEach((it) => {
+            defaults[it.poItemId] = { qty: "", rate: it.rate, discount: "0" };
+        });
+        setLineInputs(defaults);
+        setError("");
+        setSuccess("");
+        setShowModal(true);
+    };
+
+    const updateLine = (poItemId, field, value) => {
+        setLineInputs((prev) => ({ ...prev, [poItemId]: { ...prev[poItemId], [field]: value } }));
+    };
+
+    const lineAmount = (it) => {
+        const inp = lineInputs[it.poItemId] || {};
+        const qty = Number(inp.qty) || 0;
+        const rate = Number(inp.rate) || 0;
+        const disc = Number(inp.discount) || 0;
+        return qty * rate * (1 - disc / 100);
+    };
+    const modalTotal = billableItems.reduce((sum, it) => sum + lineAmount(it), 0);
+
+    const handlePrint = async (invoiceId) => {
+        setPrintingId(invoiceId);
+        try {
+            const res = await adminService.getPurchaseInvoiceById(invoiceId);
+            const inv = one(res);
+            printDocInNewWindow(invoiceToPrintDoc(inv, selectedPo));
+        } catch (err) {
+            console.error("Failed to load invoice for printing", err);
+        } finally {
+            setPrintingId(null);
+        }
+    };
+
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        setError("");
+        const f = new FormData(e.target);
+
+        const items = billableItems
+            .map((it) => {
+                const inp = lineInputs[it.poItemId] || {};
+                const qty = Number(inp.qty) || 0;
+                if (qty <= 0) return null;
+                return {
+                    poItemId: it.poItemId,
+                    itemId: it.itemId,
+                    description: it.description,
+                    hsnSac: it.hsnSac,
+                    gstRate: it.gstRate,
+                    unit: it.unit,
+                    invoicedQty: qty,
+                    rate: Number(inp.rate) || 0,
+                    discountPercent: Number(inp.discount) || 0,
+                };
+            })
+            .filter(Boolean);
+
+        if (items.length === 0) {
+            setError("Enter a quantity to bill for at least one item.");
+            return;
+        }
+        for (const it of items) {
+            const src = billableItems.find((b) => b.poItemId === it.poItemId);
+            if (it.invoicedQty > src.pendingInvoiceQty) {
+                setError(`"${src.description}" — max billable qty is ${src.pendingInvoiceQty}.`);
+                return;
+            }
+        }
+
+        const payload = {
+            poId: Number(selectedPoId),
+            invoiceNo: f.get("invoiceNo"),
+            invoiceDate: f.get("invoiceDate"),
+            dueDate: f.get("dueDate") || null,
+            dispatchedThrough: f.get("dispatchedThrough") || undefined,
+            destination: f.get("destination") || undefined,
+            termsOfDelivery: f.get("termsOfDelivery") || undefined,
+            modeOfPayment: f.get("modeOfPayment") || undefined,
+            remarks: f.get("remarks") || undefined,
+            items,
+        };
+
+        setSaving(true);
+        try {
+            const res = await adminService.createPurchaseInvoice(payload);
+            setShowModal(false);
+            loadInvoices(selectedPoId);
+            adminService.getPurchaseOrderById(selectedPoId).then((r) => setSelectedPo(one(r)));
+            const msg = res?.message || res?.Message;
+            setSuccess(msg || "Purchase Invoice recorded successfully.");
+        } catch (err) {
+            setError(err.message || "Couldn't create the invoice.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="bg-white border-b border-slate-100 p-5 flex flex-col sm:flex-row items-end gap-4">
+                <div className="w-full sm:w-80">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">
+                        Select Purchase Order
+                    </label>
+                    <select
+                        value={selectedPoId}
+                        onChange={(e) => setSelectedPoId(e.target.value)}
+                        className={`${inputClass} cursor-pointer`}
+                    >
+                        <option value="" disabled>-- Choose PO --</option>
+                        {orders.map((o) => (
+                            <option key={o.poId} value={o.poId}>
+                                {o.voucherNo} — {o.supplierName}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {selectedPo && (
+                    <div className="mb-2.5 shrink-0">
+                        <StatusStamp status={selectedPo.status} />
+                    </div>
+                )}
+
+                <button
+                    disabled={!canRecordInvoice}
+                    onClick={openModal}
+                    className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm ${canRecordInvoice
+                        ? "bg-[#0b2836] hover:bg-[#0f3345] text-white shadow-lg shadow-[#0b2836]/20"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                        }`}
+                >
+                    <i className="fa-solid fa-file-invoice" />
+                    Bill Supplier
+                </button>
+            </div>
+
+            {success && (
+                <div className="m-5 flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold rounded-xl px-5 py-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <span className="flex items-center gap-2">
+                        <i className="fa-solid fa-circle-check text-lg" />
+                        {success}
+                    </span>
+                    <button onClick={() => setSuccess("")} className="text-emerald-500 hover:text-emerald-700 shrink-0">
+                        <i className="fa-solid fa-xmark text-lg" />
+                    </button>
+                </div>
+            )}
+
+            {selectedPo && !canRecordInvoice && (
+                <div className="mx-5 mt-5 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold rounded-xl px-4 py-3">
+                    <i className="fa-solid fa-circle-info" />
+                    Nothing left to bill — either goods haven't been received yet, or everything received is already invoiced.
+                </div>
+            )}
+
+            {!selectedPoId ? (
+                <div className="flex-1 bg-slate-50/50 flex flex-col items-center justify-center text-center py-24">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 text-2xl shadow-sm mb-4 border-2 border-dashed border-slate-200">
+                        <i className="fa-solid fa-file-invoice-dollar" />
+                    </div>
+                    <p className="text-base font-bold text-slate-600">No PO Selected</p>
+                    <p className="text-sm text-slate-400 mt-1">Pick a purchase order above to view or raise a bill.</p>
+                </div>
+            ) : (
+                <Table
+                    head={["Invoice No.", "Date", "Amount", "Status", "Move to", "Print"]}
+                    rows={invoices.map((inv) => [
+                        <span className="font-mono font-bold text-amber-600">{inv.invoiceNo}</span>,
+                        <span className="font-medium text-slate-600">{fmtDate(inv.invoiceDate)}</span>,
+                        <span className="font-mono font-bold text-slate-700">{fmtINR(inv.totalAmount)}</span>,
+                        <InvoiceStatusStamp status={inv.status} />,
+                        <InvoiceStatusMoveSelect invoice={inv} onChanged={() => loadInvoices(selectedPoId)} />,
+                        <button
+                            onClick={() => handlePrint(inv.invoiceId)}
+                            disabled={printingId === inv.invoiceId}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                            title="Print / Save as PDF"
+                        >
+                            {printingId === inv.invoiceId ? (
+                                <i className="fa-solid fa-spinner animate-spin text-[13px]" />
+                            ) : (
+                                <i className="fa-solid fa-print text-[13px]" />
+                            )}
+                        </button>,
+                    ])}
+                    empty={!loading && invoices.length === 0}
+                    emptyText="No invoices raised against this PO yet."
+                />
+            )}
+
+            {showModal && (
+                <Modal title={`Bill Supplier — ${selectedPo?.voucherNo || ""}`} onClose={() => setShowModal(false)} wide>
+                    <form onSubmit={handleCreate}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Field label="Supplier's Invoice No. *">
+                                <input name="invoiceNo" required className={inputClass} placeholder="e.g. INV-1042" />
+                            </Field>
+                            <Field label="Invoice Date *">
+                                <input name="invoiceDate" type="date" required className={inputClass} />
+                            </Field>
+                            <Field label="Due Date (optional)">
+                                <input name="dueDate" type="date" className={inputClass} />
+                            </Field>
+                            <Field label="Mode of payment (optional)">
+                                <input name="modeOfPayment" defaultValue={selectedPo?.modeOfPayment || ""} className={inputClass} placeholder="e.g. NEFT/RTGS" />
+                            </Field>
+                            <Field label="Dispatched through (optional)">
+                                <input name="dispatchedThrough" defaultValue={selectedPo?.dispatchedThrough || ""} className={inputClass} />
+                            </Field>
+                            <Field label="Destination (optional)">
+                                <input name="destination" defaultValue={selectedPo?.destination || ""} className={inputClass} />
+                            </Field>
+                            <Field label="Terms of delivery (optional)">
+                                <input name="termsOfDelivery" defaultValue={selectedPo?.termsOfDelivery || ""} className={inputClass} />
+                            </Field>
+                        </div>
+
+                        <div className="border border-slate-200 rounded-2xl overflow-hidden mb-4 bg-slate-50/50">
+                            <div className="bg-slate-100/50 px-5 py-3 border-b border-slate-200">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                                    Items Awaiting Billing
+                                </span>
+                            </div>
+                            <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
+                                {billableItems.map((it) => (
+                                    <div key={it.poItemId} className="p-4 space-y-3 bg-white m-2 rounded-xl border border-slate-100 shadow-sm">
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-bold text-slate-800 truncate">{it.description || it.itemCode}</div>
+                                                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                                                    Received: <span className="text-slate-600">{it.receivedQty} {it.unit}</span>
+                                                    {" · "}Billable: <span className="text-amber-600">{it.pendingInvoiceQty} {it.unit}</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right text-xs font-mono font-bold text-emerald-600 bg-emerald-50 py-1 px-2.5 rounded-lg border border-emerald-100 shrink-0">
+                                                = {fmtINR(lineAmount(it))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bill Qty</span>
+                                                <input
+                                                    type="number" min="0" max={it.pendingInvoiceQty} step="0.01"
+                                                    value={lineInputs[it.poItemId]?.qty || ""}
+                                                    onChange={(e) => updateLine(it.poItemId, "qty", e.target.value)}
+                                                    className={inputSm}
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Rate</span>
+                                                <input
+                                                    type="number" min="0" step="0.01"
+                                                    value={lineInputs[it.poItemId]?.rate ?? it.rate}
+                                                    onChange={(e) => updateLine(it.poItemId, "rate", e.target.value)}
+                                                    className={inputSm}
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Disc. %</span>
+                                                <input
+                                                    type="number" min="0" max="100" step="0.01"
+                                                    value={lineInputs[it.poItemId]?.discount ?? "0"}
+                                                    onChange={(e) => updateLine(it.poItemId, "discount", e.target.value)}
+                                                    className={inputSm}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="bg-slate-100/50 px-5 py-3 border-t border-slate-200 text-right text-sm font-bold text-slate-800">
+                                Bill Total: <span className="font-mono text-base ml-2">{fmtINR(modalTotal)}</span>
+                            </div>
+                        </div>
+
+                        <Field label="Remarks / Notes (optional)">
+                            <textarea name="remarks" rows={2} className={`${inputClass} resize-none`} placeholder="Any discrepancies or notes..." />
+                        </Field>
+
+                        {error && <p className="text-[11px] font-bold text-rose-500 mt-2 ml-1">{error}</p>}
+
+                        <SubmitButton type="submit" disabled={saving}>
+                            {saving ? "Saving Invoice…" : "Save Purchase Invoice"}
+                        </SubmitButton>
+                    </form>
+                </Modal>
+            )}
+        </div>
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Main page — tab shell
 // ---------------------------------------------------------------------------
@@ -1552,6 +2060,7 @@ const TABS = [
     { key: "suppliers", label: "Suppliers", icon: "fa-solid fa-boxes-packing", Component: SuppliersTab },
     { key: "consignees", label: "Consignees", icon: "fa-solid fa-truck-fast", Component: ConsigneesTab },
     { key: "grn", label: "GRN", icon: "fa-solid fa-box-check", Component: GrnTab },
+    { key: "invoices", label: "Invoices", icon: "fa-solid fa-file-invoice", Component: InvoicesTab },
 ];
 
 export default function PurchaseModule() {
@@ -1569,7 +2078,7 @@ export default function PurchaseModule() {
                     </div>
                     <div>
                         <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Purchase Management</h2>
-                        <p className="text-xs text-slate-400 mt-0.5">Suppliers, consignees, orders, and goods receipts in one place.</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Suppliers, consignees, orders, goods receipts, and invoices in one place.</p>
                     </div>
                 </div>
             </div>

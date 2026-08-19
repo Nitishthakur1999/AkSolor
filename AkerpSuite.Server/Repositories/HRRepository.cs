@@ -1716,7 +1716,6 @@ namespace AkerpSuite.Server.Repositories
         #endregion
 
         #region Suppliers
-
         public async Task<int> CreateSupplierAsync(SupplierRequestDto request)
         {
             using var conn = _context.CreateConnection();
@@ -1939,6 +1938,128 @@ namespace AkerpSuite.Server.Repositories
                     p_ToDate = filter.ToDate,
                     p_Keyword = filter.Keyword
                 },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        #endregion
+
+        #region Purchase Invoice
+
+        public async Task<int> CreatePurchaseInvoiceAsync(PurchaseInvoiceRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            conn.Open();
+            using var txn = conn.BeginTransaction();
+
+            try
+            {
+                var invoiceId = await conn.QuerySingleAsync<int>(
+                    "sp_Invoice_Create",
+                    new
+                    {
+                        p_PoId = request.PoId,
+                        p_InvoiceNo = request.InvoiceNo,
+                        p_InvoiceDate = request.InvoiceDate,
+                        p_DueDate = request.DueDate,
+                        p_DispatchedThrough = request.DispatchedThrough,
+                        p_Destination = request.Destination,
+                        p_TermsOfDelivery = request.TermsOfDelivery,
+                        p_ModeOfPayment = request.ModeOfPayment,
+                        p_Remarks = request.Remarks,
+                        p_CreatedBy = request.CreatedBy
+                    },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+
+                foreach (var item in request.Items)
+                {
+                    await conn.ExecuteAsync(
+                        "sp_InvoiceItem_Add",
+                        new
+                        {
+                            p_InvoiceId = invoiceId,
+                            p_PoItemId = item.PoItemId,
+                            p_ItemId = item.ItemId,
+                            p_Description = item.Description,
+                            p_HsnSac = item.HsnSac,
+                            p_GstRate = item.GstRate,
+                            p_DueOn = item.DueOn,
+                            p_InvoicedQty = item.InvoicedQty,
+                            p_Unit = item.Unit,
+                            p_Rate = item.Rate,
+                            p_DiscountPercent = item.DiscountPercent
+                        },
+                        transaction: txn, commandType: CommandType.StoredProcedure);
+                }
+
+                // Recomputes taxable/SGST/CGST/IGST/total on header from item rows + supplier state match
+                await conn.ExecuteAsync(
+                    "sp_Invoice_RecalculateTotals",
+                    new { p_InvoiceId = invoiceId },
+                    transaction: txn, commandType: CommandType.StoredProcedure);
+
+                txn.Commit();
+                return invoiceId;
+            }
+            catch
+            {
+                txn.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateInvoiceStatusAsync(int invoiceId, string status)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Invoice_UpdateStatus",
+                new { p_InvoiceId = invoiceId, p_Status = status },
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<PurchaseInvoiceResponseDto?> GetPurchaseInvoiceByIdAsync(int invoiceId)
+        {
+            using var conn = _context.CreateConnection();
+
+            var header = await conn.QueryFirstOrDefaultAsync<PurchaseInvoiceResponseDto>(
+                "sp_Invoice_GetById",
+                new { p_InvoiceId = invoiceId },
+                commandType: CommandType.StoredProcedure);
+
+            if (header == null) return null;
+
+            var items = await conn.QueryAsync<PurchaseInvoiceItemResponseDto>(
+                "sp_InvoiceItem_GetByInvoice",
+                new { p_InvoiceId = invoiceId },
+                commandType: CommandType.StoredProcedure);
+
+            header.Items = items.ToList();
+            return header;
+        }
+
+        public async Task<IEnumerable<PurchaseInvoiceResponseDto>> SearchPurchaseInvoicesAsync(PurchaseInvoiceSearchRequestDto filter)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<PurchaseInvoiceResponseDto>(
+                "sp_Invoice_Search",
+                new
+                {
+                    p_SupplierId = filter.SupplierId,
+                    p_PoId = filter.PoId,
+                    p_Status = filter.Status,
+                    p_FromDate = filter.FromDate,
+                    p_ToDate = filter.ToDate,
+                    p_Keyword = filter.Keyword
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<PurchaseInvoiceResponseDto>> GetInvoicesByPoAsync(int poId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<PurchaseInvoiceResponseDto>(
+                "sp_Invoice_GetByPo",
+                new { p_PoId = poId },
                 commandType: CommandType.StoredProcedure);
         }
 
