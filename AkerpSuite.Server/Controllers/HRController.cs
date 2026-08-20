@@ -18,37 +18,28 @@ namespace AkerpSuite.Server.Controllers
         private readonly ILogger<HRController> _logger;
         private readonly IAdminService _adminService;
 
-        // ── HR Module (documents, bank details, employee/attendance/leave/payroll reports) ──
-        private const string HrWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
-        private const string HrDeleteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
-        private const string HrViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
-        private const string PayrollViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Accounts;
-        private const string PayrollWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Accounts;
+        private const string HrWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
+        private const string HrDeleteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
+        private const string HrViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
+        private const string PayrollViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Accounts;
+        private const string PayrollWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Accounts;
 
+        private const string SalesWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string SalesViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
-        // ── Sales Pipeline (segments, leads, followups, surveys, proposals, dispatch, sales docs/reminders) ──
-        private const string SalesWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-        private const string SalesViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string PaymentWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.Accounts + "," + Roles.Sales + "," + Roles.Manager;
+        private const string PaymentViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
-        // Payment step: keep tighter — Accounts handles verification, Sales shouldn't record payments.
-        private const string PaymentWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.Accounts + "," + Roles.Sales + "," + Roles.Manager;
-        private const string PaymentViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string BomWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
+        private const string BomViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
 
-        // BOM: Sales creates the request, stock/booking action belongs to Inventory.
-        private const string BomWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
-        private const string BomViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
+        private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string InventoryViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
 
-        // ── Inventory Module (item master, stock in/out/adjustment, transactions, reports) ──
-        private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-        private const string InventoryViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
+        private const string PurchaseWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager;
+        private const string PurchaseViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager + "," + Roles.Accounts;
 
-        // team wants a different split.
-        private const string PurchaseWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Manager;
-        private const string PurchaseViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Manager + "," + Roles.Accounts;
-
-        // Status changes (Approved/Cancelled) are a step above regular write access.
-        private const string PurchaseApproveRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR + "," + Roles.Manager;
-        public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
+        private const string PurchaseApproveRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager; public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
         {
             _service = service;
             _logger = logger;

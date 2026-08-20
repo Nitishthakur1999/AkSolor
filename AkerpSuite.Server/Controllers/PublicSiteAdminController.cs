@@ -15,8 +15,8 @@ namespace AkerpSuite.Server.Controllers
     {
         private readonly IHRService _service;
 
-        private const string SiteWriteRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
-        private const string SiteViewRoles = Roles.CMD + "," + Roles.Admin + "," + Roles.HR;
+        private const string SiteWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
+        private const string SiteViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
 
         public PublicSiteAdminController(IHRService service)
         {

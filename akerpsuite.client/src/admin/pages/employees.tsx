@@ -43,6 +43,7 @@ export default function Employees() {
 
     // 🔒 Credentials reveal popup state
     const [createdCredentials, setCreatedCredentials] = useState(null);
+    const [revealCopied, setRevealCopied] = useState(false);
 
     // Active tab inside modals
     const [activeTab, setActiveTab] = useState("personal");
@@ -971,8 +972,7 @@ export default function Employees() {
                                     </div>
 
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">First Name *</label><input type="text" required value={createForm.firstName} onChange={e => setCreateForm({ ...createForm, firstName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
-                                    <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Last Name *</label><input type="text" required value={createForm.lastName} onChange={e => setCreateForm({ ...createForm, lastName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
-                                    <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Father/Husband Name</label><input type="text" value={createForm.fatherHusbandName} onChange={e => setCreateForm({ ...createForm, fatherHusbandName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
+                                    <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Last Name</label><input type="text" value={createForm.lastName} onChange={e => setCreateForm({ ...createForm, lastName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div> <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Father/Husband Name</label><input type="text" value={createForm.fatherHusbandName} onChange={e => setCreateForm({ ...createForm, fatherHusbandName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Gender *</label><select value={createForm.gender} onChange={e => setCreateForm({ ...createForm, gender: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"><option>Male</option><option>Female</option><option>Other</option></select></div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date of Birth *</label><input type="date" required value={createForm.dateOfBirth} onChange={e => setCreateForm({ ...createForm, dateOfBirth: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Blood Group</label><input type="text" placeholder="e.g., O+" value={createForm.bloodGroup} onChange={e => setCreateForm({ ...createForm, bloodGroup: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
@@ -1089,15 +1089,9 @@ export default function Employees() {
                                             onChange={e => {
                                                 const value = e.target.value;
                                                 setCreateForm({ ...createForm, officialEmail: value });
-                                                checkFieldDuplicate("officialEmail", value);
                                             }}
-                                            className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all focus:outline-none ${fieldCheckMessages.officialEmail.type === "error" ? "border-rose-400 focus:ring-1 focus:ring-rose-400" : "border-slate-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"}`}
+                                            className="w-full px-3 py-2.5 rounded-xl border text-sm transition-all focus:outline-none border-slate-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
                                         />
-                                        {fieldCheckMessages.officialEmail.text && (
-                                            <p className={`text-[10px] mt-1.5 font-bold uppercase tracking-wide ${fieldCheckMessages.officialEmail.type === "error" ? "text-rose-600" : "text-emerald-600"}`}>
-                                                {fieldCheckMessages.officialEmail.text}
-                                            </p>
-                                        )}
                                     </div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date of Joining *</label><input type="date" required value={createForm.dateOfJoining} onChange={e => setCreateForm({ ...createForm, dateOfJoining: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
                                     <div>
@@ -1122,7 +1116,7 @@ export default function Employees() {
                                             className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
                                         >
                                             <option value="">-- No Reporting Manager --</option>
-                                            {employees.filter(emp => emp.employmentStatus === "Active" && emp.roleName === "HR").map(emp => (
+                                            {employees.filter(emp => emp.employmentStatus === "Active" && ["CMD", "Director", "Manager", "HR"].includes(emp.roleName)).map(emp => (
                                                 <option key={emp.empId} value={emp.empId}>{emp.firstName} {emp.lastName} ({emp.empCode})</option>
                                             ))}
                                         </select>
@@ -1233,7 +1227,7 @@ export default function Employees() {
                                     </div>
 
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">First Name *</label><input type="text" required value={editForm.firstName} onChange={e => setEditForm({ ...editForm, firstName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
-                                    <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Last Name *</label><input type="text" required value={editForm.lastName} onChange={e => setEditForm({ ...editForm, lastName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
+                                    <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Last Name</label><input type="text" value={editForm.lastName} onChange={e => setEditForm({ ...editForm, lastName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Father/Husband Name</label><input type="text" value={editForm.fatherHusbandName} onChange={e => setEditForm({ ...editForm, fatherHusbandName: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Gender *</label><select value={editForm.gender} onChange={e => setEditForm({ ...editForm, gender: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"><option>Male</option><option>Female</option><option>Other</option></select></div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date of Birth *</label><input type="date" required value={editForm.dateOfBirth} onChange={e => setEditForm({ ...editForm, dateOfBirth: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
@@ -1381,15 +1375,9 @@ export default function Employees() {
                                             onChange={e => {
                                                 const value = e.target.value;
                                                 setEditForm({ ...editForm, officialEmail: value });
-                                                checkFieldDuplicate("officialEmail", value, parseInt(editForm.empId, 10));
                                             }}
-                                            className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all focus:outline-none ${fieldCheckMessages.officialEmail.type === "error" ? "border-rose-400 focus:ring-1 focus:ring-rose-400" : "border-slate-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"}`}
+                                            className="w-full px-3 py-2.5 rounded-xl border text-sm transition-all focus:outline-none border-slate-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
                                         />
-                                        {fieldCheckMessages.officialEmail.text && (
-                                            <p className={`text-[10px] mt-1.5 font-bold uppercase tracking-wide ${fieldCheckMessages.officialEmail.type === "error" ? "text-rose-600" : "text-emerald-600"}`}>
-                                                {fieldCheckMessages.officialEmail.text}
-                                            </p>
-                                        )}
                                     </div>
                                     <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date of Joining *</label><input type="date" required value={editForm.dateOfJoining} onChange={e => setEditForm({ ...editForm, dateOfJoining: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" /></div>
                                     <div>
@@ -1416,7 +1404,7 @@ export default function Employees() {
                                             className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
                                         >
                                             <option value="">-- No Reporting Manager --</option>
-                                            {employees.filter(emp => emp.empId !== parseInt(editForm.empId, 10) && emp.employmentStatus === "Active" && emp.roleName === "HR").map(emp => (
+                                            {employees.filter(emp => emp.empId !== parseInt(editForm.empId, 10) && emp.employmentStatus === "Active" && ["CMD", "Director", "Sr. Manager", "HR"].includes((emp.roleName || "").trim())).map(emp => (
                                                 <option key={emp.empId} value={emp.empId}>{emp.firstName} {emp.lastName} ({emp.empCode})</option>
                                             ))}
                                         </select>
@@ -1707,13 +1695,18 @@ export default function Employees() {
                                         <span className="text-emerald-600 font-bold text-base tracking-wide select-all">{revealedCreds.password}</span>
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => navigator.clipboard.writeText(`Username: ${revealedCreds.username}\nPassword: ${revealedCreds.password}`)}
-                                    className="w-full py-3 font-bold rounded-xl text-xs uppercase tracking-wide bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 shadow-sm transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <i className="fa-regular fa-copy" /> Copy Identity Credentials
-                                </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`Username: ${revealedCreds.username}\nPassword: ${revealedCreds.password}`);
+                                            setRevealCopied(true);
+                                            setTimeout(() => setRevealCopied(false), 2000);
+                                        }}
+                                        className="w-full py-3 font-bold rounded-xl text-xs uppercase tracking-wide bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 shadow-sm transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <i className={revealCopied ? "fa-solid fa-check" : "fa-regular fa-copy"} />
+                                        {revealCopied ? "Copied" : "Copy Identity Credentials"}
+                                    </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowRevealModal(false)}

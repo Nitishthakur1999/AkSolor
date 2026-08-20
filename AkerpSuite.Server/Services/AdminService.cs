@@ -194,9 +194,9 @@ namespace AkerpSuite.Server.Services
                 throw new UnauthorizedAccessException(
                     $"Logged in role '{creatorRole}' is not allowed to create a user with role '{targetRole.RoleName}'.");
 
-            // ✅ Fix 3: Targeted check, poora table fetch nahi
-            if (await _repository.EmailExistsAsync(request.OfficialEmail))
-                throw new InvalidOperationException($"Email '{request.OfficialEmail}' is already registered.");
+            //// ✅ Fix 3: Targeted check, poora table fetch nahi
+            //if (await _repository.EmailExistsAsync(request.OfficialEmail))
+            //    throw new InvalidOperationException($"Email '{request.OfficialEmail}' is already registered.");
 
             // ✅ Fix 1: Atomic-ish next number DB se
             int nextNumber = await _repository.GetNextEmpCodeNumberAsync();

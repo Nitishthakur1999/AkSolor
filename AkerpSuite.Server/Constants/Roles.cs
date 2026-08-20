@@ -1,9 +1,11 @@
-﻿namespace AkerpSuite.Server.Constants
+﻿using DocumentFormat.OpenXml.Bibliography;
+
+namespace AkerpSuite.Server.Constants
 {
     public static class Roles
     {
         public const string CMD = "CMD";
-        public const string Admin = "Admin";
+        public const string Director = "Director";
         public const string HR = "HR";
         public const string Manager = "Manager";
         public const string Accounts = "Accounts";
@@ -14,7 +16,7 @@
         public static readonly Dictionary<string, int> HierarchyLevel = new()
         {
             { CMD, 1 },
-            { Admin, 2 },
+            { Director, 2 },
             { HR, 3 },
             { Manager, 4 },
             { Accounts, 4 },

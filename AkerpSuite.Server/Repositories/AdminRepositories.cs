@@ -248,58 +248,58 @@ namespace AkerpSuite.Server.Repositories
             var parameters = new DynamicParameters();
 
             // Core details
-            parameters.Add("p_emp_code", request.EmpCode);
-            parameters.Add("p_first_name", request.FirstName);
-            parameters.Add("p_last_name", request.LastName);
-            parameters.Add("p_father_husband_name", request.FatherHusbandName);   // ✅ NEW
-            parameters.Add("p_gender", request.Gender);
+            parameters.Add("p_emp_code", request.EmpCode?.Trim());
+            parameters.Add("p_first_name", request.FirstName?.Trim());
+            parameters.Add("p_last_name", request.LastName?.Trim());
+            parameters.Add("p_father_husband_name", request.FatherHusbandName?.Trim());
+            parameters.Add("p_gender", request.Gender?.Trim());
             parameters.Add("p_date_of_birth", request.DateOfBirth);
-            parameters.Add("p_blood_group", request.BloodGroup);
-            parameters.Add("p_marital_status", request.MaritalStatus);
+            parameters.Add("p_blood_group", request.BloodGroup?.Trim());
+            parameters.Add("p_marital_status", request.MaritalStatus?.Trim());
 
             // Contact
-            parameters.Add("p_personal_email", request.PersonalEmail);
-            parameters.Add("p_official_email", request.OfficialEmail);
-            parameters.Add("p_mobile", request.Mobile);
-            parameters.Add("p_alternate_mobile", request.AlternateMobile);
+            parameters.Add("p_personal_email", request.PersonalEmail?.Trim());
+            parameters.Add("p_official_email", request.OfficialEmail?.Trim());
+            parameters.Add("p_mobile", request.Mobile?.Trim());
+            parameters.Add("p_alternate_mobile", request.AlternateMobile?.Trim());
 
             // Address
-            parameters.Add("p_address_line1", request.AddressLine1);
-            parameters.Add("p_address_line2", request.AddressLine2);
-            parameters.Add("p_city", request.City);
-            parameters.Add("p_state", request.State);
-            parameters.Add("p_pincode", request.Pincode);
-            parameters.Add("p_country", request.Country);
+            parameters.Add("p_address_line1", request.AddressLine1?.Trim());
+            parameters.Add("p_address_line2", request.AddressLine2?.Trim());
+            parameters.Add("p_city", request.City?.Trim());
+            parameters.Add("p_state", request.State?.Trim());
+            parameters.Add("p_pincode", request.Pincode?.Trim());
+            parameters.Add("p_country", request.Country?.Trim());
 
             // Identity Documents
-            parameters.Add("p_aadhar_no", request.AadharNo);
-            parameters.Add("p_pan_no", request.PanNo);
-            parameters.Add("p_passport_no", request.PassportNo);
-            parameters.Add("p_uan_no", request.UanNo);
-            parameters.Add("p_esic_no", request.EsicNo);
+            parameters.Add("p_aadhar_no", request.AadharNo?.Trim());
+            parameters.Add("p_pan_no", request.PanNo?.Trim());
+            parameters.Add("p_passport_no", request.PassportNo?.Trim());
+            parameters.Add("p_uan_no", request.UanNo?.Trim());
+            parameters.Add("p_esic_no", request.EsicNo?.Trim());
 
             // Org
             parameters.Add("p_dept_id", request.DeptId);
             parameters.Add("p_desig_id", request.DesigId);
             parameters.Add("p_reporting_manager", request.ReportingManager);
             parameters.Add("p_date_of_joining", request.DateOfJoining);
-            parameters.Add("p_employment_type", request.EmploymentType);
-            parameters.Add("p_employment_status", request.EmploymentStatus);
-            parameters.Add("p_category", request.Category);   // ✅ NEW
+            parameters.Add("p_employment_type", request.EmploymentType?.Trim());
+            parameters.Add("p_employment_status", request.EmploymentStatus?.Trim());
+            parameters.Add("p_category", request.Category?.Trim());
             parameters.Add("p_current_ctc", request.CurrentCtc);
 
             // Photo
-            parameters.Add("p_photo_path", photoPath);
+            parameters.Add("p_photo_path", photoPath?.Trim());
 
             // Lifecycle
             parameters.Add("p_probation_end_date", request.ProbationEndDate);
             parameters.Add("p_confirmation_date", request.ConfirmationDate);
             parameters.Add("p_resignation_date", request.ResignationDate);
             parameters.Add("p_last_working_date", request.LastWorkingDate);
-            parameters.Add("p_exit_reason", request.ExitReason);
+            parameters.Add("p_exit_reason", request.ExitReason?.Trim());
 
             // Auth
-            parameters.Add("p_username", request.Username);
+            parameters.Add("p_username", request.Username?.Trim());
             parameters.Add("p_password_hash", passwordHash);
             parameters.Add("p_role_id", request.RoleId);
 
@@ -315,41 +315,41 @@ namespace AkerpSuite.Server.Repositories
             var parameters = new DynamicParameters();
 
             parameters.Add("p_emp_id", employeeId);
-            parameters.Add("p_emp_code", request.EmpCode);
-            parameters.Add("p_first_name", request.FirstName);
-            parameters.Add("p_last_name", request.LastName);
-            parameters.Add("p_father_husband_name", request.FatherHusbandName);   // ✅ NEW
-            parameters.Add("p_gender", request.Gender);
+            parameters.Add("p_emp_code", request.EmpCode?.Trim());
+            parameters.Add("p_first_name", request.FirstName?.Trim());
+            parameters.Add("p_last_name", request.LastName?.Trim());
+            parameters.Add("p_father_husband_name", request.FatherHusbandName?.Trim());
+            parameters.Add("p_gender", request.Gender?.Trim());
             parameters.Add("p_date_of_birth", request.DateOfBirth);
-            parameters.Add("p_blood_group", request.BloodGroup);
-            parameters.Add("p_marital_status", request.MaritalStatus);
-            parameters.Add("p_personal_email", request.PersonalEmail);
-            parameters.Add("p_official_email", request.OfficialEmail);
-            parameters.Add("p_mobile", request.Mobile);
-            parameters.Add("p_alternate_mobile", request.AlternateMobile);
-            parameters.Add("p_address_line1", request.AddressLine1);
-            parameters.Add("p_address_line2", request.AddressLine2);
-            parameters.Add("p_city", request.City);
-            parameters.Add("p_state", request.State);
-            parameters.Add("p_pincode", request.Pincode);
-            parameters.Add("p_country", request.Country);
+            parameters.Add("p_blood_group", request.BloodGroup?.Trim());
+            parameters.Add("p_marital_status", request.MaritalStatus?.Trim());
+            parameters.Add("p_personal_email", request.PersonalEmail?.Trim());
+            parameters.Add("p_official_email", request.OfficialEmail?.Trim());
+            parameters.Add("p_mobile", request.Mobile?.Trim());
+            parameters.Add("p_alternate_mobile", request.AlternateMobile?.Trim());
+            parameters.Add("p_address_line1", request.AddressLine1?.Trim());
+            parameters.Add("p_address_line2", request.AddressLine2?.Trim());
+            parameters.Add("p_city", request.City?.Trim());
+            parameters.Add("p_state", request.State?.Trim());
+            parameters.Add("p_pincode", request.Pincode?.Trim());
+            parameters.Add("p_country", request.Country?.Trim());
 
             // Documents Mapping parameters execution
-            parameters.Add("p_aadhar_no", request.AadharNo);
-            parameters.Add("p_pan_no", request.PanNo);
-            parameters.Add("p_passport_no", request.PassportNo);
-            parameters.Add("p_uan_no", request.UanNo);
-            parameters.Add("p_esic_no", request.EsicNo);
+            parameters.Add("p_aadhar_no", request.AadharNo?.Trim());
+            parameters.Add("p_pan_no", request.PanNo?.Trim());
+            parameters.Add("p_passport_no", request.PassportNo?.Trim());
+            parameters.Add("p_uan_no", request.UanNo?.Trim());
+            parameters.Add("p_esic_no", request.EsicNo?.Trim());
 
             parameters.Add("p_dept_id", request.DeptId);
             parameters.Add("p_desig_id", request.DesigId);
             parameters.Add("p_reporting_manager", request.ReportingManager);
             parameters.Add("p_date_of_joining", request.DateOfJoining);
-            parameters.Add("p_employment_type", request.EmploymentType);
-            parameters.Add("p_employment_status", request.EmploymentStatus);
-            parameters.Add("p_category", request.Category);   // ✅ NEW
+            parameters.Add("p_employment_type", request.EmploymentType?.Trim());
+            parameters.Add("p_employment_status", request.EmploymentStatus?.Trim());
+            parameters.Add("p_category", request.Category?.Trim());
             parameters.Add("p_current_ctc", request.CurrentCtc);
-            parameters.Add("p_photo_path", photoPath);
+            parameters.Add("p_photo_path", photoPath?.Trim());
             parameters.Add("p_role_id", request.RoleId);
 
             // Lifecycle edits
@@ -357,7 +357,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_confirmation_date", request.ConfirmationDate);
             parameters.Add("p_resignation_date", request.ResignationDate);
             parameters.Add("p_last_working_date", request.LastWorkingDate);
-            parameters.Add("p_exit_reason", request.ExitReason);
+            parameters.Add("p_exit_reason", request.ExitReason?.Trim());
 
             var affectedRows = await connection.ExecuteScalarAsync<int>(
                 "sp_employee_update",
