@@ -16,6 +16,12 @@ export default {
   ],
   theme: {
     extend: {
+      // "xs" isn't a default Tailwind breakpoint — added because a few components
+      // (e.g. Hero's button row) use xs: to switch from stacked to inline layout
+      // slightly before the sm (640px) breakpoint, for larger phones.
+      screens: {
+        xs: "420px",
+      },
       colors: {
         chalk: "var(--color-chalk)",
         paper: "var(--color-paper)",

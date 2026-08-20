@@ -416,7 +416,5 @@ export const adminService = {
     getPurchaseInvoiceById: (id?: any) => apiCall(`${SALES_API_BASE}/invoices/${id}`),
     searchPurchaseInvoices: (filters?: any) => apiCall(`${SALES_API_BASE}/invoices${buildQuery(filters)}`), // { supplierId, poId, status, fromDate, toDate, keyword }
     getInvoicesByPo: (poId?: any) => apiCall(`${SALES_API_BASE}/invoices/po/${poId}`),
-
-
 };
 

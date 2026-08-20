@@ -237,10 +237,10 @@ export default function Contact() {
     return (
         <section
             id="contact"
-            className="border-y border-line bg-paper py-24 md:py-[104px]"
+            className="border-y border-line bg-paper py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, var(--color-line) 1.2px, transparent 1.2px)', backgroundSize: '26px 26px' }}
         >
-            <div className="container mx-auto max-w-[1240px] px-7">
+            <div className="container mx-auto max-w-[1240px] px-5 sm:px-7">
                 <Reveal>
                     <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">
                         <span aria-hidden="true" className="h-px w-[22px] bg-gold-deep" />
@@ -258,10 +258,10 @@ export default function Contact() {
                     </h2>
                 </Reveal>
 
-                <div className="mt-14 grid grid-cols-1 gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+                <div className="mt-10 grid grid-cols-1 gap-10 sm:mt-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
                     {/* ---------- Info column ---------- */}
                     <Reveal delay={1}>
-                        <div className="border border-line border-l-[3px] border-l-gold bg-chalk px-6 py-7">
+                        <div className="border border-line border-l-[3px] border-l-gold bg-chalk px-5 py-6 sm:px-6 sm:py-7">
                             <InfoRow icon="fa-map-marker-alt" label="Address">
                                 {CONTACT.address1}<br />{CONTACT.address2}
                             </InfoRow>

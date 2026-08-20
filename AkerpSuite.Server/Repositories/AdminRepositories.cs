@@ -190,7 +190,6 @@ namespace AkerpSuite.Server.Repositories
         }
 
         /// Role Permission Mapping
-
         public async Task<bool> AssignPermissionsAsync(RolePermissionRequestDto request)
         {
             using var connection = _context.CreateConnection();

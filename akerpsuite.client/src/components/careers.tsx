@@ -154,17 +154,17 @@ export default function Careers() {
             </div>
 
             {selectedJob && (
-                <div className="fixed inset-0 bg-charcoal/60 z-50 overflow-y-auto flex justify-center items-start p-4 pt-8 pb-24 sm:pt-16 sm:pb-24">
+                <div className="fixed inset-0 bg-charcoal/60 z-50 overflow-y-auto flex justify-center items-start p-3 pt-6 pb-16 sm:p-4 sm:pt-16 sm:pb-24">
                     <div className="bg-paper rounded-3xl border border-line-strong shadow-2xl w-full max-w-lg relative">
                         <button
                             onClick={() => { setSelectedJob(null); resetForm(); }}
-                            className="absolute top-6 right-6 text-charcoal-soft hover:text-charcoal text-xl"
+                            className="absolute top-4 right-4 text-charcoal-soft hover:text-charcoal text-xl sm:top-6 sm:right-6"
                         >
                             ✕
                         </button>
 
                         {applicationResult ? (
-                            <div className="px-8 pt-10 pb-8 text-center">
+                            <div className="px-5 pt-10 pb-8 text-center sm:px-8">
                                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gold/10 border border-gold/30">
                                     <svg className="h-8 w-8 text-gold-deep" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -192,7 +192,7 @@ export default function Careers() {
                             </div>
                         ) : (
                             <>
-                                <div className="px-8 pt-8 pb-2">
+                                <div className="px-5 pt-8 pb-2 sm:px-8">
                                     <h2 className="text-2xl font-bold text-charcoal mb-2">Apply for {selectedJob.title}</h2>
                                     <p className="text-sm text-charcoal-soft mb-2">{selectedJob.location} • {selectedJob.employmentType}</p>
                                 </div>

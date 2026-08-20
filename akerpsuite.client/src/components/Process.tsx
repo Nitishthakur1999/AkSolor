@@ -5,11 +5,11 @@ export default function Process() {
     return (
         <section
             id="process"
-            className="relative bg-chalk py-24 md:py-[104px]"
+            className="relative bg-chalk py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'repeating-linear-gradient(115deg, rgba(228,255,78,0.05) 0px, rgba(228,255,78,0.05) 1px, transparent 1px, transparent 38px)' }}
         >
-            <div className="container mx-auto max-w-[1240px] px-7">
-                <Reveal className="mx-auto mb-16 max-w-[600px] text-center">
+            <div className="container mx-auto max-w-[1240px] px-5 sm:px-7">
+                <Reveal className="mx-auto mb-10 max-w-[600px] text-center sm:mb-16">
                     <p className="mb-[18px] flex items-center justify-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">How It Works</p>
                     <h2 className="font-display text-[clamp(2rem,4vw,3.1rem)] font-bold leading-[1.08] tracking-[-0.01em] text-charcoal">
                         From survey to <em className="not-italic text-gold-deep">sunshine</em>

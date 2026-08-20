@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { publicSiteService } from "../services/publicService";
+import Reveal from "./Reveal";
 
 const API_ORIGIN = import.meta.env.VITE_API_BASE_URL;
 //const API_ORIGIN = "https://localhost:7272"; 
@@ -191,8 +192,8 @@ export default function BannerCarousel() {
 
     if (loading) {
         return (
-            <section className="relative bg-chalk py-16 md:py-24">
-                <div className="container mx-auto px-7 text-center font-mono text-sm text-slate">
+            <section className="relative bg-chalk py-16 sm:py-24 md:py-[104px]">
+                <div className="container mx-auto px-5 sm:px-7 text-center font-mono text-sm text-slate">
                     Loading banners...
                 </div>
             </section>
@@ -201,8 +202,8 @@ export default function BannerCarousel() {
 
     if (error || total === 0) {
         return (
-            <section className="relative bg-chalk py-16 md:py-24">
-                <div className="container mx-auto px-7 text-center font-mono text-sm text-slate">
+            <section className="relative bg-chalk py-16 sm:py-24 md:py-[104px]">
+                <div className="container mx-auto px-5 sm:px-7 text-center font-mono text-sm text-slate">
                     {error || "No banners to show right now."}
                 </div>
             </section>
@@ -211,60 +212,71 @@ export default function BannerCarousel() {
 
     return (
         <section
-            className="relative overflow-hidden bg-chalk py-16 md:py-24"
+            className="relative overflow-hidden bg-chalk py-16 sm:py-24 md:py-[104px]"
             style={{
                 backgroundImage:
                     'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 56px), repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 56px)',
                 backgroundPosition: '-1px -1px',
             }}
         >
-            <div className="container relative z-[1] mx-auto px-7">
-                <div className="mb-10 flex items-center justify-end gap-5">
-                    <span className="font-mono text-[0.78rem] tabular-nums tracking-wide text-slate">
-                        {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-                    </span>
-                    <div className="flex items-center gap-3">
-                        <button onClick={goPrev} aria-label="Previous slide" className="group relative h-12 w-12">
-                            <span
-                                aria-hidden="true"
-                                className="absolute inset-0 transition-transform duration-150 ease-out"
-                                style={{
-                                    clipPath: CHAMFER_SMALL,
-                                    transform: "translateY(4px)",
-                                    background: "color-mix(in srgb, var(--color-gold-deep) 55%, black)",
-                                }}
-                            />
-                            <span
-                                className="relative flex h-12 w-12 items-center justify-center transition-transform duration-150 ease-out will-change-transform group-hover:-translate-y-[3px] group-active:translate-y-[2px]"
-                                style={{
-                                    clipPath: CHAMFER_SMALL,
-                                    background: "color-mix(in srgb, var(--color-gold) 16%, white)",
-                                    border: "1.5px solid color-mix(in srgb, var(--color-gold-deep) 45%, transparent)",
-                                    color: "color-mix(in srgb, var(--color-gold-deep) 80%, black)",
-                                }}
-                            >
-                                <ChevronLeft className="h-5 w-5" />
-                            </span>
-                        </button>
-                        <button onClick={goNext} aria-label="Next slide" className="group relative h-12 w-12">
-                            <span
-                                aria-hidden="true"
-                                className="absolute inset-0"
-                                style={{
-                                    clipPath: CHAMFER_SMALL,
-                                    transform: "translateY(4px)",
-                                    background: "color-mix(in srgb, var(--color-gold-deep) 65%, black)",
-                                }}
-                            />
-                            <span
-                                className="relative flex h-12 w-12 items-center justify-center bg-gold-deep text-white transition-transform duration-150 ease-out will-change-transform group-hover:-translate-y-[3px] group-active:translate-y-[2px]"
-                                style={{ clipPath: CHAMFER_SMALL }}
-                            >
-                                <ChevronRight className="h-5 w-5" />
-                            </span>
-                        </button>
+            <div className="container relative z-[1] mx-auto px-5 sm:px-7">
+                <Reveal className="mb-8 flex flex-col gap-6 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="mb-[14px] flex items-center gap-2.5 font-mono text-[0.72rem] font-medium uppercase tracking-[0.14em] text-gold-deep before:inline-block before:h-px before:w-[22px] before:bg-gold-deep sm:mb-[18px] sm:text-[0.74rem]">
+                            On Site
+                        </p>
+                        <h2 className="font-display text-[clamp(1.7rem,4vw,2.6rem)] font-bold leading-[1.1] tracking-[-0.01em] text-charcoal">
+                            Installations in the field
+                        </h2>
                     </div>
-                </div>
+
+                    <div className="flex items-center justify-between gap-5 sm:justify-end">
+                        <span className="font-mono text-[0.78rem] tabular-nums tracking-wide text-slate">
+                            {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+                        </span>
+                        <div className="flex items-center gap-3">
+                            <button onClick={goPrev} aria-label="Previous slide" className="group relative h-11 w-11 sm:h-12 sm:w-12">
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute inset-0 transition-transform duration-150 ease-out"
+                                    style={{
+                                        clipPath: CHAMFER_SMALL,
+                                        transform: "translateY(4px)",
+                                        background: "color-mix(in srgb, var(--color-gold-deep) 55%, black)",
+                                    }}
+                                />
+                                <span
+                                    className="relative flex h-11 w-11 items-center justify-center transition-transform duration-150 ease-out will-change-transform group-hover:-translate-y-[3px] group-active:translate-y-[2px] sm:h-12 sm:w-12"
+                                    style={{
+                                        clipPath: CHAMFER_SMALL,
+                                        background: "color-mix(in srgb, var(--color-gold) 16%, white)",
+                                        border: "1.5px solid color-mix(in srgb, var(--color-gold-deep) 45%, transparent)",
+                                        color: "color-mix(in srgb, var(--color-gold-deep) 80%, black)",
+                                    }}
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                </span>
+                            </button>
+                            <button onClick={goNext} aria-label="Next slide" className="group relative h-11 w-11 sm:h-12 sm:w-12">
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute inset-0"
+                                    style={{
+                                        clipPath: CHAMFER_SMALL,
+                                        transform: "translateY(4px)",
+                                        background: "color-mix(in srgb, var(--color-gold-deep) 65%, black)",
+                                    }}
+                                />
+                                <span
+                                    className="relative flex h-11 w-11 items-center justify-center bg-gold-deep text-white transition-transform duration-150 ease-out will-change-transform group-hover:-translate-y-[3px] group-active:translate-y-[2px] sm:h-12 sm:w-12"
+                                    style={{ clipPath: CHAMFER_SMALL }}
+                                >
+                                    <ChevronRight className="h-5 w-5" />
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </Reveal>
 
                 <div
                     className="relative select-none"
@@ -282,7 +294,7 @@ export default function BannerCarousel() {
 
                     <div
                         ref={stageRef}
-                        className="relative mx-auto h-[560px] max-w-[860px] cursor-grab touch-pan-y select-none active:cursor-grabbing sm:h-[500px] md:h-[440px]"
+                        className="relative mx-auto h-[300px] max-w-[860px] cursor-grab touch-pan-y select-none active:cursor-grabbing xs:h-[340px] sm:h-[420px] md:h-[460px] lg:h-[480px]"
                         style={{ perspective: "1900px" }}
                         onPointerDown={onPointerDown}
                         onPointerMove={onPointerMove}
@@ -327,7 +339,7 @@ export default function BannerCarousel() {
                         })}
                     </div>
 
-                    <div className="mt-10 flex items-center justify-center">
+                    <div className="mt-10 flex flex-wrap items-center justify-center gap-y-2">
                         {banners.map((_, i) => (
                             <div key={i} className="flex items-center last:flex-none">
                                 <button

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useCountUp } from '../hooks/useCountUp'
 import SolarScene from './three/SolarScene'
 
@@ -11,15 +12,15 @@ function HeroStat({ target, label, suffix = '' }: HeroStatProps) {
     const [ref, value] = useCountUp(target)
 
     return (
-        <div className="border-l-[3px] border-gold pl-3 sm:pl-4 md:pl-[18px]">
+        <div className="min-w-0 border-l-[3px] border-gold pl-2.5 xs:pl-3 sm:pl-4 md:pl-[18px]">
             <div
                 ref={ref}
-                className="font-display text-[1.5rem] sm:text-[1.8rem] md:text-[2rem] lg:text-[2.1rem] font-bold leading-none text-charcoal"
+                className="font-display text-[1.3rem] xs:text-[1.5rem] sm:text-[1.8rem] md:text-[2rem] lg:text-[2.1rem] font-bold leading-none text-charcoal"
             >
                 {value}
                 {suffix}
             </div>
-            <div className="mt-1.5 font-mono text-[0.66rem] sm:text-[0.7rem] md:text-[0.72rem] tracking-wide text-charcoal-soft">
+            <div className="mt-1.5 font-mono text-[0.6rem] xs:text-[0.66rem] sm:text-[0.7rem] md:text-[0.72rem] leading-tight tracking-wide text-charcoal-soft">
                 {label}
             </div>
         </div>
@@ -56,7 +57,7 @@ export default function Hero() {
                 style={{ background: 'radial-gradient(circle at 50% 30%, rgba(255,77,46,0.18) 0%, rgba(228,255,78,0.1) 34%, transparent 65%)' }}
             ></div>
 
-            <div className="container relative z-[5] mx-auto flex w-full max-w-[880px] flex-col items-center px-5 pt-28 pb-16 text-center sm:px-7 sm:pt-24 md:px-8 md:pt-20">
+            <div className="container relative z-[5] mx-auto flex w-full max-w-[880px] flex-col items-center px-4 pt-24 pb-14 text-center xs:px-5 xs:pt-28 sm:px-7 sm:pt-24 sm:pb-16 md:px-8 md:pt-20">
                 <div className="mb-5 flex items-center gap-2 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-gold opacity-0 animate-hero-fade-up [animation-delay:0.15s] sm:mb-6 sm:gap-2.5 sm:text-[0.78rem] sm:tracking-[0.16em]">
                     <span className="h-0.5 w-5 bg-gold sm:w-[26px]"></span>
                     Future Energy Solutions
@@ -78,12 +79,12 @@ export default function Hero() {
                 </p>
 
                 <div className="mb-12 flex flex-col gap-3 opacity-0 animate-hero-fade-up [animation-delay:0.6s] xs:flex-row xs:flex-wrap xs:justify-center sm:mb-14 sm:flex-row sm:gap-3.5">
-                    <a
-                        href="#contact"
+                    <Link
+                        to="/contact"
                         className="inline-flex items-center justify-center gap-2.5 rounded-full bg-gold-deep px-7 py-4 font-sans text-[0.88rem] font-extrabold uppercase tracking-wide text-white shadow-glow-ember transition-all hover:-translate-y-[3px] hover:shadow-[0_18px_42px_rgba(255,77,46,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto sm:px-8 sm:py-[17px] sm:text-[0.92rem]"
                     >
                         Get Free Quote <i className="fas fa-arrow-right"></i>
-                    </a>
+                    </Link>
                     <a
                         href="#services"
                         className="inline-flex items-center justify-center gap-2.5 rounded-full border-[1.5px] border-line-strong px-7 py-[15px] font-sans text-[0.88rem] font-extrabold uppercase tracking-wide text-charcoal transition-colors hover:border-gold hover:bg-gold/[0.08] hover:text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto sm:px-[30px] sm:py-4 sm:text-[0.92rem]"
@@ -92,7 +93,7 @@ export default function Hero() {
                     </a>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 opacity-0 animate-hero-fade-up [animation-delay:0.75s] sm:gap-10 md:gap-14">
+                <div className="grid grid-cols-3 gap-3.5 opacity-0 animate-hero-fade-up [animation-delay:0.75s] xs:gap-6 sm:gap-10 md:gap-14">
                     <HeroStat target={6} label="Solar Services" />
                     <HeroStat target={2023} label="Incorporated" />
                     <HeroStat target={6} label="+ States Served" />

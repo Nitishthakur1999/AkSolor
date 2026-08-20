@@ -49,7 +49,7 @@ namespace AkerpSuite.Server.Controllers
         #region HR – Employee Documents (Upload/Update/Delete)
 
         [HttpPost("document/upload")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("EmployeeDocument", "Create")]
         public async Task<IActionResult> UploadDocument([FromBody] EmployeeDocumentRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -64,7 +64,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("document/{empId:int}")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("EmployeeDocument", "View")]
         public async Task<IActionResult> GetEmployeeDocuments(int empId)
         {
             var result = await _service.GetEmployeeDocumentsAsync(empId);
@@ -73,7 +73,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("document/details/{docId:int}")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("EmployeeDocument", "View")]
         public async Task<IActionResult> GetDocumentById(int docId)
         {
             var result = await _service.GetDocumentByIdAsync(docId);
@@ -85,7 +85,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("document/update")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("EmployeeDocument", "Update")]
         public async Task<IActionResult> UpdateDocument([FromBody] EmployeeDocumentRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -97,7 +97,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("document/delete/{docId:int}")]
-        [Authorize(Roles = HrDeleteRoles)]
+        [RequirePermission("EmployeeDocument", "Delete")]
         public async Task<IActionResult> DeleteDocument(int docId)
         {
             var result = await _service.DeleteDocumentAsync(docId);
@@ -113,7 +113,7 @@ namespace AkerpSuite.Server.Controllers
         #region HR – Employee Bank Details (CRUD)
 
         [HttpPost("bank/create")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("BankDetail", "Create")]
         public async Task<IActionResult> CreateBankDetail([FromBody] EmployeeBankDetailRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -128,7 +128,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("bank/{empId:int}")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("BankDetail", "View")]
         public async Task<IActionResult> GetBankDetails(int empId)
         {
             var result = await _service.GetBankDetailsByEmployeeAsync(empId);
@@ -137,7 +137,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("bank/details/{bankId:int}")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("BankDetail", "View")]
         public async Task<IActionResult> GetBankDetailById(int bankId)
         {
             var result = await _service.GetBankDetailByIdAsync(bankId);
@@ -149,7 +149,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("bank/update")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("BankDetail", "Update")]
         public async Task<IActionResult> UpdateBankDetail([FromBody] EmployeeBankDetailRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -161,7 +161,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("bank/delete/{bankId:int}")]
-        [Authorize(Roles = HrDeleteRoles)]
+        [RequirePermission("BankDetail", "Delete")]
         public async Task<IActionResult> DeleteBankDetail(int bankId)
         {
             var result = await _service.DeleteBankDetailAsync(bankId);
@@ -176,14 +176,6 @@ namespace AkerpSuite.Server.Controllers
 
         #region Self-Service – Profile, Leave, Attendance, Payslip, Loans, Documents & HR Reports
 
-        //[HttpGet("profile")]
-        //public async Task<IActionResult> GetMyProfile()
-        //{
-        //    var empId = User.GetEmpId();
-        //    var result = await _service.GetMyProfileAsync(empId);
-
-        //    return Ok(ApiResponseDto<SelfProfileResponseDto>.Ok(result));
-        //}
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -314,7 +306,7 @@ namespace AkerpSuite.Server.Controllers
 
         // Employee Report
         [HttpGet("employees")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Report", "View")]
         public async Task<IActionResult> GetEmployeeReport(
                 [FromQuery] int? departmentId,
                 [FromQuery] int? roleId,
@@ -329,7 +321,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("attendancereport")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Report", "View")]
         public async Task<IActionResult> GetAttendanceReport(
             [FromQuery] int? empId,
             [FromQuery] DateTime? attDate,
@@ -342,7 +334,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("leave")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Report", "View")]
         public async Task<IActionResult> GetLeaveReport(
                 [FromQuery] int? empId,
                 [FromQuery] string? status,
@@ -354,7 +346,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("payroll")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Report", "View")]
         public async Task<IActionResult> GetPayrollReport(
             [FromQuery] int month,
             [FromQuery] int year,
@@ -369,7 +361,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Segments (Master Categories: PMSGY, Industrial, Commercial, etc.)
 
         [HttpPost("segments")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesSegment", "Create")]
         public async Task<IActionResult> CreateSegment([FromBody] SalesSegmentRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -380,6 +372,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("segments")]
+        [RequirePermission("SalesSegment", "View")]
         public async Task<IActionResult> GetAllSegments()
         {
             var data = await _service.GetAllSegmentsAsync();
@@ -387,7 +380,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("segments")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesSegment", "Update")]
         public async Task<IActionResult> UpdateSegment([FromBody] SalesSegmentUpdateRequestDto request)
         {
             var updated = await _service.UpdateSegmentAsync(request);
@@ -402,7 +395,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Leads (Step 1: General Entry, Step 2: Master Sheet)
 
         [HttpPost("leads")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesLead", "Create")]
         public async Task<IActionResult> CreateLead([FromBody] SalesLeadRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -413,7 +406,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("leads")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesLead", "Update")]
         public async Task<IActionResult> UpdateLead([FromBody] SalesLeadUpdateRequestDto request)
         {
             var updated = await _service.UpdateLeadAsync(request);
@@ -424,7 +417,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("leads/{id:int}")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesLead", "View")]
         public async Task<IActionResult> GetLeadById(int id)
         {
             var data = await _service.GetLeadByIdAsync(id);
@@ -436,7 +429,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/sales/leads? segmentId = &status = &assignedTo = &label = &fromDate = &toDate = &keyword =
         [HttpGet("leads")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesLead", "View")]
         public async Task<IActionResult> SearchLeads([FromQuery] SalesLeadSearchRequestDto filter)
         {
             var data = await _service.SearchLeadsAsync(filter);
@@ -448,7 +441,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Follow-ups (Follow-up Sheet + Labels like "Hot Lead")
 
         [HttpPost("followups")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesFollowup", "Create")]
         public async Task<IActionResult> CreateFollowup([FromBody] SalesFollowupRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -459,7 +452,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("followups/lead/{leadId:int}")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesFollowup", "View")]
         public async Task<IActionResult> GetFollowupsByLead(int leadId)
         {
             var data = await _service.GetFollowupsByLeadAsync(leadId);
@@ -471,7 +464,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Step 3: Site Survey
 
         [HttpPost("surveys")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesSurvey", "Create")]
         public async Task<IActionResult> CreateSurvey([FromBody] SalesSurveyRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -482,7 +475,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("surveys/feasibility")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesSurvey", "Update")]
         public async Task<IActionResult> UpdateSurveyFeasibility([FromBody] SalesSurveyFeasibilityRequestDto request)
         {
             var leadId = await _service.UpdateSurveyFeasibilityAsync(request);
@@ -495,7 +488,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("surveys/lead/{leadId:int}")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesSurvey", "View")]
         public async Task<IActionResult> GetSurveysByLead(int leadId)
         {
             var data = await _service.GetSurveysByLeadAsync(leadId);
@@ -507,7 +500,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Step 4: Financial Proposal (Tentative → Final)
 
         [HttpPost("proposals")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesProposal", "Create")]
         public async Task<IActionResult> CreateProposal([FromBody] SalesProposalRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -519,7 +512,7 @@ namespace AkerpSuite.Server.Controllers
 
         // Accepted -> lead auto-moves to Negotiation stage
         [HttpPatch("proposals/action")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesProposal", "Update")]
         public async Task<IActionResult> ActionProposal([FromBody] SalesProposalActionDto request)
         {
             var leadId = await _service.ActionProposalAsync(request);
@@ -530,7 +523,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("proposals/lead/{leadId:int}")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesProposal", "View")]
         public async Task<IActionResult> GetProposalsByLead(int leadId)
         {
             var data = await _service.GetProposalsByLeadAsync(leadId);
@@ -542,7 +535,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Step 5: Payment (Auto-forwards BOM as per Doc)
 
         [HttpPost("payments")]
-        [Authorize(Roles = PaymentWriteRoles)]
+        [RequirePermission("SalesPayment", "Create")]
         public async Task<IActionResult> CreatePayment([FromBody] SalesPaymentRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -553,7 +546,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("payments/lead/{leadId:int}")]
-        [Authorize(Roles = PaymentViewRoles)]
+        [RequirePermission("SalesPayment", "View")]
         public async Task<IActionResult> GetPaymentsByLead(int leadId)
         {
             var data = await _service.GetPaymentsByLeadAsync(leadId);
@@ -565,7 +558,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Step 6: Material Booking / BOM (Auto Stock Check)
 
         [HttpPost("bom")]
-        [Authorize(Roles = BomWriteRoles)]
+        [RequirePermission("SalesBom", "Create")]
         public async Task<IActionResult> CreateBom([FromBody] SalesBomRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -581,7 +574,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("bom/booking")]
-        [Authorize(Roles = BomWriteRoles)]
+        [RequirePermission("SalesBom", "Update")]
         public async Task<IActionResult> UpdateBomBooking([FromBody] SalesBomBookingUpdateDto request)
         {
             var updated = await _service.UpdateBomBookingAsync(request);
@@ -592,7 +585,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("bom/lead/{leadId:int}")]
-        [Authorize(Roles = BomViewRoles)]
+        [RequirePermission("SalesBom", "View")]
         public async Task<IActionResult> GetBomByLead(int leadId)
         {
             var data = await _service.GetBomByLeadAsync(leadId);
@@ -604,7 +597,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Step 7: Dispatch / Documents
 
         [HttpPost("dispatch")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesDispatch", "Create")]
         public async Task<IActionResult> CreateDispatch([FromBody] SalesDispatchRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -615,7 +608,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("dispatch/status")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesDispatch", "Update")]
         public async Task<IActionResult> UpdateDispatchStatus([FromBody] SalesDispatchStatusUpdateDto request)
         {
             var updated = await _service.UpdateDispatchStatusAsync(request);
@@ -626,7 +619,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("dispatch/lead/{leadId:int}")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesDispatch", "View")]
         public async Task<IActionResult> GetDispatchByLead(int leadId)
         {
             var data = await _service.GetDispatchByLeadAsync(leadId);
@@ -636,7 +629,7 @@ namespace AkerpSuite.Server.Controllers
         //  Documents (Upload/Download handling)
 
         [HttpPost("documents/upload")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesDocument", "Create")]
         public async Task<IActionResult> UploadDocument(
             [FromBody] SalesDocumentUploadRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -669,7 +662,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPost("documents")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesDocument", "Create")]
         public async Task<IActionResult> CreateDocument([FromBody] SalesDocumentRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -680,7 +673,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("documents/lead/{leadId:int}")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesDocument", "View")]
         public async Task<IActionResult> GetDocumentsByLead(int leadId)
         {
             var data = await _service.GetDocumentsByLeadAsync(leadId);
@@ -692,7 +685,7 @@ namespace AkerpSuite.Server.Controllers
         #region Sales – Reminders (Pop-up / Notification Till Query Attended)
 
         [HttpPost("reminders")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesReminder", "Create")]
         public async Task<IActionResult> CreateReminder([FromBody] SalesReminderRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -704,7 +697,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/sales/reminders/pending?assignedTo=5
         [HttpGet("reminders/pending")]
-        [Authorize(Roles = SalesViewRoles)]
+        [RequirePermission("SalesReminder", "View")]
         public async Task<IActionResult> GetPendingReminders([FromQuery] int? assignedTo)
         {
             var data = await _service.GetPendingRemindersAsync(assignedTo);
@@ -712,7 +705,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("reminders/{id:int}/done")]
-        [Authorize(Roles = SalesWriteRoles)]
+        [RequirePermission("SalesReminder", "Update")]
         public async Task<IActionResult> MarkReminderDone(int id)
         {
             var updated = await _service.MarkReminderDoneAsync(id);
@@ -728,7 +721,7 @@ namespace AkerpSuite.Server.Controllers
 
         // Item Master
         [HttpPost("items")]
-        [Authorize(Roles = InventoryWriteRoles)]
+        [RequirePermission("InventoryItem", "Create")]
         public async Task<IActionResult> CreateItem([FromBody] InventoryItemRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -739,7 +732,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("items")]
-        [Authorize(Roles = InventoryWriteRoles)]
+        [RequirePermission("InventoryItem", "Update")]
         public async Task<IActionResult> UpdateItem([FromBody] InventoryItemUpdateRequestDto request)
         {
             var updated = await _service.UpdateItemAsync(request);
@@ -750,7 +743,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("items/{id:int}/toggle-status")]
-        [Authorize(Roles = InventoryWriteRoles)]
+        [RequirePermission("InventoryItem", "Manage")]
         public async Task<IActionResult> ToggleItemStatus(int id)
         {
             var updated = await _service.ToggleItemStatusAsync(id);
@@ -761,7 +754,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("items/{id:int}")]
-        [Authorize(Roles = InventoryViewRoles)]
+        [RequirePermission("InventoryItem", "View")]
         public async Task<IActionResult> GetItemById(int id)
         {
             var data = await _service.GetItemByIdAsync(id);
@@ -773,7 +766,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/inventory/items?category=&isActive=&keyword=
         [HttpGet("items")]
-        [Authorize(Roles = InventoryViewRoles)]
+        [RequirePermission("InventoryItem", "View")]
         public async Task<IActionResult> GetAllItems([FromQuery] InventoryItemSearchRequestDto filter)
         {
             var data = await _service.GetAllItemsAsync(filter);
@@ -783,7 +776,7 @@ namespace AkerpSuite.Server.Controllers
         // Stock Transactions
 
         [HttpPost("stock-in")]
-        [Authorize(Roles = InventoryWriteRoles)]
+        [RequirePermission("InventoryStock", "Manage")]
         public async Task<IActionResult> StockIn([FromBody] StockInRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -794,7 +787,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPost("stock-out")]
-        [Authorize(Roles = InventoryWriteRoles)]
+        [RequirePermission("InventoryStock", "Manage")]
         public async Task<IActionResult> StockOut([FromBody] StockOutRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -812,7 +805,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPost("stock-adjustment")]
-        [Authorize(Roles = InventoryWriteRoles)]
+        [RequirePermission("InventoryStock", "Manage")]
         public async Task<IActionResult> StockAdjustment([FromBody] StockAdjustmentRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -824,7 +817,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/inventory/transactions/item/5?fromDate=&toDate=
         [HttpGet("transactions/item/{itemId:int}")]
-        [Authorize(Roles = InventoryViewRoles)]
+        [RequirePermission("InventoryTransaction", "View")]
         public async Task<IActionResult> GetTransactionsByItem(
             int itemId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
         {
@@ -834,7 +827,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/inventory/transactions?txnType=&fromDate=&toDate=
         [HttpGet("transactions")]
-        [Authorize(Roles = InventoryViewRoles)]
+        [RequirePermission("InventoryTransaction", "View")]
         public async Task<IActionResult> GetAllTransactions([FromQuery] InventoryTransactionSearchRequestDto filter)
         {
             var data = await _service.GetAllTransactionsAsync(filter);
@@ -844,7 +837,7 @@ namespace AkerpSuite.Server.Controllers
         // Reports
 
         [HttpGet("reports/low-stock")]
-        [Authorize(Roles = InventoryViewRoles)]
+        [RequirePermission("InventoryReport", "View")]
         public async Task<IActionResult> GetLowStockItems()
         {
             var data = await _service.GetLowStockItemsAsync();
@@ -857,7 +850,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/hr/milestones/probation?daysAhead=7
         [HttpGet("milestones/probation")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Milestone", "View")]
         public async Task<IActionResult> GetProbationAlerts([FromQuery] int daysAhead = 7)
         {
             var data = await _service.GetProbationAlertsAsync(daysAhead);
@@ -866,7 +859,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/hr/milestones/anniversary?daysAhead=7
         [HttpGet("milestones/anniversary")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Milestone", "View")]
         public async Task<IActionResult> GetAnniversaryAlerts([FromQuery] int daysAhead = 7)
         {
             var data = await _service.GetAnniversaryAlertsAsync(daysAhead);
@@ -875,7 +868,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/hr/milestones/all?daysAhead=7
         [HttpGet("milestones/all")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Milestone", "View")]
         public async Task<IActionResult> GetAllMilestoneAlerts([FromQuery] int daysAhead = 7)
         {
             var data = await _service.GetAllUpcomingAsync(daysAhead);
@@ -884,7 +877,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/hr/milestones/mark-sent
         [HttpPatch("milestones/mark-sent")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("Milestone", "Manage")]
         public async Task<IActionResult> MarkNotificationSent([FromBody] MarkNotificationSentRequestDto request)
         {
             var result = await _service.MarkSentAsync(request);
@@ -896,7 +889,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/hr/milestones/history?notifType=ProbationEnd&isSent=false
         [HttpGet("milestones/history")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Milestone", "View")]
         public async Task<IActionResult> GetMilestoneHistory([FromQuery] string? notifType, [FromQuery] bool? isSent)
         {
             var data = await _service.GetHistoryAsync(notifType, isSent);
@@ -909,7 +902,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/admin/employees/promote
         [HttpPost("employees/promote")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("Promotion", "Create")]
         public async Task<IActionResult> PromoteEmployee([FromBody] PromoteEmployeeRequestDto request)
         {
             if (request.ApprovedBy <= 0)
@@ -925,7 +918,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/employees/{empId}/promotions
         [HttpGet("employees/{empId}/promotions")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Promotion", "View")]
         public async Task<IActionResult> GetPromotionHistory(int empId)
         {
             var data = await _service.GetHistoryByEmpAsync(empId);
@@ -934,7 +927,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/promotions?fromDate=&toDate=
         [HttpGet("promotions")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Promotion", "View")]
         public async Task<IActionResult> GetAllPromotions([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
         {
             var data = await _service.GetAllAsync(fromDate, toDate);
@@ -943,7 +936,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PUT api/admin/hierarchy
         [HttpPut("hierarchy")]
-        [Authorize(Roles = HrWriteRoles)]
+        [RequirePermission("Hierarchy", "Manage")]
         public async Task<IActionResult> SetHierarchy([FromBody] SetHierarchyRequestDto request)
         {
             var level = await _service.SetHierarchyAsync(request);
@@ -952,7 +945,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/hierarchy/{empId}/reports
         [HttpGet("hierarchy/{empId}/reports")]
-        [Authorize(Roles = HrViewRoles)]
+        [RequirePermission("Hierarchy", "View")]
         public async Task<IActionResult> GetDirectReports(int empId)
         {
             var data = await _service.GetDirectReportsAsync(empId);
@@ -974,7 +967,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/admin/salary/increment
         [HttpPost("salary/increment")]
-        [Authorize(Roles = PayrollWriteRoles)]
+        [RequirePermission("SalaryIncrement", "Create")]
         public async Task<IActionResult> AddSalaryIncrement([FromBody] AddSalaryIncrementRequestDto request)
         {
             if (request.CreatedBy <= 0)
@@ -990,7 +983,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/salary/current/{empId}
         [HttpGet("salary/current/{empId}")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("SalaryIncrement", "View")]
         public async Task<IActionResult> GetCurrentSalary(int empId)
         {
             var data = await _service.GetCurrentAsync(empId);
@@ -1002,7 +995,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/salary/history/{empId}
         [HttpGet("salary/history/{empId}")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("SalaryIncrement", "View")]
         public async Task<IActionResult> GetSalaryHistory(int empId)
         {
             var data = await _service.GetHistoryAsync(empId);
@@ -1011,7 +1004,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/salary/as-of/{empId}?asOfDate=2026-01-01
         [HttpGet("salary/as-of/{empId}")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("SalaryIncrement", "View")]
         public async Task<IActionResult> GetSalaryAsOfDate(int empId, [FromQuery] DateTime asOfDate)
         {
             var data = await _service.GetAsOfDateAsync(empId, asOfDate);
@@ -1023,7 +1016,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/salary/increments?fromDate=&toDate=
         [HttpGet("salary/increments")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("SalaryIncrement", "View")]
         public async Task<IActionResult> GetAllIncrements([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
         {
             var data = await _service.GetAllIncrementsAsync(fromDate, toDate);
@@ -1034,6 +1027,8 @@ namespace AkerpSuite.Server.Controllers
 
         #region HR – Employee Milestone Notifications
 
+        // NOTE: dev/test endpoint — abhi bhi koi Authorize nahi laga (as-is). Production me hataana ya
+        // RequirePermission("Milestone","Manage") lagana consider karo.
         [HttpPost("milestones/probation/test-send")]
         public async Task<IActionResult> TestSendProbationReminders()
         {
@@ -1046,7 +1041,7 @@ namespace AkerpSuite.Server.Controllers
         #region Suppliers
 
         [HttpPost("suppliers")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("Supplier", "Create")]
         public async Task<IActionResult> CreateSupplier([FromBody] SupplierRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -1057,7 +1052,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("suppliers")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("Supplier", "Update")]
         public async Task<IActionResult> UpdateSupplier([FromBody] SupplierUpdateRequestDto request)
         {
             var updated = await _service.UpdateSupplierAsync(request);
@@ -1068,7 +1063,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("suppliers/{id:int}/toggle-status")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("Supplier", "Manage")]
         public async Task<IActionResult> ToggleSupplierStatus(int id)
         {
             var updated = await _service.ToggleSupplierStatusAsync(id);
@@ -1079,7 +1074,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("suppliers/{id:int}")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("Supplier", "View")]
         public async Task<IActionResult> GetSupplierById(int id)
         {
             var data = await _service.GetSupplierByIdAsync(id);
@@ -1091,7 +1086,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/purchase/suppliers?keyword=&isActive=
         [HttpGet("suppliers")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("Supplier", "View")]
         public async Task<IActionResult> SearchSuppliers([FromQuery] SupplierSearchRequestDto filter)
         {
             var data = await _service.SearchSuppliersAsync(filter);
@@ -1103,7 +1098,7 @@ namespace AkerpSuite.Server.Controllers
         #region PO Consignee
 
         [HttpPost("consignees")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("Consignee", "Create")]
         public async Task<IActionResult> CreateConsignee([FromBody] PoConsigneeRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -1114,7 +1109,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("consignees")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("Consignee", "View")]
         public async Task<IActionResult> GetAllConsignees()
         {
             var data = await _service.GetAllConsigneesAsync();
@@ -1126,7 +1121,7 @@ namespace AkerpSuite.Server.Controllers
         #region Purchase Order
 
         [HttpPost("orders")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("PurchaseOrder", "Create")]
         public async Task<IActionResult> CreatePurchaseOrder([FromBody] PurchaseOrderRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -1144,7 +1139,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("orders/status")]
-        [Authorize(Roles = PurchaseApproveRoles)]
+        [RequirePermission("PurchaseOrder", "Approve")]
         public async Task<IActionResult> UpdatePoStatus([FromBody] PurchaseOrderStatusUpdateDto request)
         {
             try
@@ -1162,7 +1157,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("orders/{id:int}")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("PurchaseOrder", "View")]
         public async Task<IActionResult> GetPurchaseOrderById(int id)
         {
             var data = await _service.GetPurchaseOrderByIdAsync(id);
@@ -1174,7 +1169,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/purchase/orders?supplierId=&status=&fromDate=&toDate=&keyword=
         [HttpGet("orders")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("PurchaseOrder", "View")]
         public async Task<IActionResult> SearchPurchaseOrders([FromQuery] PurchaseOrderSearchRequestDto filter)
         {
             var data = await _service.SearchPurchaseOrdersAsync(filter);
@@ -1186,7 +1181,7 @@ namespace AkerpSuite.Server.Controllers
         #region Purchase Invoice
 
         [HttpPost("invoices")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("PurchaseInvoice", "Create")]
         public async Task<IActionResult> CreatePurchaseInvoice([FromBody] PurchaseInvoiceRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -1204,7 +1199,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("invoices/status")]
-        [Authorize(Roles = PurchaseApproveRoles)]
+        [RequirePermission("PurchaseInvoice", "Approve")]
         public async Task<IActionResult> UpdateInvoiceStatus([FromBody] PurchaseInvoiceStatusUpdateDto request)
         {
             try
@@ -1222,7 +1217,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("invoices/{id:int}")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("PurchaseInvoice", "View")]
         public async Task<IActionResult> GetPurchaseInvoiceById(int id)
         {
             var data = await _service.GetPurchaseInvoiceByIdAsync(id);
@@ -1234,7 +1229,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/hr/invoices?supplierId=&poId=&status=&fromDate=&toDate=&keyword=
         [HttpGet("invoices")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("PurchaseInvoice", "View")]
         public async Task<IActionResult> SearchPurchaseInvoices([FromQuery] PurchaseInvoiceSearchRequestDto filter)
         {
             var data = await _service.SearchPurchaseInvoicesAsync(filter);
@@ -1242,7 +1237,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("invoices/po/{poId:int}")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("PurchaseInvoice", "View")]
         public async Task<IActionResult> GetInvoicesByPo(int poId)
         {
             var data = await _service.GetInvoicesByPoAsync(poId);
@@ -1254,7 +1249,7 @@ namespace AkerpSuite.Server.Controllers
         #region GRN (Goods Receipt Note)
 
         [HttpPost("grn")]
-        [Authorize(Roles = PurchaseWriteRoles)]
+        [RequirePermission("Grn", "Create")]
         public async Task<IActionResult> CreateGrn([FromBody] GrnRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -1277,7 +1272,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("grn/po/{poId:int}")]
-        [Authorize(Roles = PurchaseViewRoles)]
+        [RequirePermission("Grn", "View")]
         public async Task<IActionResult> GetGrnsByPo(int poId)
         {
             var data = await _service.GetGrnsByPoAsync(poId);

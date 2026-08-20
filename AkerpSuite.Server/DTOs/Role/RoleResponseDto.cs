@@ -12,6 +12,9 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Prefix { get; set; }
         public decimal CardValue { get; set; }
         public int SortOrder { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string? FullName { get; set; }   
     }
 
     public class RevealCredentialsRequestDto

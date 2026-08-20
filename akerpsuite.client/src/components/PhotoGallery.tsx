@@ -89,11 +89,11 @@ export default function PhotoGallery() {
     return (
         <section
             id="photo-gallery"
-            className="border-y border-line bg-paper py-24 md:py-[104px]"
+            className="border-y border-line bg-paper py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, var(--color-line) 1.2px, transparent 1.2px)', backgroundSize: '26px 26px' }}
         >
-            <div className="container mx-auto max-w-[1240px] px-7">
-                <Reveal className="mx-auto mb-14 max-w-[600px] text-center">
+            <div className="container mx-auto max-w-[1240px] px-5 sm:px-7">
+                <Reveal className="mx-auto mb-10 max-w-[600px] text-center sm:mb-14">
                     <p className="mb-[18px] flex items-center justify-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">
                         <span aria-hidden="true" className="h-px w-[22px] bg-gold-deep" />
                         In The Field

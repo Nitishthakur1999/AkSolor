@@ -74,6 +74,7 @@ export default function Dashboard() {
     const [cards, setCards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [fullName, setFullName] = useState("");
 
     const role = localStorage.getItem("role") ?? "User";
     const username = localStorage.getItem("username") ?? "";
@@ -98,6 +99,20 @@ export default function Dashboard() {
             .catch(() => setError("Server se connection fail hua."))
             .finally(() => setLoading(false));
     }, []);
+
+    // Fetch first/last name for the greeting (localStorage only has username)
+    useEffect(() => {
+        adminService
+            .getMyProfile()
+            .then((res) => {
+                const profile = res.data || res.Data;
+                const name =
+                    profile?.fullName ||
+                    `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim();
+                setFullName(name || username || "there");
+            })
+            .catch(() => setFullName(username || "there"));
+    }, [username]);
 
     // Split the flat card list into "chart" groups (rendered as bars) and
     // everything else (still rendered as the original number tiles), so
@@ -163,7 +178,7 @@ export default function Dashboard() {
                             {greeting} · {role}
                         </p>
                         <h1 className="font-display text-xl sm:text-2xl md:text-[26px] font-bold tracking-tight text-white leading-tight">
-                            {username || "there"}
+                            {fullName}
                         </h1>
                         <p className="text-slate-400 text-[11px] sm:text-xs font-medium mt-0.5">
                             Real-time organization overview — AkerpSuite ERP

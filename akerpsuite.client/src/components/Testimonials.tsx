@@ -47,7 +47,7 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className="group relative w-[340px] shrink-0 border border-line border-l-[3px] border-l-gold bg-chalk px-[26px] pb-7 pt-8 transition-[border-color] duration-300 hover:border-l-gold-deep"
+            className="group relative w-[280px] shrink-0 border border-line border-l-[3px] border-l-gold bg-chalk px-5 pb-6 pt-7 transition-[border-color] duration-300 hover:border-l-gold-deep sm:w-[340px] sm:px-[26px] sm:pb-7 sm:pt-8"
             style={{
                 clipPath: 'polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%)',
                 transformStyle: 'preserve-3d',
@@ -137,10 +137,10 @@ export default function Testimonials() {
     return (
         <section
             id="testimonials"
-            className="overflow-hidden border-y border-line bg-paper py-24 md:py-[104px]"
+            className="overflow-hidden border-y border-line bg-paper py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1.2px, transparent 1.2px)', backgroundSize: '24px 24px' }}
         >
-            <Reveal as="div" className="container mx-auto mb-14 max-w-[1240px] px-7 text-center">
+            <Reveal as="div" className="container mx-auto mb-10 max-w-[1240px] px-5 sm:mb-14 sm:px-7 text-center">
                 <p className="mb-[18px] flex items-center justify-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">
                     <span aria-hidden="true" className="h-px w-[22px] bg-gold-deep" />
                     Client Reviews

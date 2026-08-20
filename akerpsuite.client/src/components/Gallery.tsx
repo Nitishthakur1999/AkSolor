@@ -52,8 +52,8 @@ export default function Gallery() {
 
     if (loading) {
         return (
-            <section id="gallery" className="relative bg-chalk py-24 md:py-[104px]">
-                <div className="container mx-auto max-w-[1240px] px-7 text-center font-mono text-sm text-slate">
+            <section id="gallery" className="relative bg-chalk py-16 sm:py-24 md:py-[104px]">
+                <div className="container mx-auto max-w-[1240px] px-5 sm:px-7 text-center font-mono text-sm text-slate">
                     Loading gallery...
                 </div>
             </section>
@@ -62,8 +62,8 @@ export default function Gallery() {
 
     if (error || galleryItems.length === 0) {
         return (
-            <section id="gallery" className="relative bg-chalk py-24 md:py-[104px]">
-                <div className="container mx-auto max-w-[1240px] px-7 text-center font-mono text-sm text-slate">
+            <section id="gallery" className="relative bg-chalk py-16 sm:py-24 md:py-[104px]">
+                <div className="container mx-auto max-w-[1240px] px-5 sm:px-7 text-center font-mono text-sm text-slate">
                     {error || "No gallery items to show right now."}
                 </div>
             </section>
@@ -73,11 +73,11 @@ export default function Gallery() {
     return (
         <section
             id="gallery"
-            className="relative overflow-hidden border-y border-line bg-chalk py-24 md:py-[104px]"
+            className="relative overflow-hidden border-y border-line bg-chalk py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, var(--color-line) 1.2px, transparent 1.2px)', backgroundSize: '26px 26px' }}
         >
-            <div className="container relative mx-auto max-w-[1240px] px-7">
-                <Reveal className="mb-14 flex flex-wrap items-end justify-between gap-6 border-b border-line pb-7">
+            <div className="container relative mx-auto max-w-[1240px] px-5 sm:px-7">
+                <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-6 border-b border-line pb-7 sm:mb-14">
                     <div>
                         <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">
                             <span aria-hidden="true" className="h-px w-[22px]" />

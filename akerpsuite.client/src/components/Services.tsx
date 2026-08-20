@@ -10,11 +10,11 @@ export default function Services() {
     return (
         <section
             id="services"
-            className="border-y border-line bg-paper py-24 md:py-[104px]"
+            className="border-y border-line bg-paper py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.08) 1.2px, transparent 1.2px)', backgroundSize: '22px 22px' }}
         >
-            <div className="container mx-auto max-w-[1240px] px-7">
-                <Reveal className="relative mb-16 grid grid-cols-1 items-end gap-8 lg:grid-cols-[1.3fr_0.7fr]">
+            <div className="container mx-auto max-w-[1240px] px-5 sm:px-7">
+                <Reveal className="relative mb-10 grid grid-cols-1 items-end gap-8 sm:mb-16 lg:grid-cols-[1.3fr_0.7fr]">
                     <div>
                         <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep before:inline-block before:h-px before:w-[22px] before:bg-gold-deep">
                             What We Do
@@ -82,7 +82,7 @@ export default function Services() {
                                         <i className={`fas ${s.icon}`}></i>
                                     </div>
                                 </div>
-                                <div className="border-t border-dashed border-line p-9 pt-9 pb-8">
+                                <div className="border-t border-dashed border-line p-6 pt-7 pb-6 sm:p-9 sm:pt-9 sm:pb-8">
                                     <span className="mb-3.5 block font-mono text-[0.68rem] uppercase tracking-[0.08em] text-slate">{s.tag}</span>
                                     <div className="mb-3 font-display text-[1.12rem] font-bold text-charcoal">{s.title}</div>
                                     <p className="text-[0.9rem] leading-[1.7] text-slate">{s.desc}</p>
@@ -135,7 +135,7 @@ export default function Services() {
                                             style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%)' }}
                                         ></div>
                                     </div>
-                                    <div className="border-t border-dashed border-line p-9 pt-9 pb-8">
+                                    <div className="border-t border-dashed border-line p-6 pt-7 pb-6 sm:p-9 sm:pt-9 sm:pb-8">
                                         <div className="font-display text-[1.12rem] font-bold text-charcoal">{item.name}</div>
                                     </div>
                                 </TiltCard>

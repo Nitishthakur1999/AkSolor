@@ -68,6 +68,7 @@ builder.Services.AddScoped<IAdminRepositories, AdminRepositories>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IHRRepository, HRRepository>();
 builder.Services.AddScoped<IHRService, HRService>();
+builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddSingleton<JwtHelper>();
 
 // 🔔 Email Service (probation/anniversary reminders, etc.)

@@ -28,7 +28,7 @@ export default function Impact() {
     return (
         <section
             id="impact"
-            className="relative overflow-hidden border-y border-line py-24 md:py-[104px] bg-paper dark:border-white/10 dark:bg-[#0E0F16]"
+            className="relative overflow-hidden border-y border-line py-16 sm:py-24 md:py-[104px] bg-paper dark:border-white/10 dark:bg-[#0E0F16]"
         >
             {/* circuit pattern — charcoal strokes in light mode, teal in dark mode. Two layers, one shown at a time. */}
             <div
@@ -62,7 +62,7 @@ export default function Impact() {
                 style={{ background: 'radial-gradient(circle, rgba(0,240,200,0.12), transparent 70%)', transform: 'translateY(var(--parallax-y-slow, 0px))' }}
             ></div>
 
-            <div className="container relative z-[2] mx-auto max-w-[1240px] px-7">
+            <div className="container relative z-[2] mx-auto max-w-[1240px] px-5 sm:px-7">
                 <Reveal>
                     <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep before:inline-block before:h-px before:w-[22px] before:bg-gold-deep dark:text-gold dark:before:bg-gold">
                         Our Reach
@@ -80,16 +80,16 @@ export default function Impact() {
                     </h2>
                 </Reveal>
 
-                <Reveal className="mb-10 grid grid-cols-1 items-end gap-10 border-b border-line pb-10 text-left md:grid-cols-[1fr_auto] dark:border-white/10" delay={1}>
-                    <p className="max-w-[520px] font-sans text-base leading-[1.75] text-white md:mt-[18px] md:text-[1.05rem] dark:text-chalk/60">
+                <Reveal className="mb-8 grid grid-cols-1 items-end gap-6 border-b border-line pb-8 text-left sm:mb-10 sm:gap-10 sm:pb-10 md:grid-cols-[1fr_auto] dark:border-white/10" delay={1}>
+                    <p className="max-w-[520px] font-sans text-base leading-[1.75] text-slate md:mt-[18px] md:text-[1.05rem] dark:text-chalk/60">
                         Based in Sunder Nagar, Mandi, Himachal Pradesh, AKS Solar Systems has delivered solar power plants,
                         street lights, and geysers for clients across multiple states.
                     </p>
                     <div className="text-left md:text-right">
-                        <div className="font-display text-[clamp(4.5rem,9vw,7.5rem)] font-bold leading-[0.85] text-gold-deep dark:text-gold">
+                        <div className="font-display text-[clamp(3.6rem,9vw,7.5rem)] font-bold leading-[0.85] text-gold-deep dark:text-gold">
                             <HeroCounter target={6} />
                         </div>
-                        <div className="mt-2 font-mono text-[0.8rem] uppercase tracking-[0.08em] text-white dark:text-chalk/50">
+                        <div className="mt-2 font-mono text-[0.8rem] uppercase tracking-[0.08em] text-slate dark:text-chalk/50">
                             Solar service categories
                         </div>
                     </div>
@@ -107,7 +107,11 @@ export default function Impact() {
                     ))}
                 </div>
 
-                <Reveal as="div" className="grid grid-cols-2 gap-px overflow-hidden rounded-b-2xl bg-line-strong sm:grid-cols-3 sm:rounded-2xl lg:grid-cols-5 dark:bg-white/20" delay={2}>
+                <Reveal
+                    as="div"
+                    className="grid grid-cols-2 gap-px overflow-hidden rounded-b-2xl bg-line-strong sm:grid-cols-3 sm:rounded-2xl lg:grid-cols-5 dark:bg-white/20 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1"
+                    delay={2}
+                >
                     {impactStats.map((stat) => (
                         <StatCell key={stat.label} target={stat.target} label={stat.label} />
                     ))}

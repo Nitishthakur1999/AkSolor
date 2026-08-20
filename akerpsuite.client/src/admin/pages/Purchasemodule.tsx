@@ -2060,7 +2060,7 @@ const TABS = [
     { key: "suppliers", label: "Suppliers", icon: "fa-solid fa-boxes-packing", Component: SuppliersTab },
     { key: "consignees", label: "Consignees", icon: "fa-solid fa-truck-fast", Component: ConsigneesTab },
     { key: "grn", label: "GRN", icon: "fa-solid fa-box-check", Component: GrnTab },
-    { key: "invoices", label: "Invoices", icon: "fa-solid fa-file-invoice", Component: InvoicesTab },
+    { key: "invoices", label: "Purchase Invoices", icon: "fa-solid fa-file-invoice", Component: InvoicesTab },
 ];
 
 export default function PurchaseModule() {

@@ -6,7 +6,7 @@ export default function WhyUs() {
     return (
         <section
             id="why"
-            className="relative overflow-hidden bg-chalk py-24 md:py-[112px]"
+            className="relative overflow-hidden bg-chalk py-16 sm:py-24 md:py-[112px]"
             style={{
                 backgroundImage:
                     'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 56px), repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 56px), repeating-linear-gradient(0deg, rgba(228,255,78,0.06) 0px, rgba(228,255,78,0.06) 1px, transparent 1px, transparent 14px)',
@@ -19,9 +19,9 @@ export default function WhyUs() {
                 style={{ background: 'radial-gradient(circle, rgba(228,255,78,0.22), transparent 70%)' }}
             ></div>
 
-            <div className="container relative z-[1] mx-auto max-w-[1240px] px-7">
+            <div className="container relative z-[1] mx-auto max-w-[1240px] px-5 sm:px-7">
                 {/* ── Header ── */}
-                <Reveal className="mb-14 grid grid-cols-1 items-end gap-10 md:mb-16 md:grid-cols-[1.15fr_auto_1fr]">
+                <Reveal className="mb-10 grid grid-cols-1 items-end gap-8 sm:mb-14 sm:gap-10 md:mb-16 md:grid-cols-[1.15fr_auto_1fr]">
                     <div>
                         <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep before:inline-block before:h-px before:w-[22px] before:bg-gold-deep">
                             Vision &amp; Mission
@@ -81,7 +81,7 @@ export default function WhyUs() {
                 <div className="grid grid-cols-1 gap-px overflow-hidden rounded-b-2xl bg-line-strong sm:grid-cols-2 sm:rounded-2xl lg:grid-cols-4">
                     {whyCards.map((card, i) => (
                         <Reveal key={card.title} delay={(i % 4) + 1}>
-                            <TiltCard maxTilt={8} className="group relative h-full bg-paper p-[38px_28px] transition-colors duration-300 hover:bg-charcoal"
+                            <TiltCard maxTilt={8} className="group relative h-full bg-paper p-[28px_22px] transition-colors duration-300 hover:bg-charcoal sm:p-[38px_28px]"
                                 style={{ clipPath: 'polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%)' }}
                             >
                                 <span

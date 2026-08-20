@@ -54,10 +54,10 @@ export default function Highlights() {
     return (
         <section
             id="highlights"
-            className="relative overflow-hidden bg-gradient-to-b from-paper to-chalk py-24 md:py-[104px]"
+            className="relative overflow-hidden bg-gradient-to-b from-paper to-chalk py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.10) 1.2px, transparent 1.2px)', backgroundSize: '24px 24px' }}
         >
-            <div className="container relative z-[1] mx-auto max-w-[1240px] px-7">
+            <div className="container relative z-[1] mx-auto max-w-[1240px] px-5 sm:px-7">
                 <Reveal>
                     <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold before:inline-block before:h-px before:w-[22px] before:bg-gold">See It In Action</p>
                     <h2 className="font-display text-[clamp(2rem,4vw,3.1rem)] font-bold leading-[1.08] tracking-[-0.01em] text-charcoal">

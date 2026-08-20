@@ -1,15 +1,16 @@
+import { Link } from 'react-router-dom'
 import Reveal from './Reveal'
 
 export default function CTA() {
     return (
         <section
             id="cta"
-            className="border-y border-line bg-paper py-24 md:py-[104px]"
+            className="border-y border-line bg-paper py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.07) 1.2px, transparent 1.2px)', backgroundSize: '24px 24px' }}
         >
-            <Reveal className="container mx-auto max-w-[1240px] px-7">
+            <Reveal className="container mx-auto max-w-[1240px] px-5 sm:px-7">
                 <div
-                    className="relative overflow-hidden border border-line border-l-[3px] border-l-gold bg-chalk px-6 py-14 text-center md:px-16 md:py-[76px]"
+                    className="relative overflow-hidden border border-line border-l-[3px] border-l-gold bg-chalk px-5 py-10 text-center sm:px-6 sm:py-14 md:px-16 md:py-[76px]"
                     style={{ clipPath: 'polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)' }}
                 >
                     {/* folded corner accent, same trick as the testimonial cards */}
@@ -50,19 +51,19 @@ export default function CTA() {
                             system — rooftop or ground-mounted, on-grid or off-grid, geysers or street lights.
                         </p>
 
-                        <div className="mb-10 flex flex-wrap items-center justify-center gap-3.5">
-                            <a
-                                href="#contact"
-                                className="group inline-flex items-center gap-2.5 border border-charcoal bg-charcoal px-8 py-[17px] font-sans text-[0.9rem] font-bold text-chalk transition-colors duration-300 hover:border-gold-deep hover:bg-gold-deep"
+                        <div className="mb-10 flex flex-col items-center justify-center gap-3.5 xs:flex-row xs:flex-wrap">
+                            <Link
+                                to="/contact"
+                                className="group inline-flex w-full items-center justify-center gap-2.5 border border-charcoal bg-charcoal px-8 py-[17px] font-sans text-[0.9rem] font-bold text-chalk transition-colors duration-300 hover:border-gold-deep hover:bg-gold-deep xs:w-auto"
                                 style={{ clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)' }}
                             >
                                 Send Enquiry
                                 <i className="fas fa-arrow-right text-[0.8rem] transition-transform duration-300 group-hover:translate-x-1"></i>
-                            </a>
+                            </Link>
 
                             <a
                                 href="tel:+919805763000"
-                                className="inline-flex items-center gap-2.5 border-[1.5px] border-line-strong px-[30px] py-4 font-sans text-[0.9rem] font-bold text-charcoal transition-colors hover:border-gold-deep hover:bg-gold/10"
+                                className="inline-flex w-full items-center justify-center gap-2.5 border-[1.5px] border-line-strong px-[30px] py-4 font-sans text-[0.9rem] font-bold text-charcoal transition-colors hover:border-gold-deep hover:bg-gold/10 xs:w-auto"
                             >
                                 <i className="fas fa-phone text-[0.8rem]"></i> +91-9805763000
                             </a>

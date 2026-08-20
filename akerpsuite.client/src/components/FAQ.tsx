@@ -8,7 +8,7 @@ function FaqItem({ index, q, a, isOpen, onToggle }) {
             className={`overflow-hidden border bg-chalk transition-colors duration-300 ${isOpen ? 'border-l-[3px] border-l-gold border-line-strong' : 'border-line'}`}
         >
             <button
-                className="flex w-full items-center gap-4 px-6 py-5 text-left"
+                className="flex w-full items-center gap-3 px-4 py-4 text-left sm:gap-4 sm:px-6 sm:py-5"
                 onClick={onToggle}
                 aria-expanded={isOpen}
             >
@@ -31,7 +31,7 @@ function FaqItem({ index, q, a, isOpen, onToggle }) {
                 reads on render, no forced reflow, GPU-friendly */}
             <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                 <div className="overflow-hidden">
-                    <div className="border-t border-dashed border-line px-6 pb-[22px] pt-4 pl-[46px] text-[0.88rem] leading-[1.7] text-slate">
+                    <div className="border-t border-dashed border-line px-4 pb-5 pt-4 pl-[38px] text-[0.88rem] leading-[1.7] text-slate sm:px-6 sm:pb-[22px] sm:pl-[46px]">
                         {a}
                     </div>
                 </div>
@@ -46,11 +46,11 @@ export default function FAQ() {
     return (
         <section
             id="faq"
-            className="border-y border-line bg-paper py-24 md:py-[104px]"
+            className="border-y border-line bg-paper py-16 sm:py-24 md:py-[104px]"
             style={{ backgroundImage: 'radial-gradient(circle, var(--color-line) 1.2px, transparent 1.2px)', backgroundSize: '26px 26px' }}
         >
-            <div className="container mx-auto max-w-[1240px] px-7">
-                <div className="grid grid-cols-1 gap-16 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="container mx-auto max-w-[1240px] px-5 sm:px-7">
+                <div className="grid grid-cols-1 gap-10 sm:gap-16 lg:grid-cols-[0.8fr_1.2fr]">
                     <Reveal>
                         <div className="lg:sticky lg:top-32">
                             <p className="mb-[18px] flex items-center gap-2.5 font-mono text-[0.74rem] font-medium uppercase tracking-[0.14em] text-gold-deep">

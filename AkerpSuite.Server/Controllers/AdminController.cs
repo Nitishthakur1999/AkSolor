@@ -66,7 +66,7 @@ namespace AkerpSuite.Server.Controllers
         #region Role Management (CRUD)
 
         [HttpPost("creteroles")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Role", "Create")]
         public async Task<IActionResult> CreateRole([FromBody] RoleRequestDto request)
         {
             var data = await _service.CreateRoleAsync(request);
@@ -74,7 +74,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getallroles")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Role", "View")]
         public async Task<IActionResult> GetRoles()
         {
             var data = await _service.GetRolesAsync();
@@ -82,7 +82,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getrolesbyid/{id}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Role", "View")]
         public async Task<IActionResult> GetRole(int id)
         {
             var data = await _service.GetRoleByIdAsync(id);
@@ -92,7 +92,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("updateroles/{id}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Role", "Update")]
         public async Task<IActionResult> UpdateRole(int id, [FromBody] RoleRequestDto request)
         {
             var updated = await _service.UpdateRoleAsync(id, request);
@@ -102,7 +102,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("deleteroles/{id}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Role", "Delete")]
         public async Task<IActionResult> DeleteRole(int id)
         {
             var deleted = await _service.DeleteRoleAsync(id);
@@ -116,7 +116,7 @@ namespace AkerpSuite.Server.Controllers
         #region Role–Permission Mapping (CRUD + Assign/Remove)
 
         [HttpPost("createpermissions")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "Create")]
         public async Task<IActionResult> CreatePermission([FromBody] PermissionRequestDto request)
         {
             var data = await _service.CreatePermissionAsync(request);
@@ -124,7 +124,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getallpermissions")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "View")]
         public async Task<IActionResult> GetPermissions()
         {
             var data = await _service.GetPermissionsAsync();
@@ -132,7 +132,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getpermissions/{id}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "View")]
         public async Task<IActionResult> GetPermission(int id)
         {
             var data = await _service.GetPermissionByIdAsync(id);
@@ -142,7 +142,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("updatepermissions/{id}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "Update")]
         public async Task<IActionResult> UpdatePermission(int id, [FromBody] PermissionRequestDto request)
         {
             var updated = await _service.UpdatePermissionAsync(id, request);
@@ -152,7 +152,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("deletepermissions/{id}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "Delete")]
         public async Task<IActionResult> DeletePermission(int id)
         {
             var deleted = await _service.DeletePermissionAsync(id);
@@ -162,7 +162,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("permissions/{id}/toggle-status")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "Manage")]
         public async Task<IActionResult> TogglePermissionStatus(int id)
         {
             var updated = await _service.ToggleStatusAsync(id);
@@ -174,7 +174,7 @@ namespace AkerpSuite.Server.Controllers
         // Role Permission Mapping
 
         [HttpPost("assignpermissions")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "Manage")]
         public async Task<IActionResult> AssignPermissions([FromBody] RolePermissionRequestDto request)
         {
             var result = await _service.AssignPermissionsAsync(request);
@@ -182,7 +182,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getrolepermissions/{roleId}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "View")]
         public async Task<IActionResult> GetRolePermissions(int roleId)
         {
             var data = await _service.GetRolePermissionsAsync(roleId);
@@ -190,7 +190,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("removerolepermission/{roleId}/{permissionId}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("Permission", "Manage")]
         public async Task<IActionResult> RemovePermission(int roleId, int permissionId)
         {
             var result = await _service.RemovePermissionAsync(roleId, permissionId);
@@ -204,7 +204,7 @@ namespace AkerpSuite.Server.Controllers
         #region Employee Management (CRUD + Status Toggle)
 
         [HttpPost("CreateEmployee")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Employee", "Create")]
         public async Task<IActionResult> CreateEmployee([FromBody] EmployeeRequestDto request)
         {
             var creatorRole = User.FindFirst(ClaimTypes.Role)?.Value
@@ -215,7 +215,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getallemployees")]
-        [Authorize]
+        [RequirePermission("Employee", "View")]
         public async Task<IActionResult> GetAllEmployees(
                     [FromQuery] int? departmentId,
                     [FromQuery] int? roleId,
@@ -230,6 +230,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("getemployee/{id}")]
+        [RequirePermission("Employee", "View")]
         public async Task<IActionResult> GetEmployee(int id)
         {
             var data = await _service.GetEmployeeByIdAsync(id);
@@ -239,7 +240,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("updateemployee/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Employee", "Update")]
         public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeRequestDto request)
         {
             var existingEmployee = await _service.GetEmployeeByIdAsync(id);
@@ -254,7 +255,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("deleteemployee/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Employee", "Delete")]
         public async Task<IActionResult> DeleteEmployee(int id)
         {
             var deleted = await _service.DeleteEmployeeAsync(id);
@@ -264,7 +265,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("employees/{id}/toggle-status")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Employee", "Update")]
         public async Task<IActionResult> ToggleEmployeeStatus(int id, [FromBody] EmployeeRequestDto request)
         {
             if (string.IsNullOrWhiteSpace(request.EmploymentStatus))
@@ -283,7 +284,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST /api/department
         [HttpPost("CreateDepartment")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Department", "Create")]
         public async Task<IActionResult> CreateDepartment([FromBody] DepartmentRequestDto request)
         {
             var data = await _service.CreateDepartmentAsync(request);
@@ -292,6 +293,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/department
         [HttpGet("GetDepartments")]
+        [RequirePermission("Department", "View")]
         public async Task<IActionResult> GetDepartments()
         {
             var data = await _service.GetDepartmentsAsync();
@@ -300,6 +302,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/department/{id}
         [HttpGet("GetDepartmentById/{id}")]
+        [RequirePermission("Department", "View")]
         public async Task<IActionResult> GetDepartment(int id)
         {
             var data = await _service.GetDepartmentByIdAsync(id);
@@ -312,7 +315,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PUT /api/department/{id}
         [HttpPut("UpdateDepartment/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Department", "Update")]
         public async Task<IActionResult> UpdateDepartment(int id, [FromBody] DepartmentRequestDto request)
         {
             var updated = await _service.UpdateDepartmentAsync(id, request);
@@ -325,7 +328,7 @@ namespace AkerpSuite.Server.Controllers
 
         // DELETE /api/department/{id}
         [HttpDelete("DeleteDepartment/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Department", "Delete")]
         public async Task<IActionResult> DeleteDepartment(int id)
         {
             var deleted = await _service.DeleteDepartmentAsync(id);
@@ -342,7 +345,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST /api/admin/CreateDesignation
         [HttpPost("CreateDesignation")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Designation", "Create")]
         public async Task<IActionResult> CreateDesignation([FromBody] DesignationRequestDto request)
         {
             var data = await _service.CreateDesignationAsync(request);
@@ -351,6 +354,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/admin/GetDesignations
         [HttpGet("GetDesignations")]
+        [RequirePermission("Designation", "View")]
         public async Task<IActionResult> GetDesignations()
         {
             var data = await _service.GetDesignationsAsync();
@@ -359,6 +363,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/admin/GetDesignationById/1
         [HttpGet("GetDesignationById/{id}")]
+        [RequirePermission("Designation", "View")]
         public async Task<IActionResult> GetDesignationById(int id)
         {
             var data = await _service.GetDesignationByIdAsync(id);
@@ -371,7 +376,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PUT /api/admin/UpdateDesignation/1
         [HttpPut("UpdateDesignation/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Designation", "Update")]
         public async Task<IActionResult> UpdateDesignation(int id, [FromBody] DesignationRequestDto request)
         {
             var updated = await _service.UpdateDesignationAsync(id, request);
@@ -384,7 +389,7 @@ namespace AkerpSuite.Server.Controllers
 
         // DELETE /api/admin/DeleteDesignation/1
         [HttpDelete("DeleteDesignation/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Designation", "Delete")]
         public async Task<IActionResult> DeleteDesignation(int id)
         {
             var deleted = await _service.DeleteDesignationAsync(id);
@@ -401,7 +406,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST: api/admin/addpage
         [HttpPost("addpage")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("PageMaster", "Create")]
         public async Task<IActionResult> AddPage([FromBody] PageMasterRequestDto request)
         {
             var result = await _service.AddPageAsync(request);
@@ -412,7 +417,7 @@ namespace AkerpSuite.Server.Controllers
         }
         // GET: api/admin/getallpages
         [HttpGet("getallpages")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("PageMaster", "View")]
         public async Task<IActionResult> GetAllPages()
         {
             var data = await _service.GetAllPagesAsync();
@@ -421,7 +426,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET: api/admin/getrolepages/3
         [HttpGet("getrolepages/{roleId}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("PageMaster", "View")]
         public async Task<IActionResult> GetRolePages(int roleId)
         {
             var data = await _service.GetPagesByRoleAsync(roleId);
@@ -430,7 +435,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PUT: api/admin/updaterolepages
         [HttpPut("updaterolepages")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("PageMaster", "Update")]
         public async Task<IActionResult> UpdateRolePages([FromBody] RolePageUpdateRequestDto request)
         {
             var result = await _service.UpdateRolePagesAsync(request);
@@ -441,7 +446,7 @@ namespace AkerpSuite.Server.Controllers
         }
         // PUT: api/admin/updatepage
         [HttpPut("updatepage")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("PageMaster", "Update")]
         public async Task<IActionResult> UpdatePage([FromBody] PageMasterUpdateRequestDto request)
         {
             var result = await _service.UpdatePageAsync(request);
@@ -452,7 +457,7 @@ namespace AkerpSuite.Server.Controllers
         }
         // DELETE: api/admin/deletepage/3
         [HttpDelete("deletepage/{pageId}")]
-        [Authorize(Roles = SuperAdminRoles)]
+        [RequirePermission("PageMaster", "Delete")]
         public async Task<IActionResult> DeletePage(int pageId)
         {
             var result = await _service.DeletePageAsync(pageId);
@@ -466,7 +471,7 @@ namespace AkerpSuite.Server.Controllers
         #region Attendance dashbord,Marking, History, Regularization & Summary 
 
         [HttpPost("mark")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Attendance", "Mark")]
         public async Task<IActionResult> MarkAttendance([FromBody] AttendanceRequestDto request)
         {
             if (User.IsInRole(Roles.Employee))
@@ -490,6 +495,7 @@ namespace AkerpSuite.Server.Controllers
         }
         // GET /api/attendance/employee/{empId}?fromDate=&toDate=
         [HttpGet("employee/{empId}")]
+        [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetByEmployee(
             int empId,
             [FromQuery] DateTime? fromDate,
@@ -501,7 +507,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/attendance/all?empId=&attDate=&status=&fromDate=&toDate=
         [HttpGet("all")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetAll(
             [FromQuery] int? empId,
             [FromQuery] DateTime? attDate,
@@ -523,7 +529,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/attendance/regularization?empId=&status=
         [HttpGet("regularization")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetRegRequests(
             [FromQuery] int? empId,
             [FromQuery] string? status,
@@ -535,7 +541,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH /api/attendance/regularization/{requestId}/action?status=Approved&approvedBy=5
         [HttpPatch("regularization/{requestId}/action")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Attendance", "Approve")]
         public async Task<IActionResult> RegAction(int requestId, [FromQuery] string status, [FromQuery] int approvedBy)
         {
             var result = await _service.RegActionAsync(requestId, status, approvedBy);
@@ -544,7 +550,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST /api/attendance/summary/generate
         [HttpPost("summary/generate")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Attendance", "Manage")]
         public async Task<IActionResult> GenerateSummary([FromBody] AttendanceSummaryRequestDto request)
         {
             var summaryId = await _service.GenerateSummaryAsync(request.EmpId, request.Month, request.Year);
@@ -553,6 +559,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET /api/attendance/summary?empId=&month=&year=
         [HttpGet("summary")]
+        [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetSummary(
             [FromQuery] int? empId,
             [FromQuery] int? month,
@@ -563,7 +570,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("dashboard-stats")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetDashboardStats()
         {
             var data = await _service.GetAttendanceDashboardStatsAsync();
@@ -571,7 +578,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("sunday-holiday-status")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Manager)]
+        [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetSundayHolidayStatus([FromQuery] int month, [FromQuery] int year)
         {
             var data = await _service.GetSundayHolidayStatusAsync(month, year);
@@ -580,7 +587,7 @@ namespace AkerpSuite.Server.Controllers
 
 
         [HttpGet("sunday-holiday-status/pdf")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Attendance", "Report")]
         public async Task<IActionResult> DownloadSundayHolidayStatusPdf([FromQuery] int month, [FromQuery] int year)
         {
             var bytes = await _service.GetSundayHolidayStatusPdfAsync(month, year);
@@ -589,7 +596,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPost("sunday-holiday-status/mark")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Attendance", "Manage")]
         public async Task<IActionResult> MarkSundayDuty([FromBody] SundayDutyRequestDto request)
         {
             var empIdClaim = User.FindFirst("emp_id")?.Value;
@@ -606,7 +613,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/leave/types
         [HttpPost("types")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Leave", "Create")]
         public async Task<IActionResult> CreateLeaveType([FromBody] LeaveTypeRequestDto request)
         {
             var data = await _service.CreateLeaveTypeAsync(request);
@@ -615,7 +622,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/leave/types
         [HttpGet("types")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Leave", "View")]
         public async Task<IActionResult> GetAllLeaveTypes()
         {
             var data = await _service.GetAllLeaveTypesAsync();
@@ -624,6 +631,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/leave/types/1
         [HttpGet("types/{id}")]
+        [RequirePermission("Leave", "View")]
         public async Task<IActionResult> GetLeaveTypeById(int id)
         {
             var data = await _service.GetLeaveTypeByIdAsync(id);
@@ -634,7 +642,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PUT api/leave/types/1
         [HttpPut("types/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Leave", "Update")]
         public async Task<IActionResult> UpdateLeaveType(int id, [FromBody] LeaveTypeRequestDto request)
         {
             var updated = await _service.UpdateLeaveTypeAsync(id, request);
@@ -645,7 +653,7 @@ namespace AkerpSuite.Server.Controllers
 
         // DELETE api/leave/types/1
         [HttpDelete("types/{id}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Leave", "Delete")]
         public async Task<IActionResult> DeleteLeaveType(int id)
         {
             var deleted = await _service.DeleteLeaveTypeAsync(id);
@@ -658,7 +666,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/leave/balance/initialize
         [HttpPost("balance/initialize")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Leave", "Create")]
         public async Task<IActionResult> InitializeBalance([FromBody] LeaveBalanceInitRequestDto request)
         {
             var result = await _service.InitializeBalanceAsync(request.EmpId, request.Year);
@@ -676,7 +684,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/leave/balance/all?year=2025
         [HttpGet("balance/all")]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Leave", "View")]
         public async Task<IActionResult> GetAllLeaveBalances([FromQuery] int? year)
         {
             var currentYear = year ?? DateTime.Now.Year;
@@ -695,7 +703,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/leave/requests?empId=&status=&month=&year=
         [HttpGet("requests")]
-        [Authorize(Roles = HrManagerApprovalRoles)]
+        [RequirePermission("Leave", "View")]
         public async Task<IActionResult> GetAllLeaveRequests([FromQuery] int? empId, [FromQuery] string? status,
             [FromQuery] int? month, [FromQuery] int? year)
         {
@@ -705,6 +713,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/leave/requests/5
         [HttpGet("requests/{leaveId}")]
+        [RequirePermission("Leave", "View")]
         public async Task<IActionResult> GetLeaveRequestById(int leaveId)
         {
             var data = await _service.GetLeaveRequestByIdAsync(leaveId);
@@ -715,7 +724,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/leave/requests/5/action
         [HttpPatch("requests/{leaveId}/action")]
-        [Authorize(Roles = HrManagerApprovalRoles)]
+        [RequirePermission("Leave", "Approve")]
         public async Task<IActionResult> LeaveAction(int leaveId, [FromBody] LeaveActionRequestDto request)
         {
             // Auto-fill approvedBy from JWT token if not provided
@@ -735,6 +744,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/leave/history/{empId}?year=2025
         [HttpGet("history/{empId}")]
+        [RequirePermission("Leave", "View")]
         public async Task<IActionResult> GetLeaveHistory(int empId, [FromQuery] int? year)
         {
             var data = await _service.GetLeaveHistoryAsync(empId, year);
@@ -747,7 +757,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/salary/set
         [HttpPost("salary/set")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Payroll", "Manage")]
         public async Task<IActionResult> SetSalary([FromBody] EmployeeSalaryRequestDto request)
         {
             var salId = await _service.SetEmployeeSalaryAsync(request);
@@ -756,7 +766,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/salary/{empId}
         [HttpGet("salary/{empId}")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Payroll", "View")]
         public async Task<IActionResult> GetSalary(int empId)
         {
             var data = await _service.GetEmployeeSalaryAsync(empId);
@@ -767,6 +777,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/structures
         [HttpGet("structures")]
+        [RequirePermission("Payroll", "View")]
         public async Task<IActionResult> GetStructures()
         {
             var data = await _service.GetSalaryStructuresAsync();
@@ -777,7 +788,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/generate
         [HttpPost("generate")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Payroll", "Manage")]
         public async Task<IActionResult> GeneratePayroll([FromBody] PayrollGenerateRequestDto request)
         {
             var payrollId = await _service.GeneratePayrollAsync(request);
@@ -786,7 +797,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/months
         [HttpGet("months")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Payroll", "View")]
         public async Task<IActionResult> GetPayrollMonths()
         {
             var data = await _service.GetPayrollMonthsAsync();
@@ -795,7 +806,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/details?month=6&year=2026&empId=
         [HttpGet("details")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Payroll", "View")]
         public async Task<IActionResult> GetPayrollDetails(
             [FromQuery] int month,
             [FromQuery] int year,
@@ -807,7 +818,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/finalize
         [HttpPost("finalize")]
-        [Authorize(Roles = PayrollFinalizeRoles)]
+        [RequirePermission("Payroll", "Manage")]
         public async Task<IActionResult> FinalizePayroll([FromBody] PayrollFinalizeRequestDto request)
         {
             if (request.ApprovedBy <= 0)
@@ -823,7 +834,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/markpaid?month=6&year=2026
         [HttpPost("markpaid")]
-        [Authorize(Roles = PayrollMarkPaidRoles)]
+        [RequirePermission("Payroll", "Manage")]
         public async Task<IActionResult> MarkPaid(
             [FromQuery] int month,
             [FromQuery] int year)
@@ -851,7 +862,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/deductions/add
         [HttpPost("deductions/add")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Payroll", "Manage")]
         public async Task<IActionResult> AddDeduction([FromBody] SalaryDeductionRequestDto request)
         {
             if (request.CreatedBy <= 0)
@@ -867,7 +878,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/payroll/deductions/action
         [HttpPatch("deductions/action")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Payroll", "Manage")]
         public async Task<IActionResult> DeductionAction([FromBody] SalaryDeductionActionDto request)
         {
             if (request.ApprovedBy <= 0)
@@ -886,7 +897,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/deductions?empId=&month=&year=&status=
         [HttpGet("deductions")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Payroll", "View")]
         public async Task<IActionResult> GetDeductions([FromQuery] int? empId, [FromQuery] int? month, [FromQuery] int? year, [FromQuery] string? status)
         {
             var data = await _service.GetDeductionsAsync(empId, month, year, status);
@@ -895,7 +906,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/salary/all
         [HttpGet("salary/all")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Payroll", "View")]
         public async Task<IActionResult> GetAllEmployeeSalaries()
         {
             var data = await _service.GetAllEmployeeSalariesAsync();
@@ -907,7 +918,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/loans
         [HttpPost("loans")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Loan", "Create")]
         public async Task<IActionResult> CreateLoan([FromBody] LoanRequestDto request)
         {
             var loanId = await _service.CreateLoanAsync(request);
@@ -916,6 +927,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/loans/employee/{empId}
         [HttpGet("loans/employee/{empId}")]
+        [RequirePermission("Loan", "View")]
         public async Task<IActionResult> GetLoansByEmp(int empId)
         {
             var data = await _service.GetLoansByEmpAsync(empId);
@@ -924,7 +936,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/loans?status=Active
         [HttpGet("loans")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Loan", "View")]
         public async Task<IActionResult> GetAllLoans([FromQuery] string? status)
         {
             var data = await _service.GetAllLoansAsync(status);
@@ -933,7 +945,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/payroll/loans/action
         [HttpPatch("loans/action")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Loan", "Approve")]
         public async Task<IActionResult> LoanAction([FromBody] LoanActionDto request)
         {
             if (request.ApprovedBy <= 0)
@@ -949,7 +961,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/payroll/loans/close
         [HttpPatch("loans/close")]
-        [Authorize(Roles = PayrollViewRoles)]
+        [RequirePermission("Loan", "Close")]
         public async Task<IActionResult> CloseLoan([FromBody] LoanCloseDto request)
         {
             var result = await _service.CloseLoanAsync(request);
@@ -971,8 +983,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/attendance/overtime?empId=&status=&fromDate=&toDate=
         [HttpGet("overtime")]
-        // [Authorize(Roles = HrManagerApprovalRoles)]
-        [Authorize(Roles = HrManageRoles + "," + Roles.Employee)]
+        [RequirePermission("Overtime", "View")]
         public async Task<IActionResult> GetAllOvertime(
             [FromQuery] int? empId,
             [FromQuery] string? status,
@@ -985,7 +996,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/attendance/overtime/action
         [HttpPatch("overtime/action")]
-        [Authorize(Roles = HrManagerApprovalRoles)]
+        [RequirePermission("Overtime", "Approve")]
         public async Task<IActionResult> OvertimeAction([FromBody] OvertimeActionDto request)
         {
             if (request.ApprovedBy <= 0)
@@ -1006,7 +1017,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/payroll/late-mark-rule
         [HttpPost("late-mark-rule")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("LateMarkRule", "Create")]
         public async Task<IActionResult> CreateLateMarkRule([FromBody] LateMarkRuleRequestDto request)
         {
             var ruleId = await _service.CreateLateMarkRuleAsync(request);
@@ -1025,7 +1036,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/payroll/late-mark-rule/history
         [HttpGet("late-mark-rule/history")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("LateMarkRule", "View")]
         public async Task<IActionResult> GetAllLateMarkRules()
         {
             var data = await _service.GetAllLateMarkRulesAsync();
@@ -1038,7 +1049,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/recruitment/requisitions
         [HttpPost("requisitions")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Requisition", "Create")]
         public async Task<IActionResult> CreateRequisition([FromBody] JobRequisitionRequestDto request)
         {
             var id = await _service.CreateRequisitionAsync(request);
@@ -1047,7 +1058,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/recruitment/requisitions/action
         [HttpPatch("requisitions/action")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Requisition", "Approve")]
         public async Task<IActionResult> ActionRequisition([FromBody] JobRequisitionActionDto request)
         {
             var result = await _service.ActionRequisitionAsync(request);
@@ -1058,7 +1069,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/recruitment/requisitions?status=Pending
         [HttpGet("requisitions")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Requisition", "View")]
         public async Task<IActionResult> GetAllRequisitions([FromQuery] string? status)
         {
             var data = await _service.GetAllRequisitionsAsync(status);
@@ -1067,7 +1078,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/recruitment/requisitions/5
         [HttpGet("requisitions/{id}")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Requisition", "View")]
         public async Task<IActionResult> GetRequisitionById(int id)
         {
             var data = await _service.GetRequisitionByIdAsync(id);
@@ -1081,7 +1092,7 @@ namespace AkerpSuite.Server.Controllers
         #region Recruitment – Job Posting (Public Career Page + Reports)
 
         [HttpPost("postings")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("JobPosting", "Create")]
         public async Task<IActionResult> CreateJobPosting([FromBody] JobPostingRequestDto request)
         {
             request.CreatedBy = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
@@ -1090,7 +1101,7 @@ namespace AkerpSuite.Server.Controllers
         }
         // PUT api/recruitment/postings
         [HttpPut("postings")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("JobPosting", "Update")]
         public async Task<IActionResult> UpdateJobPosting([FromBody] JobPostingUpdateRequestDto request)
         {
             var updated = await _service.UpdateJobPostingAsync(request);
@@ -1123,7 +1134,7 @@ namespace AkerpSuite.Server.Controllers
         // GET api/admin/reports/recruitment-status?fromDate=&toDate=
 
         [HttpGet("reports/recruitment-status")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("JobPosting", "View")]
         public async Task<IActionResult> GetRecruitmentStatusReport(
             [FromQuery] DateTime? fromDate,
             [FromQuery] DateTime? toDate)
@@ -1157,7 +1168,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/recruitment/candidates?status=Shortlisted&jobPostingId=3
         [HttpGet("candidates")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Candidate", "View")]
         public async Task<IActionResult> SearchCandidates([FromQuery] CandidateSearchRequestDto filter)
         {
             var data = await _service.SearchCandidatesAsync(filter);
@@ -1166,7 +1177,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/recruitment/candidates/5
         [HttpGet("candidates/{id}")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Candidate", "View")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
             var data = await _service.GetCandidateByIdAsync(id);
@@ -1177,7 +1188,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/recruitment/candidates/status
         [HttpPatch("candidates/status")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Candidate", "Update")]
         public async Task<IActionResult> UpdateCandidateStatus([FromBody] CandidateStatusUpdateDto request)
         {
             var updated = await _service.UpdateCandidateStatusAsync(request);
@@ -1192,7 +1203,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/recruitment/interviews
         [HttpPost("interviews")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Interview", "Create")]
         public async Task<IActionResult> ScheduleInterview([FromBody] InterviewScheduleRequestDto request)
         {
             var id = await _service.ScheduleInterviewAsync(request);
@@ -1201,7 +1212,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/recruitment/interviews/feedback
         [HttpPatch("interviews/feedback")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Interview", "Update")]
         public async Task<IActionResult> SubmitInterviewFeedback([FromBody] InterviewFeedbackRequestDto request)
         {
             var updated = await _service.SubmitInterviewFeedbackAsync(request);
@@ -1210,8 +1221,9 @@ namespace AkerpSuite.Server.Controllers
         }
 
         // GET api/recruitment/interviews/candidate/5
+        // NOTE: DB me "Interview,View" permission add karna padega (gap tha) — see migration doc.
         [HttpGet("interviews/candidate/{candidateId}")]
-        [Authorize(Roles = HrRecruitRoles)]
+        [RequirePermission("Interview", "View")]
         public async Task<IActionResult> GetInterviewsByCandidate(int candidateId)
         {
             var data = await _service.GetInterviewsByCandidateAsync(candidateId);
@@ -1220,7 +1232,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/recruitment/interviews/selection-approval
         [HttpPatch("interviews/selection-approval")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Interview", "Approve")]
         public async Task<IActionResult> SelectionApproval([FromBody] InterviewSelectionApprovalDto request)
         {
             if (request.ApprovedBy <= 0)
@@ -1242,7 +1254,7 @@ namespace AkerpSuite.Server.Controllers
 
         // POST api/recruitment/offers
         [HttpPost("offers")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Offer", "Create")]
         public async Task<IActionResult> CreateOffer([FromBody] OfferCreateRequestDto request)
         {
             var id = await _service.CreateOfferAsync(request);
@@ -1251,7 +1263,7 @@ namespace AkerpSuite.Server.Controllers
 
         // PATCH api/recruitment/offers/action
         [HttpPatch("offers/action")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Offer", "Update")]
         public async Task<IActionResult> ActionOffer([FromBody] OfferActionDto request)
         {
             var updated = await _service.OfferActionAsync(request);   // was ActionOfferAsync
@@ -1262,7 +1274,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/recruitment/offers/candidate/5
         [HttpGet("offers/candidate/{candidateId}")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Offer", "View")]
         public async Task<IActionResult> GetOfferByCandidate(int candidateId)
         {
             var data = await _service.GetOfferByCandidateAsync(candidateId);
@@ -1273,7 +1285,7 @@ namespace AkerpSuite.Server.Controllers
 
 
         [HttpPost("joining/confirm")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Joining", "Create")]
         public async Task<IActionResult> ConfirmJoining(JoiningConfirmationRequestDto request)
         {
             var creatorRole = User.FindFirst(ClaimTypes.Role)?.Value
@@ -1287,7 +1299,7 @@ namespace AkerpSuite.Server.Controllers
         #region Employee Credential Reveal (Secret-Key Protected)
 
         [HttpPost("employees/{empId}/reveal-credentials")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Credential", "Manage")]
         public async Task<IActionResult> RevealCredentials(int empId, RevealCredentialsRequestDto request)
         {
             try
@@ -1306,7 +1318,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/candidates/5/offer-letter
         [HttpGet("candidates/{candidateId}/offer-letter")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Letter", "Generate")]
         public async Task<IActionResult> GetOfferLetter(int candidateId)
         {
             var bytes = await _service.GenerateOfferLetterAsync(candidateId);
@@ -1320,7 +1332,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/candidates/5/appointment-letter
         [HttpGet("candidates/{candidateId}/appointment-letter")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Letter", "Generate")]
         public async Task<IActionResult> GetAppointmentLetter(int candidateId)
         {
             var bytes = await _service.GenerateAppointmentLetterAsync(candidateId);
@@ -1334,7 +1346,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/candidates/5/regularization-letter?effectiveDate=2026-08-08
         [HttpGet("candidates/{candidateId}/regularization-letter")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Letter", "Generate")]
         public async Task<IActionResult> GetRegularizationLetter(int candidateId, [FromQuery] DateTime effectiveDate)
         {
             var bytes = await _service.GenerateRegularizationLetterAsync(candidateId, effectiveDate);
@@ -1348,7 +1360,7 @@ namespace AkerpSuite.Server.Controllers
 
         // GET api/admin/candidates/5/relieving-letter
         [HttpGet("candidates/{candidateId}/relieving-letter")]
-        [Authorize(Roles = HrManageRoles)]
+        [RequirePermission("Letter", "Generate")]
         public async Task<IActionResult> GetRelievingLetter(int candidateId)
         {
             var bytes = await _service.GenerateRelievingLetterAsync(candidateId);
