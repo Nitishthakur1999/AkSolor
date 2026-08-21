@@ -1116,9 +1116,16 @@ export default function Employees() {
                                             className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
                                         >
                                             <option value="">-- No Reporting Manager --</option>
-                                            {employees.filter(emp => emp.employmentStatus === "Active" && ["CMD", "Director", "Manager", "HR"].includes(emp.roleName)).map(emp => (
-                                                <option key={emp.empId} value={emp.empId}>{emp.firstName} {emp.lastName} ({emp.empCode})</option>
-                                            ))}
+                                            {employees
+                                                .filter(emp =>
+                                                    (emp.employmentStatus === "Active" && ![1, 2, 5].includes(emp.roleId)) ||
+                                                    String(emp.empId) === String(createForm.reportingManager)
+                                                )
+                                                .map(emp => (
+                                                    <option key={emp.empId} value={String(emp.empId)}>
+                                                        {emp.firstName} {emp.lastName} ({emp.empCode})
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
                                     <div>
@@ -1404,9 +1411,17 @@ export default function Employees() {
                                             className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
                                         >
                                             <option value="">-- No Reporting Manager --</option>
-                                            {employees.filter(emp => emp.empId !== parseInt(editForm.empId, 10) && emp.employmentStatus === "Active" && ["CMD", "Director", "Sr. Manager", "HR"].includes((emp.roleName || "").trim())).map(emp => (
-                                                <option key={emp.empId} value={emp.empId}>{emp.firstName} {emp.lastName} ({emp.empCode})</option>
-                                            ))}
+                                            {employees
+                                                .filter(emp =>
+                                                    emp.empId !== parseInt(editForm.empId, 10) &&
+                                                    ((emp.employmentStatus === "Active" && ![1, 2, 5].includes(emp.roleId)) ||
+                                                        String(emp.empId) === String(editForm.reportingManager))
+                                                )
+                                                .map(emp => (
+                                                    <option key={emp.empId} value={String(emp.empId)}>
+                                                        {emp.firstName} {emp.lastName} ({emp.empCode})
+                                                    </option>
+                                                ))}
                                         </select>
                                     </div>
                                     <div>
