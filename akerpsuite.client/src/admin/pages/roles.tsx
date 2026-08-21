@@ -3,7 +3,7 @@ import { adminService } from "@/services/adminService";
 
 export default function Roles() {
     // ── Tab Control ──
-    const [activeTab, setActiveTab] = useState("roles"); 
+    const [activeTab, setActiveTab] = useState("roles");
 
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -190,6 +190,22 @@ export default function Roles() {
         !isModuleFullyChecked(mod) &&
         groupedPermissions[mod].some(p => assignedPermissionIds.has(p.permissionId ?? p.PermissionId));
 
+    const moduleCheckedCount = (mod) =>
+        groupedPermissions[mod].filter(p => assignedPermissionIds.has(p.permissionId ?? p.PermissionId)).length;
+
+    // ── Global "Select All" across every module ──
+    const isAllChecked = () =>
+        allPermissions.length > 0 &&
+        allPermissions.every(p => assignedPermissionIds.has(p.permissionId ?? p.PermissionId));
+
+    const toggleAllPermissions = () => {
+        if (isAllChecked()) {
+            setAssignedPermissionIds(new Set());
+        } else {
+            setAssignedPermissionIds(new Set(allPermissions.map(p => p.permissionId ?? p.PermissionId)));
+        }
+    };
+
     const hasChanges = () => {
         if (assignedPermissionIds.size !== originalPermissionIds.size) return true;
         for (const id of assignedPermissionIds) {
@@ -227,7 +243,15 @@ export default function Roles() {
         }
     };
 
-
+    // Color coding per action, so the eye can scan by permission type instead of hunting checkboxes
+    const actionStyle = (name) => {
+        const n = (name || "").toLowerCase();
+        if (n.includes("delete")) return { dot: "bg-rose-500", ring: "ring-rose-200", text: "text-rose-700", bg: "bg-rose-50", border: "border-rose-300" };
+        if (n.includes("approve") || n.includes("manage")) return { dot: "bg-violet-500", ring: "ring-violet-200", text: "text-violet-700", bg: "bg-violet-50", border: "border-violet-300" };
+        if (n.includes("create")) return { dot: "bg-emerald-500", ring: "ring-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-300" };
+        if (n.includes("update")) return { dot: "bg-sky-500", ring: "ring-sky-200", text: "text-sky-700", bg: "bg-sky-50", border: "border-sky-300" };
+        return { dot: "bg-amber-500", ring: "ring-amber-200", text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-300" }; // View / default
+    };
 
     const selectedRole = roles.find(r => String(r.roleId) === String(selectedRoleId));
 
@@ -454,10 +478,26 @@ export default function Roles() {
                         </div>
 
                         {selectedRole && (
-                            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-                                <i className="fa-solid fa-circle-info text-amber-500" />
-                                Configuring access for <span className="font-bold text-slate-700">{selectedRole.roleName}</span>
-                                {" "}— <span className="font-bold text-slate-700">{assignedPermissionIds.size}</span> permission(s) currently selected.
+                            <div className="mt-4 flex items-center justify-between gap-3 flex-wrap pt-3 border-t border-slate-100">
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <i className="fa-solid fa-circle-info text-amber-500" />
+                                    Configuring access for <span className="font-bold text-slate-700">{selectedRole.roleName}</span>
+                                    {" "}— <span className="font-bold text-slate-700">{assignedPermissionIds.size}</span> / {allPermissions.length} permission(s) selected.
+                                </div>
+
+                                {/* Select-all as a switch, distinct look from the pill checkmarks below */}
+                                <button
+                                    type="button"
+                                    onClick={toggleAllPermissions}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
+                                >
+                                    <span className={`relative w-8 h-4.5 rounded-full transition-colors ${isAllChecked() ? "bg-amber-500" : "bg-slate-300"}`} style={{ height: "18px" }}>
+                                        <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${isAllChecked() ? "translate-x-3.5" : ""}`} />
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-600">
+                                        {isAllChecked() ? "All selected" : "Select all"}
+                                    </span>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -477,49 +517,81 @@ export default function Roles() {
                         </div>
                     ) : (
                         <>
+                            {/* ── Legend: explains the color-coded action dots used below ── */}
+                            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Legend</span>
+                                {[
+                                    { label: "View", cls: "bg-amber-500" },
+                                    { label: "Create", cls: "bg-emerald-500" },
+                                    { label: "Update", cls: "bg-sky-500" },
+                                    { label: "Approve / Manage", cls: "bg-violet-500" },
+                                    { label: "Delete", cls: "bg-rose-500" },
+                                ].map(item => (
+                                    <span key={item.label} className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                                        <span className={`w-2 h-2 rounded-full ${item.cls}`} />
+                                        {item.label}
+                                    </span>
+                                ))}
+                            </div>
+
                             {/* ── Module Permission Cards ── */}
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {filteredModuleNames.map(mod => (
-                                    <div key={mod} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                                        <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-                                            <span className="text-sm font-bold text-slate-800">{mod}</span>
-                                            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isModuleFullyChecked(mod)}
-                                                    ref={el => { if (el) el.indeterminate = isModulePartiallyChecked(mod); }}
-                                                    onChange={(e) => toggleModuleAll(mod, e.target.checked)}
-                                                    className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
-                                                />
-                                                <span className="text-[10px] font-bold uppercase text-slate-400">All</span>
-                                            </label>
+                                {filteredModuleNames.map(mod => {
+                                    const total = groupedPermissions[mod].length;
+                                    const checkedCount = moduleCheckedCount(mod);
+                                    const fully = isModuleFullyChecked(mod);
+                                    const partial = isModulePartiallyChecked(mod);
+
+                                    return (
+                                        <div key={mod} className={`bg-white border rounded-2xl shadow-sm overflow-hidden transition-colors ${fully ? "border-amber-300" : "border-slate-200"}`}>
+                                            <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="text-sm font-bold text-slate-800 truncate">{mod}</span>
+                                                    <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-200/70 text-slate-500">
+                                                        {checkedCount}/{total}
+                                                    </span>
+                                                </div>
+                                                {/* Module-level control is a text action, not a second checkbox */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleModuleAll(mod, !fully)}
+                                                    className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md transition-colors ${fully
+                                                        ? "text-amber-700 bg-amber-100 hover:bg-amber-200"
+                                                        : partial
+                                                            ? "text-slate-600 bg-slate-200 hover:bg-slate-300"
+                                                            : "text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                                                        }`}
+                                                >
+                                                    {fully ? "Clear" : "Select all"}
+                                                </button>
+                                            </div>
+                                            <div className="p-4 flex flex-wrap gap-2">
+                                                {groupedPermissions[mod].map(p => {
+                                                    const id = p.permissionId ?? p.PermissionId;
+                                                    const name = p.permissionName ?? p.PermissionName;
+                                                    const checked = assignedPermissionIds.has(id);
+                                                    const style = actionStyle(name);
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={id}
+                                                            onClick={() => togglePermission(id)}
+                                                            aria-pressed={checked}
+                                                            className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${checked
+                                                                ? `${style.bg} ${style.border} ${style.text} ring-1 ${style.ring}`
+                                                                : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300"
+                                                                }`}
+                                                        >
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${checked ? style.dot : "bg-slate-300"}`} />
+                                                            {checked && <i className="fa-solid fa-check text-[9px]" />}
+                                                            {name}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                        <div className="p-4 flex flex-wrap gap-2">
-                                            {groupedPermissions[mod].map(p => {
-                                                const id = p.permissionId ?? p.PermissionId;
-                                                const name = p.permissionName ?? p.PermissionName;
-                                                const checked = assignedPermissionIds.has(id);
-                                                return (
-                                                    <label
-                                                        key={id}
-                                                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer select-none transition-colors ${checked
-                                                            ? "bg-amber-50 border-amber-300 text-amber-700"
-                                                            : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                                                            }`}
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={checked}
-                                                            onChange={() => togglePermission(id)}
-                                                            className="w-3.5 h-3.5 rounded accent-amber-500 cursor-pointer"
-                                                        />
-                                                        {name}
-                                                    </label>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {filteredModuleNames.length === 0 && (
                                     <div className="md:col-span-2 xl:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm py-16 flex flex-col items-center justify-center text-center">

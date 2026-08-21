@@ -19,24 +19,7 @@ namespace AkerpSuite.Server.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _service;
-        //   private const string SuperAdminRoles = Roles.CMD + "," + Roles.Director;
-        private const string SuperAdminRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-        // ── HR Core management (Employee, Department, Designation, Attendance, Leave, Payroll) ──
-        private const string HrManageRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-
-        // ── Recruitment (HR + Manager for requisitions/interviews) ──
-        private const string HrRecruitRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager;
-
-        // ── Payroll views that Accounts also needs ──
-        private const string PayrollViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Accounts;
-
-        // ── Payroll finalize/markpaid: tighter control ──
-        private const string PayrollFinalizeRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-        private const string PayrollMarkPaidRoles = Roles.CMD + "," + Roles.Director + "," + Roles.Accounts + "," + Roles.HR;
-
-        // ── Leave/Overtime actions that Manager also approves for their team ──
-        private const string HrManagerApprovalRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager;
-
+       
         public AdminController(IAdminService service)
         {
             _service = service;
@@ -471,7 +454,7 @@ namespace AkerpSuite.Server.Controllers
         #region Attendance dashbord,Marking, History, Regularization & Summary 
 
         [HttpPost("mark")]
-        [RequirePermission("Attendance", "Mark")]
+        [RequirePermission("Attendance", "Manage")]
         public async Task<IActionResult> MarkAttendance([FromBody] AttendanceRequestDto request)
         {
             if (User.IsInRole(Roles.Employee))

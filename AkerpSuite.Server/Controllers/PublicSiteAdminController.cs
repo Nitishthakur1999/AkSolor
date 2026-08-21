@@ -15,9 +15,6 @@ namespace AkerpSuite.Server.Controllers
     {
         private readonly IHRService _service;
 
-        private const string SiteWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-        private const string SiteViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-
         public PublicSiteAdminController(IHRService service)
         {
             _service = service;
@@ -26,7 +23,7 @@ namespace AkerpSuite.Server.Controllers
         #region Banner
 
         [HttpPost("banner")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteBanner", "Manage")]
         public async Task<IActionResult> CreateBanner(
             [FromBody] BannerRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -43,7 +40,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("banner")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("SiteBanner", "View")]
         public async Task<IActionResult> GetAllBanners()
         {
             var data = await _service.GetAllBannersAsync();
@@ -51,7 +48,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("banner")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteBanner", "Manage")]
         public async Task<IActionResult> UpdateBanner(
             [FromBody] BannerUpdateRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -71,7 +68,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("banner/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteBanner", "Manage")]
         public async Task<IActionResult> DeleteBanner(int id, [FromServices] FileUploadHelper fileHelper)
         {
             var deleted = await _service.DeleteBannerAsync(id, fileHelper);
@@ -86,7 +83,7 @@ namespace AkerpSuite.Server.Controllers
         #region Gallery
 
         [HttpPost("gallery")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteGallery", "Manage")]
         public async Task<IActionResult> CreateGallery(
             [FromBody] GalleryRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -103,7 +100,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("gallery")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("SiteGallery", "View")]
         public async Task<IActionResult> GetAllGallery()
         {
             var data = await _service.GetAllGalleryAsync();
@@ -111,7 +108,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("gallery")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteGallery", "Manage")]
         public async Task<IActionResult> UpdateGallery(
             [FromBody] GalleryUpdateRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -131,7 +128,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("gallery/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteGallery", "Manage")]
         public async Task<IActionResult> DeleteGallery(int id, [FromServices] FileUploadHelper fileHelper)
         {
             var deleted = await _service.DeleteGalleryAsync(id, fileHelper);
@@ -146,7 +143,7 @@ namespace AkerpSuite.Server.Controllers
         #region Our Team
 
         [HttpPost("team")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteTeam", "Manage")]
         public async Task<IActionResult> CreateTeam(
             [FromBody] TeamRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -163,7 +160,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("team")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("SiteTeam", "View")]
         public async Task<IActionResult> GetAllTeam()
         {
             var data = await _service.GetAllTeamAsync();
@@ -171,7 +168,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("team")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteTeam", "Manage")]
         public async Task<IActionResult> UpdateTeam(
             [FromBody] TeamUpdateRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -191,7 +188,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("team/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteTeam", "Manage")]
         public async Task<IActionResult> DeleteTeam(int id, [FromServices] FileUploadHelper fileHelper)
         {
             var deleted = await _service.DeleteTeamAsync(id, fileHelper);
@@ -206,7 +203,7 @@ namespace AkerpSuite.Server.Controllers
         #region Completed Projects (multi-image)
 
         [HttpPost("projects")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteProject", "Manage")]
         public async Task<IActionResult> CreateProject(
             [FromBody] ProjectRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -226,7 +223,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("projects")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("SiteProject", "View")]
         public async Task<IActionResult> GetAllProjects()
         {
             var data = await _service.GetAllProjectsAsync();
@@ -234,7 +231,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("projects")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteProject", "Manage")]
         public async Task<IActionResult> UpdateProject(
             [FromBody] ProjectUpdateRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -257,7 +254,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("projects/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteProject", "Manage")]
         public async Task<IActionResult> DeleteProject(int id, [FromServices] FileUploadHelper fileHelper)
         {
             var deleted = await _service.DeleteProjectAsync(id, fileHelper);
@@ -272,7 +269,7 @@ namespace AkerpSuite.Server.Controllers
         #region Highlights
 
         [HttpPost("highlights")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteHighlight", "Manage")]
         public async Task<IActionResult> CreateHighlight(
             [FromBody] HighlightRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -289,7 +286,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("highlights")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("SiteHighlight", "View")]
         public async Task<IActionResult> GetAllHighlights()
         {
             var data = await _service.GetAllHighlightsAsync();
@@ -297,7 +294,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("highlights")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteHighlight", "Manage")]
         public async Task<IActionResult> UpdateHighlight(
             [FromBody] HighlightUpdateRequestDto request,
             [FromServices] FileUploadHelper fileHelper)
@@ -317,7 +314,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("highlights/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteHighlight", "Manage")]
         public async Task<IActionResult> DeleteHighlight(int id, [FromServices] FileUploadHelper fileHelper)
         {
             var deleted = await _service.DeleteHighlightAsync(id, fileHelper);
@@ -332,7 +329,7 @@ namespace AkerpSuite.Server.Controllers
         #region Career (no images)
 
         [HttpPost("career")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteCareer", "Manage")]
         public async Task<IActionResult> CreateCareer([FromBody] CareerRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -343,7 +340,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpGet("career")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("SiteCareer", "View")]
         public async Task<IActionResult> GetAllCareers()
         {
             var data = await _service.GetAllCareersAsync();
@@ -351,7 +348,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPut("career")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteCareer", "Manage")]
         public async Task<IActionResult> UpdateCareer([FromBody] CareerUpdateRequestDto request)
         {
             if (!ModelState.IsValid)
@@ -365,7 +362,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("career/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("SiteCareer", "Manage")]
         public async Task<IActionResult> DeleteCareer(int id)
         {
             var deleted = await _service.DeleteCareerAsync(id);
@@ -380,7 +377,7 @@ namespace AkerpSuite.Server.Controllers
         #region Contact Query (Admin only VIEWS, mark-read, delete — no create)
 
         [HttpGet("contact-query")]
-        [Authorize(Roles = SiteViewRoles)]
+        [RequirePermission("ContactQuery", "View")]
         public async Task<IActionResult> GetAllQueries([FromQuery] bool? isRead)
         {
             var data = await _service.GetAllContactQueriesAsync(isRead);
@@ -388,7 +385,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpPatch("contact-query/{id:int}/mark-read")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("ContactQuery", "Manage")]
         public async Task<IActionResult> MarkQueryRead(int id)
         {
             var updated = await _service.MarkQueryReadAsync(id);
@@ -399,7 +396,7 @@ namespace AkerpSuite.Server.Controllers
         }
 
         [HttpDelete("contact-query/{id:int}")]
-        [Authorize(Roles = SiteWriteRoles)]
+        [RequirePermission("ContactQuery", "Manage")]
         public async Task<IActionResult> DeleteQuery(int id)
         {
             var deleted = await _service.DeleteContactQueryAsync(id);

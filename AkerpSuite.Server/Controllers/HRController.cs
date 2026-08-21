@@ -17,29 +17,7 @@ namespace AkerpSuite.Server.Controllers
         private readonly IHRService _service;
         private readonly ILogger<HRController> _logger;
         private readonly IAdminService _adminService;
-
-        private const string HrWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-        private const string HrDeleteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-        private const string HrViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR;
-        private const string PayrollViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Accounts;
-        private const string PayrollWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Accounts;
-
-        private const string SalesWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-        private const string SalesViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-
-        private const string PaymentWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.Accounts + "," + Roles.Sales + "," + Roles.Manager;
-        private const string PaymentViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-
-        private const string BomWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
-        private const string BomViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Inventory + "," + Roles.Manager;
-
-        private const string InventoryWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-        private const string InventoryViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Sales + "," + Roles.Manager;
-
-        private const string PurchaseWriteRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager;
-        private const string PurchaseViewRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager + "," + Roles.Accounts;
-
-        private const string PurchaseApproveRoles = Roles.CMD + "," + Roles.Director + "," + Roles.HR + "," + Roles.Manager; public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
+        public HRController(IHRService service, ILogger<HRController> logger, IAdminService adminService)
         {
             _service = service;
             _logger = logger;
@@ -1280,7 +1258,5 @@ namespace AkerpSuite.Server.Controllers
         }
 
         #endregion
-
-
     }
 }
