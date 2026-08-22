@@ -625,6 +625,8 @@ export default function Employees() {
     };
 
     const filteredEmployees = employees.filter(emp => {
+        if ([1,2].includes(emp.roleId)) return false;   
+
         const query = searchQuery.toLowerCase();
         return (
             (emp.firstName || "").toLowerCase().includes(query) ||
@@ -1139,7 +1141,7 @@ export default function Employees() {
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">System Security Role *</label>
                                         <select required value={createForm.roleId} onChange={e => setCreateForm({ ...createForm, roleId: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer">
                                             <option value="">-- Assign Login Role Tiers --</option>
-                                            {roles.filter(r => Number(r.roleId) > loggedInRoleId).map(r => (
+                                            {roles.map(r => (
                                                 <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
                                             ))}
                                         </select>
@@ -1434,7 +1436,7 @@ export default function Employees() {
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">System Security Role *</label>
                                         <select required value={editForm.roleId} onChange={e => setEditForm({ ...editForm, roleId: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer">
-                                            {roles.filter(r => Number(r.roleId) > loggedInRoleId).map(r => (
+                                            {roles.map(r => (
                                                 <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
                                             ))}
                                         </select>

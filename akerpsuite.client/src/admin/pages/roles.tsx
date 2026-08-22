@@ -138,7 +138,6 @@ export default function Roles() {
 
     // 🔍 ---------------- SEARCH & PAGINATION COMPUTATION ----------------
     const filteredRoles = roles
-        .filter(r => r.roleId !== 1)
         .filter(r =>
             r.roleName.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (r.description && r.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -384,13 +383,15 @@ export default function Roles() {
                                                         >
                                                             <i className="fa-solid fa-pen text-[13px]" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleDeleteRole(r.roleId)}
-                                                            className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-colors"
-                                                            title="Delete Role"
-                                                        >
-                                                            <i className="fa-solid fa-trash-can text-[13px]" />
-                                                        </button>
+                                                        {r.roleId !== 1 && (
+                                                            <button
+                                                                onClick={() => handleDeleteRole(r.roleId)}
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 hover:text-rose-600 transition-colors"
+                                                                title="Delete Role"
+                                                            >
+                                                                <i className="fa-solid fa-trash-can text-[13px]" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
