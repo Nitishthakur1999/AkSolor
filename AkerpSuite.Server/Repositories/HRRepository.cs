@@ -1944,7 +1944,6 @@ namespace AkerpSuite.Server.Repositories
         #endregion
 
         #region Purchase Invoice
-
         public async Task<int> CreatePurchaseInvoiceAsync(PurchaseInvoiceRequestDto request)
         {
             using var conn = _context.CreateConnection();

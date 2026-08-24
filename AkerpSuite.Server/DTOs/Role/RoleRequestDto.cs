@@ -30,14 +30,12 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("password")]
         public string? Password { get; set; }
 
-        // Core Profile Fields
         [JsonPropertyName("firstName")]
         public string FirstName { get; set; } = string.Empty;
 
         [JsonPropertyName("lastName")]
         public string LastName { get; set; } = string.Empty;
 
-        // ✅ NEW — client sheet: "FATHER NAME/ HUSBAND NAME"
         [JsonPropertyName("fatherHusbandName")]
         public string? FatherHusbandName { get; set; }
 
@@ -53,7 +51,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("maritalStatus")]
         public string? MaritalStatus { get; set; }
 
-        // Contact Nodes
         [JsonPropertyName("personalEmail")]
         public string? PersonalEmail { get; set; }
 
@@ -66,7 +63,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("alternateMobile")]
         public string? AlternateMobile { get; set; }
 
-        // Address Segments
         [JsonPropertyName("addressLine1")]
         public string? AddressLine1 { get; set; }
 
@@ -100,7 +96,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("esicNo")]
         public string? EsicNo { get; set; }
 
-        // Organization Relational Maps
         [JsonPropertyName("deptId")]
         public int DeptId { get; set; }
 
@@ -113,7 +108,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("roleId")]
         public int RoleId { get; set; }
 
-        // Corporate Life-cycle Triggers
         [JsonPropertyName("dateOfJoining")]
         public DateTime DateOfJoining { get; set; }
 
@@ -129,7 +123,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("currentCtc")]
         public decimal? CurrentCtc { get; set; }
 
-        // Extended Dates Trackers
         [JsonPropertyName("probationEndDate")]
         public DateTime? ProbationEndDate { get; set; }
 
@@ -145,7 +138,6 @@ namespace AkerpSuite.Server.DTOs.Role
         [JsonPropertyName("exitReason")]
         public string? ExitReason { get; set; }
 
-        // Base64 Images Parameters
         [JsonPropertyName("photoBase64")]
         public string? PhotoBase64 { get; set; }
 
@@ -163,8 +155,8 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Source { get; set; } = "Manual";
         public string? Remarks { get; set; }
         public int? CreatedBy { get; set; }
-        public decimal? Latitude { get; set; }      // 🆕
-        public decimal? Longitude { get; set; }     // 🆕
+        public decimal? Latitude { get; set; }      
+        public decimal? Longitude { get; set; }     
         public string? LocationAddress { get; set; }
     }
     public class AttendanceRegRequestDto
@@ -324,20 +316,17 @@ namespace AkerpSuite.Server.DTOs.Role
         public DateTime LoanDate { get; set; }
         public string? Remarks { get; set; }
     }
-
     public class LoanActionDto
     {
         public int LoanId { get; set; }
         public string Status { get; set; } = string.Empty;
         public int ApprovedBy { get; set; }
     }
-
     public class LoanCloseDto
     {
         public int LoanId { get; set; }
         public string? Remarks { get; set; }
     }
-
     public class OvertimeRequestDto
     {
         public int EmpId { get; set; }
@@ -345,14 +334,12 @@ namespace AkerpSuite.Server.DTOs.Role
         public decimal OtHours { get; set; }
         public string? Reason { get; set; }
     }
-
     public class OvertimeActionDto
     {
         public int OtId { get; set; }
         public string Status { get; set; } = string.Empty;
         public int ApprovedBy { get; set; }
     }
-
     public class LateMarkRuleRequestDto
     {
         public int LatesCount { get; set; }
@@ -447,7 +434,7 @@ namespace AkerpSuite.Server.DTOs.Role
     {
         public int CandidateId { get; set; }
         public DateTime ScheduledDate { get; set; }
-        public string Mode { get; set; } = string.Empty;      // 'In-Person','Online','Phone'
+        public string Mode { get; set; } = string.Empty; 
         public string? Location { get; set; }
         public string? Interviewers { get; set; }
         public int RoundNo { get; set; } = 1;
@@ -471,13 +458,11 @@ namespace AkerpSuite.Server.DTOs.Role
         public DateTime? OfferExpiry { get; set; }
         public int ApprovedBy { get; set; }
     }
-
     public class ConfirmJoiningRequestDto
     {
         public int CandidateId { get; set; }
         public DateTime JoiningDate { get; set; }
     }
-
     public class SundayDutyRequestDto
     {
         public int EmpId { get; set; }
@@ -486,6 +471,4 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Location { get; set; }
         public bool CountsAsDuty { get; set; } = true;
     }
-
-
 }

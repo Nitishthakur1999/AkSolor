@@ -31,6 +31,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [mounted, setMounted] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
 
     useEffect(() => {
         const t = setTimeout(() => setMounted(true), 60);
@@ -42,6 +43,43 @@ export default function LoginPage() {
         setError("");
     };
 
+    // const handleSubmit = async (e: any) => {
+    //     e.preventDefault();
+    //     if (!form.username || !form.password) {
+    //         setError("Username and password are required.");
+    //         return;
+    //     }
+    //     setLoading(true);
+    //     setError("");
+    //     try {
+    //         const res = await fetch(`${API_BASE}/auth/login`, {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify(form),
+    //         });
+    //         const data = await res.json();
+    //         if (!res.ok) {
+    //             setError(data?.message || "Login failed. Please check your credentials.");
+    //             return;
+    //         }
+
+    //         const userData = data?.data;
+
+    //         localStorage.setItem("token", userData?.token);
+    //         localStorage.setItem("role", userData?.role);
+    //         localStorage.setItem("username", userData?.username);
+    //         localStorage.setItem("userId", userData?.userId);
+    //         localStorage.setItem("empId", userData?.employeeId ?? "");
+    //         localStorage.setItem("pages", JSON.stringify(userData?.pages));
+    //         localStorage.setItem("user", JSON.stringify(userData));
+
+    //         window.location.href = "/dashboard";
+    //     } catch {
+    //         setError("Could not connect to server. Please check your network connection.");
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         if (!form.username || !form.password) {
@@ -72,14 +110,16 @@ export default function LoginPage() {
             localStorage.setItem("pages", JSON.stringify(userData?.pages));
             localStorage.setItem("user", JSON.stringify(userData));
 
-            window.location.href = "/dashboard";
+            // Chhota delay — taaki browser "Save password?" popup dikha sake redirect se pehle
+            setTimeout(() => {
+                window.location.href = "/dashboard";
+            }, 300);
         } catch {
             setError("Could not connect to server. Please check your network connection.");
         } finally {
             setLoading(false);
         }
     };
-
     return (
         <div className="min-h-screen flex font-sans bg-[#F2F5F9] overflow-hidden relative">
             <style>{`
@@ -272,6 +312,19 @@ export default function LoginPage() {
                                         <i className={`fa-regular ${showPass ? 'fa-eye-slash' : 'fa-eye'}`} />
                                     </button>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    id="rememberMe"
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="w-4 h-4 rounded border-slate-300 text-[#0b2836] focus:ring-[#0b2836]"
+                                />
+                                <label htmlFor="rememberMe" className="text-xs font-semibold text-slate-600 cursor-pointer">
+                                    Remember me
+                                </label>
                             </div>
 
                             {/* Submit Button */}

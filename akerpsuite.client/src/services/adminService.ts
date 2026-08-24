@@ -3,19 +3,47 @@ const API_BASE = `${BASE}/api/admin`;
 const ATTENDANCE_API_BASE = `${BASE}/api/admin`;
 const SALES_API_BASE = `${BASE}/api/hr`;
 const SITE_API_BASE = `${BASE}/api/admin/site`;
- 
 
 const getHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json",
     "Authorization": `Bearer ${localStorage.getItem("token")}`
 });
 
-// Centralized helper function to handle fetch and JSON parsing
+// // Centralized helper function to handle fetch and JSON parsing
+// const apiCall = async (url: string, method: string = "GET", body: any = null): Promise<any> => {
+//     const options: RequestInit = { method, headers: getHeaders() };
+//     if (body) options.body = JSON.stringify(body);
+
+//     const res = await fetch(url, options);
+//     const text = await res.text();
+//     const data = text ? JSON.parse(text) : null;
+
+//     if (!res.ok) {
+//         const message = data?.Message || data?.message || data?.title || `Request failed (${res.status})`;
+//         throw new Error(message);
+//     }
+
+//     return data;
+// };
+
+const handleUnauthorized = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    alert("Session expired, please login again.");
+    window.location.href = "/login"; 
+};
+
 const apiCall = async (url: string, method: string = "GET", body: any = null): Promise<any> => {
     const options: RequestInit = { method, headers: getHeaders() };
     if (body) options.body = JSON.stringify(body);
 
     const res = await fetch(url, options);
+
+    if (res.status === 401) {
+        handleUnauthorized();
+        throw new Error("Session expired, please login again.");
+    }
+
     const text = await res.text();
     const data = text ? JSON.parse(text) : null;
 
@@ -42,8 +70,15 @@ const buildQuery = (filters: Record<string, any> = {}): string => {
     const queryString = params.toString();
     return queryString ? `?${queryString}` : '';
 };
+
 const downloadFile = async (url: string, filename: string): Promise<void> => {
     const res = await fetch(url, { headers: getHeaders() });
+
+    if (res.status === 401) {
+        handleUnauthorized();
+        throw new Error("Session expired, please login again.");
+    }
+
     if (!res.ok) {
         const text = await res.text();
         const data = text ? JSON.parse(text) : null;
@@ -57,6 +92,22 @@ const downloadFile = async (url: string, filename: string): Promise<void> => {
     a.click();
     window.URL.revokeObjectURL(objUrl);
 };
+
+// const downloadFile = async (url: string, filename: string): Promise<void> => {
+//     const res = await fetch(url, { headers: getHeaders() });
+//     if (!res.ok) {
+//         const text = await res.text();
+//         const data = text ? JSON.parse(text) : null;
+//         throw new Error(data?.Message || data?.message || `Request failed (${res.status})`);
+//     }
+//     const blob = await res.blob();
+//     const objUrl = window.URL.createObjectURL(blob);
+//     const a = document.createElement("a");
+//     a.href = objUrl;
+//     a.download = filename;
+//     a.click();
+//     window.URL.revokeObjectURL(objUrl);
+// };
 
 export const adminService = {
 
@@ -394,7 +445,7 @@ export const adminService = {
     updateSupplier: (data?: any) => apiCall(`${SALES_API_BASE}/suppliers`, "PUT", data),
     toggleSupplierStatus: (id?: any) => apiCall(`${SALES_API_BASE}/suppliers/${id}/toggle-status`, "PATCH"),
     getSupplierById: (id?: any) => apiCall(`${SALES_API_BASE}/suppliers/${id}`),
-    searchSuppliers: (filters?: any) => apiCall(`${SALES_API_BASE}/suppliers${buildQuery(filters)}`), // { keyword, isActive }
+    searchSuppliers: (filters?: any) => apiCall(`${SALES_API_BASE}/suppliers${buildQuery(filters)}`), 
 
     // PO Consignees
     createConsignee: (data?: any) => apiCall(`${SALES_API_BASE}/consignees`, "POST", data),
@@ -402,9 +453,9 @@ export const adminService = {
 
     // Purchase Orders
     createPurchaseOrder: (data?: any) => apiCall(`${SALES_API_BASE}/orders`, "POST", data),
-    updatePoStatus: (data?: any) => apiCall(`${SALES_API_BASE}/orders/status`, "PATCH", data), // { poId, status }
+    updatePoStatus: (data?: any) => apiCall(`${SALES_API_BASE}/orders/status`, "PATCH", data), 
     getPurchaseOrderById: (id?: any) => apiCall(`${SALES_API_BASE}/orders/${id}`),
-    searchPurchaseOrders: (filters?: any) => apiCall(`${SALES_API_BASE}/orders${buildQuery(filters)}`), // { supplierId, status, fromDate, toDate, keyword }
+    searchPurchaseOrders: (filters?: any) => apiCall(`${SALES_API_BASE}/orders${buildQuery(filters)}`), 
 
     // GRN (Goods Receipt Note)
     createGrn: (data?: any) => apiCall(`${SALES_API_BASE}/grn`, "POST", data),
@@ -412,9 +463,9 @@ export const adminService = {
 
     // Purchase Invoices
     createPurchaseInvoice: (data?: any) => apiCall(`${SALES_API_BASE}/invoices`, "POST", data),
-    updateInvoiceStatus: (data?: any) => apiCall(`${SALES_API_BASE}/invoices/status`, "PATCH", data), // { invoiceId, status }
+    updateInvoiceStatus: (data?: any) => apiCall(`${SALES_API_BASE}/invoices/status`, "PATCH", data), 
     getPurchaseInvoiceById: (id?: any) => apiCall(`${SALES_API_BASE}/invoices/${id}`),
-    searchPurchaseInvoices: (filters?: any) => apiCall(`${SALES_API_BASE}/invoices${buildQuery(filters)}`), // { supplierId, poId, status, fromDate, toDate, keyword }
+    searchPurchaseInvoices: (filters?: any) => apiCall(`${SALES_API_BASE}/invoices${buildQuery(filters)}`), 
     getInvoicesByPo: (poId?: any) => apiCall(`${SALES_API_BASE}/invoices/po/${poId}`),
 };
 

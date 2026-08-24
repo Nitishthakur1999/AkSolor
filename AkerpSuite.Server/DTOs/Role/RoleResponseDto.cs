@@ -54,13 +54,8 @@ namespace AkerpSuite.Server.DTOs.Role
         public string EmpCode { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-
-        // ✅ Missing tha — SP mein CONCAT se aa raha hai
         public string? FullName { get; set; }
-
-        // ✅ NEW — client sheet: "FATHER NAME/ HUSBAND NAME"
         public string? FatherHusbandName { get; set; }
-
         public string Gender { get; set; } = string.Empty;
         public DateTime DateOfBirth { get; set; }
         public string? BloodGroup { get; set; }
@@ -75,56 +70,34 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? State { get; set; }
         public string? Pincode { get; set; }
         public string? Country { get; set; }
-
-        // Identity Documents
         public string? AadharNo { get; set; }
         public string? PanNo { get; set; }
         public string? PassportNo { get; set; }
         public string? UanNo { get; set; }
         public string? EsicNo { get; set; }
-
         public int? DeptId { get; set; }
-
-        // ✅ Missing tha — SP mein DeptName aa raha hai
         public string? DeptName { get; set; }
-
         public int? DesigId { get; set; }
-
-        // ✅ Missing tha — SP mein DesigName aa raha hai
         public string? DesigName { get; set; }
-
         public int? ReportingManager { get; set; }
         public DateTime? DateOfJoining { get; set; }
         public string? EmploymentType { get; set; }
         public string? EmploymentStatus { get; set; }
-
-        // ✅ NEW — client sheet: "CATEGORY" (High Skilled/Skilled/Semi Skilled/Unskilled)
         public string? Category { get; set; }
-
-        // Lifecycle Tracking
         public DateTime? ProbationEndDate { get; set; }
         public DateTime? ConfirmationDate { get; set; }
         public DateTime? ResignationDate { get; set; }
         public DateTime? LastWorkingDate { get; set; }
         public string? ExitReason { get; set; }
-
         public decimal? CurrentCtc { get; set; }
         public string? PhotoPath { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
-
-        // ✅ Missing tha — SP mein UpdatedAt aa raha hai
         public DateTime? UpdatedAt { get; set; }
-
-        // User Info
         public int? UserId { get; set; }
         public string? Username { get; set; }
-
-        // ✅ Missing tha — SP mein RoleId & RoleName aa rahe hain
         public int? RoleId { get; set; }
         public string? RoleName { get; set; }
-
-        // Admin Credentials — sirf CreateEmployee response mein populate hote hain
         public string? GeneratedUsername { get; set; }
         public string? GeneratedPassword { get; set; }
     }
@@ -312,10 +285,10 @@ namespace AkerpSuite.Server.DTOs.Role
         public string EmpCode { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string? FatherHusbandName { get; set; }   // ✅ NEW — maps to father_husband_name
-        public string? Category { get; set; }              // ✅ NEW — maps to category
-        public string? EsicNo { get; set; }                 // ✅ NEW — maps to esic_no
-        public string? UanNo { get; set; }                  // ✅ NEW — maps to uan_no
+        public string? FatherHusbandName { get; set; }   
+        public string? Category { get; set; }              
+        public string? EsicNo { get; set; }                 
+        public string? UanNo { get; set; }                 
         public string? DeptName { get; set; }
         public string? DesigName { get; set; }
         public int Month { get; set; }

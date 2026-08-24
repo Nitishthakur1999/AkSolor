@@ -630,9 +630,9 @@ namespace AkerpSuite.Server.DTOs.Hr
         public decimal GstRate { get; set; }
         public DateTime? DueOn { get; set; }
         public decimal InvoicedQty { get; set; }
-        public string Unit { get; set; }            // "per" column
+        public string Unit { get; set; }           
         public decimal Rate { get; set; }
-        public decimal DiscountPercent { get; set; } // "Disc. %" column
+        public decimal DiscountPercent { get; set; }
     }
     public class PurchaseInvoiceStatusUpdateDto
     {

@@ -606,7 +606,7 @@
         public decimal Rate { get; set; }
         public decimal Amount { get; set; }
         public decimal ReceivedQty { get; set; }
-        public decimal InvoicedQty { get; set; }   // ← YE LINE MISSING HAI, ADD KARO
+        public decimal InvoicedQty { get; set; }  
         public decimal PendingQty => Quantity - ReceivedQty;
     }
 

@@ -44,7 +44,7 @@ namespace AkerpSuite.Server.Helpers
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.RoleName.Trim()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("RoleId", user.RoleId.ToString()),   // ← YE ADD KARO
+                new Claim("RoleId", user.RoleId.ToString()),   
             };
 
             if (user.EmployeeId.HasValue)
