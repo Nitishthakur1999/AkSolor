@@ -13,8 +13,8 @@ export default function Roles() {
     const [showEditRoleModal, setShowEditRoleModal] = useState(false);
 
     // Forms States
-    const [roleForm, setRoleForm] = useState({ roleName: "", description: "" });
-    const [editRoleForm, setEditRoleForm] = useState({ roleId: "", roleName: "", description: "" });
+    const [roleForm, setRoleForm] = useState({ roleName: "", description: "", isCmdEqual: false });
+    const [editRoleForm, setEditRoleForm] = useState({ roleId: "", roleName: "", description: "", isCmdEqual: false });
 
     // 🔍 ---------------- SEARCH & PAGINATION STATES ----------------
     const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +98,7 @@ export default function Roles() {
             const res = await adminService.createRole(roleForm);
             if (res.success || res.Success) {
                 setShowRoleModal(false);
-                setRoleForm({ roleName: "", description: "" });
+                setRoleForm({ roleName: "", description: "", isCmdEqual: false });
                 loadInitialData();
             }
         } catch (err) {
@@ -112,7 +112,8 @@ export default function Roles() {
         try {
             const result = await adminService.updateRole(editRoleForm.roleId, {
                 roleName: editRoleForm.roleName,
-                description: editRoleForm.description
+                description: editRoleForm.description,
+                isCmdEqual: editRoleForm.isCmdEqual
             });
 
             if (result.success || result.Success) {
@@ -353,7 +354,14 @@ export default function Roles() {
                                         {currentItems.map((r) => (
                                             <tr key={r.roleId} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-6 py-4">
-                                                    <span className="font-bold text-slate-800">{r.roleName}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-slate-800">{r.roleName}</span>
+                                                        {(r.isCmdEqual ?? r.IsCmdEqual) && (
+                                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-wide">
+                                                                CMD Equal
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-600 whitespace-normal line-clamp-2">
                                                     {r.description || <span className="text-slate-400 italic text-xs">No description mapped.</span>}
@@ -377,7 +385,15 @@ export default function Roles() {
                                                             <i className="fa-solid fa-key text-[13px]" />
                                                         </button>
                                                         <button
-                                                            onClick={() => { setEditRoleForm({ roleId: r.roleId, roleName: r.roleName, description: r.description || "" }); setShowEditRoleModal(true); }}
+                                                            onClick={() => {
+                                                                setEditRoleForm({
+                                                                    roleId: r.roleId,
+                                                                    roleName: r.roleName,
+                                                                    description: r.description || "",
+                                                                    isCmdEqual: r.isCmdEqual ?? r.IsCmdEqual ?? false
+                                                                });
+                                                                setShowEditRoleModal(true);
+                                                            }}
                                                             className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 transition-colors"
                                                             title="Edit Role"
                                                         >
@@ -670,6 +686,18 @@ export default function Roles() {
                                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all resize-none"
                                 />
                             </div>
+                            <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                <input
+                                    type="checkbox"
+                                    id="isCmdEqualCreate"
+                                    checked={roleForm.isCmdEqual}
+                                    onChange={e => setRoleForm({ ...roleForm, isCmdEqual: e.target.checked })}
+                                    className="w-4 h-4 accent-amber-500 cursor-pointer"
+                                />
+                                <label htmlFor="isCmdEqualCreate" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                    Give CMD-equal access (full system access, sabhi employees/data dikhega)
+                                </label>
+                            </div>
                             <div className="pt-2">
                                 <button type="submit" className="w-full py-2.5 bg-[#0b2836] text-white rounded-xl text-sm font-bold hover:bg-[#0f3345] transition-colors">
                                     Save Role
@@ -709,6 +737,18 @@ export default function Roles() {
                                     onChange={e => setEditRoleForm({ ...editRoleForm, description: e.target.value })}
                                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all resize-none"
                                 />
+                            </div>
+                            <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                <input
+                                    type="checkbox"
+                                    id="isCmdEqualEdit"
+                                    checked={editRoleForm.isCmdEqual}
+                                    onChange={e => setEditRoleForm({ ...editRoleForm, isCmdEqual: e.target.checked })}
+                                    className="w-4 h-4 accent-amber-500 cursor-pointer"
+                                />
+                                <label htmlFor="isCmdEqualEdit" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                    Give Full Access 
+                                </label>
                             </div>
                             <div className="pt-2 flex gap-3">
                                 <button type="button" onClick={() => setShowEditRoleModal(false)} className="flex-1 py-2.5 bg-white text-slate-600 border border-slate-300 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors">

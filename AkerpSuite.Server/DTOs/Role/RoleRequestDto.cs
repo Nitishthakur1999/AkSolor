@@ -6,6 +6,7 @@ namespace AkerpSuite.Server.DTOs.Role
     {
         public string RoleName { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public bool IsCmdEqual { get; set; }
     }
     public class PermissionRequestDto
     {

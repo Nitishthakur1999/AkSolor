@@ -43,6 +43,7 @@ namespace AkerpSuite.Server.Repositories
             var parameters = new DynamicParameters();
             parameters.Add("p_role_name", request.RoleName);
             parameters.Add("p_description", request.Description);
+            parameters.Add("p_is_cmd_equal", request.IsCmdEqual);
             return await connection.ExecuteScalarAsync<int>(
                 "sp_role_create",
                 parameters,
@@ -79,7 +80,7 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_role_id", roleId);
             parameters.Add("p_role_name", request.RoleName);
             parameters.Add("p_description", request.Description);
-
+            parameters.Add("p_is_cmd_equal", request.IsCmdEqual);
             var rows = await connection.ExecuteAsync(
                 "sp_role_update",
                 parameters,

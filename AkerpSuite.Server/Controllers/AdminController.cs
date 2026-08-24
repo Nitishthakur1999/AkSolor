@@ -454,7 +454,7 @@ namespace AkerpSuite.Server.Controllers
         #region Attendance dashbord,Marking, History, Regularization & Summary 
 
         [HttpPost("mark")]
-        [RequirePermission("Attendance", "Manage")]
+       [RequirePermission("Attendance", "Manage")]
         public async Task<IActionResult> MarkAttendance([FromBody] AttendanceRequestDto request)
         {
             if (User.IsInRole(Roles.Employee))

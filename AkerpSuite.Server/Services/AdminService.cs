@@ -164,6 +164,105 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Employee Management            
+        //public async Task<EmployeeResponseDto> CreateEmployeeAsync(EmployeeRequestDto request, string creatorRole)
+        //{
+        //    if (string.IsNullOrWhiteSpace(creatorRole))
+        //        throw new UnauthorizedAccessException("Role claim is missing in the generated security token.");
+
+        //    creatorRole = creatorRole.Trim();
+
+        //    // ✅ NAYA ADD: Employment status default — form pe field nahi hai, khaali na rahe
+        //    if (string.IsNullOrWhiteSpace(request.EmploymentStatus))
+        //        request.EmploymentStatus = "Active";
+
+        //    // ✅ NAYA ADD: Probation end date fallback — form pe optional hai
+        //    // agar HR ne khaali chhoda to DateOfJoining + 3 months auto-set ho jaye
+        //    if (!request.ProbationEndDate.HasValue)
+        //        request.ProbationEndDate = request.DateOfJoining.AddMonths(1);
+
+        //    // ✅ Target role ka naam DB se nikalo
+        //    var targetRole = await _repository.GetRoleByIdAsync(request.RoleId);
+        //    if (targetRole == null)
+        //        throw new InvalidOperationException($"Invalid Role Id: {request.RoleId}.");
+
+        //    // ✅ Rule 1: CMD kisi ko bhi assign nahi ho sakta
+        //    if (string.Equals(targetRole.RoleName, Roles.CMD, StringComparison.OrdinalIgnoreCase))
+        //        throw new UnauthorizedAccessException("CMD role cannot be assigned to any employee.");
+
+        //    // ✅ Rule 2: Apna level ya usse neeche hi allowed
+        //    if (!Roles.CanView(creatorRole, targetRole.RoleName))
+        //        throw new UnauthorizedAccessException(
+        //            $"Logged in role '{creatorRole}' is not allowed to create a user with role '{targetRole.RoleName}'.");
+
+        //    //// ✅ Fix 3: Targeted check, poora table fetch nahi
+        //    //if (await _repository.EmailExistsAsync(request.OfficialEmail))
+        //    //    throw new InvalidOperationException($"Email '{request.OfficialEmail}' is already registered.");
+
+        //    // ✅ Fix 1: Atomic-ish next number DB se
+        //    int nextNumber = await _repository.GetNextEmpCodeNumberAsync();
+        //    request.EmpCode = $"AKS-{nextNumber:D3}";
+
+        //    // Username generation (isko bhi DB check se optimize kar sakte ho, filhaal simple rakha)
+        //    string baseUsername = $"{request.FirstName.ToLower().Trim()}.{request.LastName.ToLower().Trim()}".Replace(" ", "");
+        //    request.Username = await _repository.GenerateUniqueUsernameAsync(baseUsername);
+
+        //    // ✅ Fix 2: Secure random password
+        //    string plainPassword = GenerateSecureTempPassword();
+        //    string passwordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword);
+
+        //    string savedPhotoPath = string.Empty;
+        //    if (!string.IsNullOrWhiteSpace(request.PhotoBase64))
+        //    {
+        //        string ext = !string.IsNullOrWhiteSpace(request.PhotoExtension) ? request.PhotoExtension : ".jpg";
+        //        var resultPath = await _fileUploadHelper.SaveBase64FileAsync(request.PhotoBase64, ext, "employee-profile");
+        //        savedPhotoPath = resultPath != null ? $"/{resultPath}" : string.Empty;
+        //    }
+
+        //    int empId;
+        //    int attempt = 0;
+        //    const int maxAttempts = 5;
+
+        //    while (true)
+        //    {
+        //        try
+        //        {
+        //            empId = await _repository.CreateEmployeeAsync(request, passwordHash, savedPhotoPath);
+        //            break;
+        //        }
+        //        catch (MySqlException ex) when (ex.Number == 1062)
+        //        {
+        //            attempt++;
+        //            if (attempt >= maxAttempts)
+        //                throw new InvalidOperationException("Failed to generate a unique employee code after multiple attempts.");
+
+        //            nextNumber++;
+        //            request.EmpCode = $"AKS-{nextNumber:D3}";
+        //        }
+        //    }
+
+
+        //    // ✅ NEW: Leave balances auto-initialize
+        //    await _repository.InitializeLeaveBalancesAsync(empId, request.DateOfJoining.Year);
+
+        //    // ✅ NAYA ADD: Company hierarchy sync — reporting manager set hai to org-chart me turant reflect ho
+        //    if (request.ReportingManager.HasValue)
+        //    {
+        //        await _hrService.SetHierarchyAsync(new SetHierarchyRequestDto
+        //        {
+        //            EmpId = empId,
+        //            ParentEmpId = request.ReportingManager.Value
+        //        });
+        //    }
+
+        //    var created = await _repository.GetEmployeeByIdAsync(empId);
+        //    if (created == null)
+        //        throw new InvalidOperationException("Failed to load freshly registered record configuration pipelines.");
+
+        //    created.GeneratedUsername = request.Username;
+        //    created.GeneratedPassword = plainPassword;
+
+        //    return created;
+        //}
         public async Task<EmployeeResponseDto> CreateEmployeeAsync(EmployeeRequestDto request, string creatorRole)
         {
             if (string.IsNullOrWhiteSpace(creatorRole))
@@ -171,16 +270,12 @@ namespace AkerpSuite.Server.Services
 
             creatorRole = creatorRole.Trim();
 
-            // ✅ NAYA ADD: Employment status default — form pe field nahi hai, khaali na rahe
             if (string.IsNullOrWhiteSpace(request.EmploymentStatus))
                 request.EmploymentStatus = "Active";
 
-            // ✅ NAYA ADD: Probation end date fallback — form pe optional hai
-            // agar HR ne khaali chhoda to DateOfJoining + 3 months auto-set ho jaye
             if (!request.ProbationEndDate.HasValue)
                 request.ProbationEndDate = request.DateOfJoining.AddMonths(1);
 
-            // ✅ Target role ka naam DB se nikalo
             var targetRole = await _repository.GetRoleByIdAsync(request.RoleId);
             if (targetRole == null)
                 throw new InvalidOperationException($"Invalid Role Id: {request.RoleId}.");
@@ -189,24 +284,23 @@ namespace AkerpSuite.Server.Services
             if (string.Equals(targetRole.RoleName, Roles.CMD, StringComparison.OrdinalIgnoreCase))
                 throw new UnauthorizedAccessException("CMD role cannot be assigned to any employee.");
 
-            // ✅ Rule 2: Apna level ya usse neeche hi allowed
-            if (!Roles.CanView(creatorRole, targetRole.RoleName))
+            // ✅ Creator ka isCmdEqual flag DB se nikalo
+            var allRoles = await _repository.GetRolesAsync();
+            var creatorRoleData = allRoles.FirstOrDefault(r =>
+                string.Equals(r.RoleName, creatorRole, StringComparison.OrdinalIgnoreCase));
+            bool creatorIsCmdEqual = creatorRoleData?.IsCmdEqual ?? false;
+
+            // ✅ Rule 2: Naya signature — isCmdEqual + dono role naam
+            if (!Roles.CanView(creatorIsCmdEqual, creatorRole, targetRole.RoleName))
                 throw new UnauthorizedAccessException(
                     $"Logged in role '{creatorRole}' is not allowed to create a user with role '{targetRole.RoleName}'.");
 
-            //// ✅ Fix 3: Targeted check, poora table fetch nahi
-            //if (await _repository.EmailExistsAsync(request.OfficialEmail))
-            //    throw new InvalidOperationException($"Email '{request.OfficialEmail}' is already registered.");
-
-            // ✅ Fix 1: Atomic-ish next number DB se
             int nextNumber = await _repository.GetNextEmpCodeNumberAsync();
             request.EmpCode = $"AKS-{nextNumber:D3}";
 
-            // Username generation (isko bhi DB check se optimize kar sakte ho, filhaal simple rakha)
             string baseUsername = $"{request.FirstName.ToLower().Trim()}.{request.LastName.ToLower().Trim()}".Replace(" ", "");
             request.Username = await _repository.GenerateUniqueUsernameAsync(baseUsername);
 
-            // ✅ Fix 2: Secure random password
             string plainPassword = GenerateSecureTempPassword();
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword);
 
@@ -240,11 +334,8 @@ namespace AkerpSuite.Server.Services
                 }
             }
 
-
-            // ✅ NEW: Leave balances auto-initialize
             await _repository.InitializeLeaveBalancesAsync(empId, request.DateOfJoining.Year);
 
-            // ✅ NAYA ADD: Company hierarchy sync — reporting manager set hai to org-chart me turant reflect ho
             if (request.ReportingManager.HasValue)
             {
                 await _hrService.SetHierarchyAsync(new SetHierarchyRequestDto
@@ -296,27 +387,49 @@ namespace AkerpSuite.Server.Services
             return await _repository.UpdateEmployeeAsync(employeeId, request, updatedPhotoPath);
         }
 
+        //public async Task<IEnumerable<EmployeeResponseDto>> GetAllEmployeesAsync(
+        //     int? departmentId, int? roleId, string? status, int? designationId, string viewerRole)
+        //{
+        //    var employees = await _repository.GetAllEmployeesAsync(departmentId, roleId, status, designationId);
+
+        //    // RoleId -> RoleName lookup ek baar banao
+        //    var allRoles = await _repository.GetRolesAsync();
+        //    var roleNameById = allRoles.ToDictionary(r => r.RoleId, r => r.RoleName);
+
+        //    return employees.Where(e =>
+        //    {
+        //        if (e.RoleId == null)
+        //            return false; // role hi assign nahi, safe-side hide karo
+
+        //        if (!roleNameById.TryGetValue(e.RoleId.Value, out var empRoleName))
+        //            return false; // unknown role, safe-side hide karo
+
+        //        if (string.Equals(empRoleName, Roles.CMD, StringComparison.OrdinalIgnoreCase))
+        //            return false; // CMD kisi ko dikhna hi nahi chahiye, viewer chahe koi bhi ho
+
+        //        return Roles.CanView(viewerRole, empRoleName);
+        //    });
+        //}
+
         public async Task<IEnumerable<EmployeeResponseDto>> GetAllEmployeesAsync(
-             int? departmentId, int? roleId, string? status, int? designationId, string viewerRole)
+        int? departmentId, int? roleId, string? status, int? designationId, string viewerRole)
         {
             var employees = await _repository.GetAllEmployeesAsync(departmentId, roleId, status, designationId);
 
-            // RoleId -> RoleName lookup ek baar banao
-            var allRoles = await _repository.GetRolesAsync();
+            var allRoles = await _repository.GetRolesAsync(); // RoleDto me IsCmdEqual bhi hona chahiye
             var roleNameById = allRoles.ToDictionary(r => r.RoleId, r => r.RoleName);
+            var viewerRoleData = allRoles.FirstOrDefault(r => string.Equals(r.RoleName, viewerRole, StringComparison.OrdinalIgnoreCase));
+            bool viewerIsCmdEqual = viewerRoleData?.IsCmdEqual ?? false;
 
             return employees.Where(e =>
             {
-                if (e.RoleId == null)
-                    return false; // role hi assign nahi, safe-side hide karo
-
-                if (!roleNameById.TryGetValue(e.RoleId.Value, out var empRoleName))
-                    return false; // unknown role, safe-side hide karo
+                if (e.RoleId == null) return false;
+                if (!roleNameById.TryGetValue(e.RoleId.Value, out var empRoleName)) return false;
 
                 if (string.Equals(empRoleName, Roles.CMD, StringComparison.OrdinalIgnoreCase))
-                    return false; // CMD kisi ko dikhna hi nahi chahiye, viewer chahe koi bhi ho
+                    return false; // CMD hamesha hidden
 
-                return Roles.CanView(viewerRole, empRoleName);
+                return Roles.CanView(viewerIsCmdEqual, viewerRole, empRoleName);
             });
         }
 

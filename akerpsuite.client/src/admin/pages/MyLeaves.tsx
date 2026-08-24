@@ -463,7 +463,7 @@ export default function MyLeaves() {
                                     required
                                 >
                                     <option value="" disabled>-- Select leave type --</option>
-                                    {leaveTypes.map((t: any) => {
+                                    {activeLeaveTypes.map((t: any) => {
                                         const bal: any = balances.find((b: any) => b.leaveTypeId === t.leaveTypeId);
                                         return (
                                             <option key={t.leaveTypeId} value={t.leaveTypeId}>
@@ -472,7 +472,7 @@ export default function MyLeaves() {
                                         );
                                     })}
                                 </select>
-                                {leaveTypes.length === 0 && (
+                                {activeLeaveTypes.length === 0 && (
                                     <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">No leave types configured yet.</p>
                                 )}
                             </div>

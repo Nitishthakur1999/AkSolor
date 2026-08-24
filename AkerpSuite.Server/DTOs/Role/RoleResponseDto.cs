@@ -28,6 +28,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public string RoleName { get; set; } = string.Empty;
         public string? Description { get; set; }
         public bool IsActive { get; set; }
+        public bool IsCmdEqual { get; set; }
         public DateTime CreatedAt { get; set; }
     }
     public class PermissionResponseDto
