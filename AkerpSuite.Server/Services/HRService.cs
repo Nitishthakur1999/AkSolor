@@ -391,7 +391,8 @@ namespace AkerpSuite.Server.Services
 
         public Task<IEnumerable<SalesLeadResponseDto>> SearchLeadsAsync(SalesLeadSearchRequestDto filter) =>
             _repository.SearchLeadsAsync(filter);
-
+        public async Task<bool> DeleteLeadAsync(int leadId) => await _repository.DeleteLeadAsync(leadId);
+        
         // ---------------- Followups ----------------
 
         public Task<int> CreateFollowupAsync(SalesFollowupRequestDto request) =>

@@ -9,23 +9,6 @@ const getHeaders = (): Record<string, string> => ({
     "Authorization": `Bearer ${localStorage.getItem("token")}`
 });
 
-// // Centralized helper function to handle fetch and JSON parsing
-// const apiCall = async (url: string, method: string = "GET", body: any = null): Promise<any> => {
-//     const options: RequestInit = { method, headers: getHeaders() };
-//     if (body) options.body = JSON.stringify(body);
-
-//     const res = await fetch(url, options);
-//     const text = await res.text();
-//     const data = text ? JSON.parse(text) : null;
-
-//     if (!res.ok) {
-//         const message = data?.Message || data?.message || data?.title || `Request failed (${res.status})`;
-//         throw new Error(message);
-//     }
-
-//     return data;
-// };
-
 const handleUnauthorized = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -92,22 +75,6 @@ const downloadFile = async (url: string, filename: string): Promise<void> => {
     a.click();
     window.URL.revokeObjectURL(objUrl);
 };
-
-// const downloadFile = async (url: string, filename: string): Promise<void> => {
-//     const res = await fetch(url, { headers: getHeaders() });
-//     if (!res.ok) {
-//         const text = await res.text();
-//         const data = text ? JSON.parse(text) : null;
-//         throw new Error(data?.Message || data?.message || `Request failed (${res.status})`);
-//     }
-//     const blob = await res.blob();
-//     const objUrl = window.URL.createObjectURL(blob);
-//     const a = document.createElement("a");
-//     a.href = objUrl;
-//     a.download = filename;
-//     a.click();
-//     window.URL.revokeObjectURL(objUrl);
-// };
 
 export const adminService = {
 
@@ -291,6 +258,7 @@ export const adminService = {
     createLead: (data?: any) => apiCall(`${SALES_API_BASE}/leads`, "POST", data),
     getLeadById: (id?: any) => apiCall(`${SALES_API_BASE}/leads/${id}`),
     updateLead: (data?: any) => apiCall(`${SALES_API_BASE}/leads`, "PUT", data),
+    deleteLead: (id?: any) => apiCall(`${SALES_API_BASE}/leads/${id}`, "DELETE"),
 
     // Follow-ups
     getFollowups: (leadId?: any) => apiCall(`${SALES_API_BASE}/followups/lead/${leadId}`),

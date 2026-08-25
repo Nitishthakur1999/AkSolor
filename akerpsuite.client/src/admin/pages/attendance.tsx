@@ -37,7 +37,7 @@ export default function Attendance() {
     // 🆕 isCmdEqual OR purani hardcoded list — dono me se ek true ho to full access
     const isCMD = userRole === "CMD" || isCmdEqual;
     const isAdminLevel = isCmdEqual || ["CMD", "ADMIN", "HR"].includes(userRole);
-    const isManager = userRole === "MANAGER";
+    const isManager = userRole === "MANAGER" || userRole === "SR MANAGER" || userRole === "SR. MANAGER";
     const isTeamLevel = isAdminLevel || isManager;
     const loggedInEmpId = (() => {
         try {
@@ -68,6 +68,10 @@ export default function Attendance() {
     const [statusFilter, setStatusFilter] = useState("");
     const [dateFilter, setDateFilter] = useState("");
 
+    // 🆕 Dashboard card click ab yahin (dashboard tab ke andar) list dikhata hai, "logs" tab pe navigate nahi karta
+    const [dashboardFilter, setDashboardFilter] = useState<{ label: string; status: string; date: string } | null>(null);
+    const [dashboardLogsLoading, setDashboardLogsLoading] = useState(false);
+
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
     const [showMarkModal, setShowMarkModal] = useState(false);
@@ -81,7 +85,8 @@ export default function Attendance() {
     const [actionLoading, setActionLoading] = useState(false);
     const [dutyLocationStatus, setDutyLocationStatus] = useState("idle");
     const [dutyCapturedLocation, setDutyCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
-
+    const [checkoutLocationStatus, setCheckoutLocationStatus] = useState("idle");
+    const [checkoutCapturedLocation, setCheckoutCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
     const getTodayDateStr = () => {
         const now = new Date();
         const yyyy = now.getFullYear();
@@ -136,6 +141,10 @@ export default function Attendance() {
         if (activeTab !== "logs") {
             setStatusFilter("");
             setDateFilter("");
+        }
+        // 🆕 tab badalte hi dashboard ki inline list band kar do
+        if (activeTab !== "dashboard") {
+            setDashboardFilter(null);
         }
     }, [activeTab]);
 
@@ -200,6 +209,24 @@ export default function Attendance() {
         }
     };
 
+    // 🆕 Dashboard card click handler — tab change nahi karta, sirf inline list dikhata/filter karta hai
+    const openDashboardFilter = async (label, status) => {
+        const today = new Date().toISOString().split("T")[0];
+        setDashboardFilter({ label, status, date: today });
+        setCurrentPage(1);
+        if (attendanceLogs.length === 0) {
+            setDashboardLogsLoading(true);
+            try {
+                const res = await adminService.getAttendanceAll();
+                if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
+            } catch (err) {
+                console.error("Dashboard logs load error:", err);
+            } finally {
+                setDashboardLogsLoading(false);
+            }
+        }
+    };
+
     const determinePunchMode = async (empId) => {
         if (!empId) {
             setPunchMode(null);
@@ -248,6 +275,8 @@ export default function Attendance() {
         });
         setLocationStatus("idle");
         setCapturedLocation({ latitude: null, longitude: null, address: null });
+        setCheckoutLocationStatus("idle");
+        setCheckoutCapturedLocation({ latitude: null, longitude: null, address: null });
         setTodaysRecord(null);
         setEmpSearchOpen(false);
         setEmpSearchText("");
@@ -337,11 +366,16 @@ export default function Attendance() {
         );
     };
 
-    const getCurrentLocation = (): Promise<{ latitude: number | null; longitude: number | null; address: string | null }> => {
-        setLocationStatus("fetching");
+    type LocationResult = { latitude: number | null; longitude: number | null; address: string | null };
+
+    const captureLocation = (
+        setStatus: (s: string) => void,
+        setLoc: (l: LocationResult) => void
+    ): Promise<LocationResult> => {
+        setStatus("fetching");
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
-                setLocationStatus("denied");
+                setStatus("denied");
                 resolve({ latitude: null, longitude: null, address: null });
                 return;
             }
@@ -350,19 +384,25 @@ export default function Attendance() {
                     const { latitude, longitude } = pos.coords;
                     const address = await reverseGeocode(latitude, longitude);
                     const loc = { latitude, longitude, address };
-                    setCapturedLocation(loc);
-                    setLocationStatus("captured");
+                    setLoc(loc);
+                    setStatus("captured");
                     resolve(loc);
                 },
                 (err) => {
                     console.warn("Location access denied or failed:", err);
-                    setLocationStatus("denied");
+                    setStatus("denied");
                     resolve({ latitude: null, longitude: null, address: null });
                 },
                 { enableHighAccuracy: true, timeout: 8000 }
             );
         });
     };
+
+    const getCurrentLocation = (): Promise<LocationResult> =>
+        captureLocation(setLocationStatus, setCapturedLocation);
+
+    const getCheckoutLocation = (): Promise<LocationResult> =>
+        captureLocation(setCheckoutLocationStatus, setCheckoutCapturedLocation);
 
     const [locationStatus, setLocationStatus] = useState("idle");
     const [capturedLocation, setCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
@@ -391,9 +431,8 @@ export default function Attendance() {
     const handlePunchOut = () => {
         const time = getCurrentTimeStr();
         setMarkForm(prev => ({ ...prev, checkOut: time }));
-        if (locationStatus === "idle" || locationStatus === "denied") {
-            getCurrentLocation();
-        }
+        setCheckoutLocationStatus("idle");
+        getCheckoutLocation();
     };
 
     const handleMarkAttendance = async (e) => {
@@ -427,6 +466,10 @@ export default function Attendance() {
                 ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
                 : (markForm.checkIn ? markForm.checkIn + ":00" : null);
 
+            const checkoutLoc = markForm.checkOut
+                ? (checkoutLocationStatus === "captured" ? checkoutCapturedLocation : await getCheckoutLocation())
+                : { latitude: null, longitude: null, address: null };
+
             const payload = {
                 empId: parseInt(markForm.empId, 10),
                 attDate: markForm.attDate ? `${markForm.attDate}T00:00:00` : null,
@@ -439,6 +482,9 @@ export default function Attendance() {
                 latitude,
                 longitude,
                 locationAddress: address,
+                checkOutLatitude: checkoutLoc.latitude,
+                checkOutLongitude: checkoutLoc.longitude,
+                checkOutLocationAddress: checkoutLoc.address,
             };
 
             const res = await adminService.markAttendance(payload);
@@ -619,7 +665,7 @@ export default function Attendance() {
     const tabsList = [
         ...(isCMD ? [{ key: "dashboard", label: "Executive Dashboard" }] : []),
         { key: "logs", label: "Attendance Logs" },
-        { key: "requests", label: "Regularization Requests" },
+        { key: "requests", label: "Attendance Approval Requests" },
         ...(isTeamLevel ? [{ key: "sundayWorking", label: "Sunday Working" }] : []),
         ...(isAdminLevel ? [{ key: "summaries", label: "Monthly Summary" }] : [])
     ];
@@ -668,10 +714,41 @@ export default function Attendance() {
         }))),
         ["fullName"]
     );
+
+    // 🆕 "Absent Today" ka matlab: jinka aaj Present/Late record hi nahi hai (punch nahi kiya) — ye employees list se nikalte hai, attendance logs se nahi
+    const isDashboardAbsentFilter = dashboardFilter?.status === "Absent";
+
+    const dashboardAbsentEmployees = isDashboardAbsentFilter
+        ? scopeToEmployee(
+            employees.filter((emp) => {
+                const rec = attendanceLogs.find(
+                    (log) => Number(log.empId) === Number(emp.empId) && (log.attDate || "").slice(0, 10) === dashboardFilter.date
+                );
+                // koi record nahi mila (punch hi nahi kiya) YA record explicitly "Absent" mark hai
+                return !rec || rec.status === "Absent";
+            })
+        )
+        : [];
+
+    // 🆕 Baaki cards (Total/Present/Late) ke liye purana logic — attendanceLogs se filter
+    const dashboardFilteredLogs = dashboardFilter && !isDashboardAbsentFilter
+        ? scopeToEmployee(
+            attendanceLogs.filter((log) => {
+                const statusMatch = !dashboardFilter.status || log.status === dashboardFilter.status;
+                const dateMatch = (log.attDate || "").slice(0, 10) === dashboardFilter.date;
+                return statusMatch && dateMatch;
+            })
+        )
+        : [];
+
+    // 🆕 Dono me se jo applicable ho wahi "rows" ban jaata hai — table isi ko render karega
+    const dashboardRows = isDashboardAbsentFilter ? dashboardAbsentEmployees : dashboardFilteredLogs;
+
     const pagedLogs = paginate(filteredLogs);
     const pagedRequests = paginate(filteredRequests);
     const pagedSummaries = paginate(filteredSummaries);
     const pagedSundayHoliday = paginate(filteredSundayHolidayData);
+    const pagedDashboardLogs = dashboardFilter ? paginate(dashboardRows) : [];
 
     const activeListMeta = {
         logs: { total: filteredLogs.length, placeholder: "Search by employee, status, or source..." },
@@ -681,6 +758,8 @@ export default function Attendance() {
     }[activeTab];
 
     const totalPages = activeListMeta ? Math.max(1, Math.ceil(activeListMeta.total / ITEMS_PER_PAGE)) : 1;
+    // 🆕 dashboard inline list ka apna pagination total
+    const dashboardTotalPages = dashboardFilter ? Math.max(1, Math.ceil(dashboardRows.length / ITEMS_PER_PAGE)) : 1;
 
     const PaginationBar = () => {
         if (!activeListMeta || activeListMeta.total === 0) return null;
@@ -707,6 +786,41 @@ export default function Attendance() {
                     <button
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+                    >
+                        Next <i className="fa-solid fa-chevron-right text-[10px]" />
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    // 🆕 Dashboard inline list ke liye alag pagination bar (apna total/page count use karta hai)
+    const DashboardPaginationBar = () => {
+        if (!dashboardFilter || dashboardRows.length === 0) return null;
+        const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+        const end = Math.min(currentPage * ITEMS_PER_PAGE, dashboardRows.length);
+        return (
+            <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border-t border-slate-200 text-sm text-slate-500 gap-4">
+                <div>
+                    Showing <span className="font-bold text-slate-800">{start}</span> to{" "}
+                    <span className="font-bold text-slate-800">{end}</span> of{" "}
+                    <span className="font-bold text-slate-800">{dashboardRows.length}</span> entries
+                </div>
+                <div className="flex gap-1.5">
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+                    >
+                        <i className="fa-solid fa-chevron-left text-[10px]" /> Prev
+                    </button>
+                    <div className="hidden sm:flex items-center px-3 font-bold text-slate-700">
+                        Page {currentPage} of {dashboardTotalPages}
+                    </div>
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.min(dashboardTotalPages, p + 1))}
+                        disabled={currentPage === dashboardTotalPages}
                         className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-50 disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
                     >
                         Next <i className="fa-solid fa-chevron-right text-[10px]" />
@@ -750,7 +864,7 @@ export default function Attendance() {
                         </p>
                     </div>
                 </div>
-                {!isCMD && (
+                {userRole !== "CMD" && userRole !== "DIRECTOR" && (
                     <div className="flex flex-wrap gap-2">
                         {activeTab === "sundayWorking" && isAdminLevel ? (
                             <>
@@ -780,7 +894,7 @@ export default function Attendance() {
                                     onClick={openRegModal}
                                     className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-white border border-transparent hover:border-slate-200 transition-all flex items-center gap-2"
                                 >
-                                    <i className="fa-solid fa-code-pull-request" /> Request Regularization
+                                    <i className="fa-solid fa-code-pull-request" /> Request Attendance Approval
                                 </button>
                                 {isAdminLevel && (
                                     <button
@@ -865,57 +979,137 @@ export default function Attendance() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setActiveTab("logs");
-                                    setStatusFilter("");
-                                    setDateFilter(new Date().toISOString().split("T")[0]);
-                                }}
-                                className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer"
+                                onClick={() => openDashboardFilter("Total Employees", "")}
+                                className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
                             >
                                 <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
                                 <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setActiveTab("logs");
-                                    setStatusFilter("Present");
-                                    setDateFilter(new Date().toISOString().split("T")[0]);
-                                }}
-                                className="p-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 shadow-sm hover:shadow-md hover:bg-emerald-50 transition-all text-left cursor-pointer"
+                                onClick={() => openDashboardFilter("Present Today", "Present")}
+                                className={`p-5 rounded-2xl border bg-emerald-50/50 shadow-sm hover:shadow-md hover:bg-emerald-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Present Today" ? "border-emerald-400 ring-2 ring-emerald-200" : "border-emerald-100"}`}
                             >
                                 <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Present Today</p>
                                 <p className="text-3xl font-black text-emerald-700">{dashboardStats?.presentToday || 0}</p>
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setActiveTab("logs");
-                                    setStatusFilter("Absent");
-                                    setDateFilter(new Date().toISOString().split("T")[0]);
-                                }}
-                                className="p-5 rounded-2xl border border-rose-100 bg-rose-50/50 shadow-sm hover:shadow-md hover:bg-rose-50 transition-all text-left cursor-pointer"
+                                onClick={() => openDashboardFilter("Absent Today", "Absent")}
+                                className={`p-5 rounded-2xl border bg-rose-50/50 shadow-sm hover:shadow-md hover:bg-rose-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Absent Today" ? "border-rose-400 ring-2 ring-rose-200" : "border-rose-100"}`}
                             >
                                 <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider mb-1">Absent Today</p>
                                 <p className="text-3xl font-black text-rose-700">{dashboardStats?.absentToday || 0}</p>
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setActiveTab("logs");
-                                    setStatusFilter("Late");
-                                    setDateFilter(new Date().toISOString().split("T")[0]);
-                                }}
-                                className="p-5 rounded-2xl border border-amber-100 bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer"
+                                onClick={() => openDashboardFilter("Late Arrivals", "Late")}
+                                className={`p-5 rounded-2xl border bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Late Arrivals" ? "border-amber-400 ring-2 ring-amber-200" : "border-amber-100"}`}
                             >
                                 <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
                                 <p className="text-3xl font-black text-amber-700">{dashboardStats?.lateToday || 0}</p>
                             </button>
                         </div>
-                        <div className="p-10 text-center text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-                            <i className="fa-solid fa-chart-line text-2xl mb-2 text-slate-300"></i>
-                            <p>More executive charts and operational trends will appear here...</p>
-                        </div>
+
+                        {/* 🆕 Card click ka result — same page, neeche inline list */}
+                        {dashboardFilter ? (
+                            <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                                <div className="flex justify-between items-center px-6 py-4 bg-slate-50/80 border-b border-slate-200">
+                                    <h4 className="font-bold text-slate-800 text-sm">
+                                        {dashboardFilter.label} — {new Date(dashboardFilter.date).toLocaleDateString("en-IN")}
+                                    </h4>
+                                    <button
+                                        onClick={() => setDashboardFilter(null)}
+                                        className="text-xs font-bold text-slate-400 hover:text-slate-700 flex items-center gap-1.5"
+                                    >
+                                        <i className="fa-solid fa-xmark" /> Close
+                                    </button>
+                                </div>
+
+                                {dashboardLogsLoading ? (
+                                    <div className="p-16 flex flex-col items-center justify-center gap-3">
+                                        <div className="relative w-10 h-10 flex items-center justify-center">
+                                            <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                                            <div className="absolute inset-0 border-4 border-amber-400 rounded-full border-t-transparent animate-spin"></div>
+                                        </div>
+                                        <div className="text-sm font-semibold text-slate-400 tracking-wide animate-pulse">Loading employees...</div>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse min-w-[800px]">
+                                            <thead>
+                                                <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                                                    <th className="px-6 py-4">Employee</th>
+                                                    <th className="px-6 py-4">Date</th>
+                                                    <th className="px-6 py-4">Check In</th>
+                                                    <th className="px-6 py-4">Check Out</th>
+                                                    <th className="px-6 py-4">Location</th>
+                                                    <th className="px-6 py-4">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                                {dashboardRows.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={6} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                                            No records found for this filter
+                                                        </td>
+                                                    </tr>
+                                                ) : isDashboardAbsentFilter ? (
+                                                    // 🆕 Absent rows employee-master se aati hai (koi punch record hi nahi), isliye alag field names
+                                                    pagedDashboardLogs.map((emp) => (
+                                                        <tr key={emp.empId} className="hover:bg-slate-50/60 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-900">
+                                                                {emp.firstName} {emp.lastName} <span className="text-slate-400 font-normal text-xs">({emp.empCode})</span>
+                                                            </td>
+                                                            <td className="px-6 py-4 font-medium text-slate-600">
+                                                                {new Date(dashboardFilter.date).toLocaleDateString("en-IN")}
+                                                            </td>
+                                                            <td className="px-6 py-4 font-mono font-medium text-slate-400">--:--</td>
+                                                            <td className="px-6 py-4 font-mono font-medium text-slate-400">--:--</td>
+                                                            <td className="px-6 py-4 text-[13px] text-slate-300">—</td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border bg-rose-50 text-rose-700 border-rose-200/50">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                                                    Absent
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    pagedDashboardLogs.map((log) => (
+                                                        <tr key={log.attId} className="hover:bg-slate-50/60 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-900">
+                                                                {log.fullName || `EMP-${log.empId}`}
+                                                            </td>
+                                                            <td className="px-6 py-4 font-medium text-slate-600">
+                                                                {new Date(log.attDate).toLocaleDateString("en-IN")}
+                                                            </td>
+                                                            <td className="px-6 py-4 font-mono font-medium text-slate-600">{log.checkIn || "--:--"}</td>
+                                                            <td className="px-6 py-4 font-mono font-medium text-slate-600">{log.checkOut || "--:--"}</td>
+                                                            <td className="px-6 py-4 text-[13px] text-slate-500 max-w-[200px] truncate" title={log.locationAddress || ""}>
+                                                                {log.locationAddress ? log.locationAddress : log.latitude && log.longitude ? `${Number(log.latitude).toFixed(5)}, ${Number(log.longitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                                                    {log.status}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                        <DashboardPaginationBar />
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="p-10 text-center text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                                <i className="fa-solid fa-chart-line text-2xl mb-2 text-slate-300"></i>
+                                <p>More executive charts and operational trends will appear here...</p>
+                            </div>
+                        )}
                     </div>
                 ) : activeTab === "logs" ? (
                     <div className="overflow-x-auto flex-1">
@@ -1317,10 +1511,15 @@ export default function Attendance() {
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">GPS Location</label>
                                         <div className="w-full h-[46px] px-3 rounded-xl border-2 border-slate-100 text-xs font-semibold bg-slate-50 text-slate-500 flex items-center justify-center text-center overflow-hidden">
-                                            {locationStatus === "idle" && "Captured automatically"}
-                                            {locationStatus === "fetching" && <span className="text-amber-500 animate-pulse flex items-center gap-1.5"><i className="fa-solid fa-location-crosshairs animate-spin" /> Fetching...</span>}
-                                            {locationStatus === "captured" && <span className="text-emerald-600 truncate px-1 flex items-center gap-1.5"><i className="fa-solid fa-location-dot" /> {capturedLocation.address ? capturedLocation.address : "Location Pinned"}</span>}
-                                            {locationStatus === "denied" && <span className="text-rose-500 flex items-center gap-1.5"><i className="fa-solid fa-location-dot" /> Unavailable</span>}
+                                            {(() => {
+                                                const status = punchMode === "out" ? checkoutLocationStatus : locationStatus;
+                                                const loc = punchMode === "out" ? checkoutCapturedLocation : capturedLocation;
+                                                if (status === "idle") return "Captured automatically";
+                                                if (status === "fetching") return <span className="text-amber-500 animate-pulse flex items-center gap-1.5"><i className="fa-solid fa-location-crosshairs animate-spin" /> Fetching...</span>;
+                                                if (status === "captured") return <span className="text-emerald-600 truncate px-1 flex items-center gap-1.5"><i className="fa-solid fa-location-dot" /> {loc.address ? loc.address : "Location Pinned"}</span>;
+                                                if (status === "denied") return <span className="text-rose-500 flex items-center gap-1.5"><i className="fa-solid fa-location-dot" /> Unavailable</span>;
+                                                return null;
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -1345,7 +1544,7 @@ export default function Attendance() {
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white border border-slate-200 w-full max-w-md rounded-[24px] p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-xl font-bold text-slate-900">Request Regularization</h3>
+                            <h3 className="text-xl font-bold text-slate-900">Request Attendance Approval</h3>
                             <button onClick={() => setShowRegModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
                                 <i className="fa-solid fa-xmark text-lg" />
                             </button>

@@ -27,30 +27,7 @@ namespace AkerpSuite.Server.Services
             _configuration = configuration;                    // ✅ ADD
         }
 
-        //public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request,string? ipAddress)
-        //{
-        //    var user = await _authRepository.GetUserByUsernameAsync(request.Username);
-        //    if (user == null)return null;
-        //    bool isValid = BCrypt.Net.BCrypt.Verify(request.Password,user.PasswordHash);
-        //    if (!isValid)return null;
-        //    if (!user.IsActive)return null;
-
-        //    await _authRepository.UpdateLastLoginAsync(user.UserId);
-        //    await _authRepository.InsertAuditLogAsync(user.UserId,"LOGIN",ipAddress);
-        //    var (token, expiresAt) = _jwtHelper.GenerateToken(user);
-        //    var pages = await _adminRepository.GetPagesByRoleAsync(user.RoleId);
-
-        //    return new LoginResponseDto
-        //    {
-        //        Token = token,
-        //        UserId = user.UserId,
-        //        Username = user.Username,
-        //        Role = user.RoleName,
-        //        EmployeeId = user.EmployeeId,
-        //        ExpiresAt = expiresAt,
-        //        Pages = pages.ToList()
-        //    };
-        //}
+        
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, string? ipAddress)
         {
             var trimmedUsername = request.Username?.Trim() ?? string.Empty;

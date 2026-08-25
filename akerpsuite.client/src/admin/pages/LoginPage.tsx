@@ -43,43 +43,6 @@ export default function LoginPage() {
         setError("");
     };
 
-    // const handleSubmit = async (e: any) => {
-    //     e.preventDefault();
-    //     if (!form.username || !form.password) {
-    //         setError("Username and password are required.");
-    //         return;
-    //     }
-    //     setLoading(true);
-    //     setError("");
-    //     try {
-    //         const res = await fetch(`${API_BASE}/auth/login`, {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify(form),
-    //         });
-    //         const data = await res.json();
-    //         if (!res.ok) {
-    //             setError(data?.message || "Login failed. Please check your credentials.");
-    //             return;
-    //         }
-
-    //         const userData = data?.data;
-
-    //         localStorage.setItem("token", userData?.token);
-    //         localStorage.setItem("role", userData?.role);
-    //         localStorage.setItem("username", userData?.username);
-    //         localStorage.setItem("userId", userData?.userId);
-    //         localStorage.setItem("empId", userData?.employeeId ?? "");
-    //         localStorage.setItem("pages", JSON.stringify(userData?.pages));
-    //         localStorage.setItem("user", JSON.stringify(userData));
-
-    //         window.location.href = "/dashboard";
-    //     } catch {
-    //         setError("Could not connect to server. Please check your network connection.");
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         if (!form.username || !form.password) {

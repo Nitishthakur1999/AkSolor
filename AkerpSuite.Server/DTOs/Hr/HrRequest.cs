@@ -113,6 +113,7 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? Remarks { get; set; }
         public int? AssignedTo { get; set; }
         public int CreatedBy { get; set; }
+        public string? AlternateContactNo { get; set; }
     }
 
     public class SalesLeadUpdateRequestDto
@@ -130,6 +131,7 @@ namespace AkerpSuite.Server.DTOs.Hr
         public DateTime? NextFollowup { get; set; }
         public string? Status { get; set; }
         public int? AssignedTo { get; set; }
+        public string? AlternateContactNo { get; set; }
     }
 
     public class SalesLeadSearchRequestDto

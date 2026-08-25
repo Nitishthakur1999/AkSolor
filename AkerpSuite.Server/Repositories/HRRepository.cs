@@ -491,6 +491,7 @@ namespace AkerpSuite.Server.Repositories
             p.Add("p_LeadDate", request.LeadDate);
             p.Add("p_Name", request.Name);
             p.Add("p_ContactNo", request.ContactNo);
+            p.Add("p_AlternateContactNo", request.AlternateContactNo);
             p.Add("p_Email", request.Email);
             p.Add("p_Address", request.Address);
             p.Add("p_Reference", request.Reference);
@@ -511,6 +512,7 @@ namespace AkerpSuite.Server.Repositories
             p.Add("p_LeadId", request.LeadId);
             p.Add("p_Name", request.Name);
             p.Add("p_ContactNo", request.ContactNo);
+            p.Add("p_AlternateContactNo", request.AlternateContactNo);
             p.Add("p_Email", request.Email);
             p.Add("p_Address", request.Address);
             p.Add("p_Reference", request.Reference);
@@ -563,6 +565,18 @@ namespace AkerpSuite.Server.Repositories
 
             return await conn.QueryAsync<SalesLeadResponseDto>(
                 "sp_SearchSalesLeads", p, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> DeleteLeadAsync(int leadId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_LeadId", leadId);
+
+            var affectedRows = await conn.QueryFirstOrDefaultAsync<int>(
+                "sp_DeleteSalesLead", p, commandType: CommandType.StoredProcedure);
+
+            return affectedRows > 0;
         }
 
         // ---------------- Followups ----------------

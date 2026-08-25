@@ -414,6 +414,17 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
+        [HttpDelete("leads/{id:int}")]
+        [RequirePermission("SalesLead", "Delete")]
+        public async Task<IActionResult> DeleteLead(int id)
+        {
+            var deleted = await _service.DeleteLeadAsync(id);
+            if (!deleted)
+                return NotFound(new { Success = false, Message = "Lead not found" });
+
+            return Ok(new { Success = true, Message = "Lead deleted successfully" });
+        }
+
         #endregion
 
         #region Sales – Follow-ups (Follow-up Sheet + Labels like "Hot Lead")

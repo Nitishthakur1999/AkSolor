@@ -156,8 +156,11 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Remarks { get; set; }
         public int? CreatedBy { get; set; }
         public decimal? Latitude { get; set; }      
-        public decimal? Longitude { get; set; }     
+        public decimal? Longitude { get; set; }
         public string? LocationAddress { get; set; }
+        public decimal? CheckOutLatitude { get; set; }
+        public decimal? CheckOutLongitude { get; set; }
+        public string? CheckOutLocationAddress { get; set; }
     }
     public class AttendanceRegRequestDto
     {

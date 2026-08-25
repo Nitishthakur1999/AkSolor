@@ -55,6 +55,7 @@ namespace AkerpSuite.Server.Services
         Task<bool> UpdateLeadAsync(SalesLeadUpdateRequestDto request);
         Task<SalesLeadResponseDto?> GetLeadByIdAsync(int leadId);
         Task<IEnumerable<SalesLeadResponseDto>> SearchLeadsAsync(SalesLeadSearchRequestDto filter);
+        Task<bool> DeleteLeadAsync(int leadId);
 
         // Followups
         Task<int> CreateFollowupAsync(SalesFollowupRequestDto request);

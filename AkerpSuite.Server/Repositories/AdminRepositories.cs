@@ -741,6 +741,12 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_latitude", request.Latitude);
             parameters.Add("p_longitude", request.Longitude);
             parameters.Add("p_location_address", request.LocationAddress);
+            parameters.Add("p_latitude", request.Latitude);
+            parameters.Add("p_longitude", request.Longitude);
+            parameters.Add("p_location_address", request.LocationAddress);
+            parameters.Add("p_checkout_latitude", request.CheckOutLatitude);
+            parameters.Add("p_checkout_longitude", request.CheckOutLongitude);
+            parameters.Add("p_checkout_location_address", request.CheckOutLocationAddress);
 
             return await connection.QuerySingleAsync<MarkAttendanceResultDto>(
                 "sp_attendance_mark", parameters,

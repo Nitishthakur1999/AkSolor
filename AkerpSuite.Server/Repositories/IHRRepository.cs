@@ -56,6 +56,7 @@ namespace AkerpSuite.Server.Repositories
         Task<bool> MarkLeadNotFeasibleAsync(int leadId, string? remarks);
         Task<SalesLeadResponseDto?> GetLeadByIdAsync(int leadId);
         Task<IEnumerable<SalesLeadResponseDto>> SearchLeadsAsync(SalesLeadSearchRequestDto filter);
+        Task<bool> DeleteLeadAsync(int leadId);
 
         // Followups
         Task<int> CreateFollowupAsync(SalesFollowupRequestDto request);
