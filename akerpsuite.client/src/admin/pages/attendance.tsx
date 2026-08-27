@@ -154,7 +154,15 @@ export default function Attendance() {
 
     useEffect(() => {
         adminService.getEmployees().then(res => {
-            if (res.Success || res.success) setEmployees(res.Data || res.data || []);
+            if (res.Success || res.success) {
+                const all = res.Data || res.data || [];
+                
+                const filtered = all.filter(emp => {
+                    const empRole = String(emp.role ?? emp.Role ?? emp.roleName ?? emp.RoleName ?? "").toUpperCase();
+                    return empRole !== "DIRECTOR" && empRole !== "CMD";
+                });
+                setEmployees(filtered);
+            }
         });
     }, []);
 
@@ -181,6 +189,8 @@ export default function Attendance() {
             if (activeTab === "dashboard") {
                 const res = await adminService.getDashboardStats();
                 if (res.Success || res.success) setDashboardStats(res.Data || res.data || {});
+                const logsRes = await adminService.getAttendanceAll();
+                if (logsRes.Success || logsRes.success) setAttendanceLogs(logsRes.Data || logsRes.data || []);
             } else if (activeTab === "logs") {
                 const res = await adminService.getAttendanceAll();
                 if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
@@ -663,7 +673,7 @@ export default function Attendance() {
     };
 
     const tabsList = [
-        ...(isCMD ? [{ key: "dashboard", label: "Executive Dashboard" }] : []),
+        ...(isCMD ? [{ key: "dashboard", label: "Attendance Dashboard" }] : []),
         { key: "logs", label: "Attendance Logs" },
         { key: "requests", label: "Attendance Approval Requests" },
         ...(isTeamLevel ? [{ key: "sundayWorking", label: "Sunday Working" }] : []),
@@ -715,8 +725,17 @@ export default function Attendance() {
         ["fullName"]
     );
 
-    // 🆕 "Absent Today" ka matlab: jinka aaj Present/Late record hi nahi hai (punch nahi kiya) — ye employees list se nikalte hai, attendance logs se nahi
     const isDashboardAbsentFilter = dashboardFilter?.status === "Absent";
+    const isDashboardLateFilter = dashboardFilter?.label === "Late Arrivals"; 
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const lateArrivalsCount = attendanceLogs.filter(
+        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.checkIn && log.checkIn.slice(0, 5) > LATE_CUTOFF
+    ).length;
+    const onHolidayCount = attendanceLogs.filter(
+        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Holiday"
+    ).length;
+
 
     const dashboardAbsentEmployees = isDashboardAbsentFilter
         ? scopeToEmployee(
@@ -734,9 +753,14 @@ export default function Attendance() {
     const dashboardFilteredLogs = dashboardFilter && !isDashboardAbsentFilter
         ? scopeToEmployee(
             attendanceLogs.filter((log) => {
-                const statusMatch = !dashboardFilter.status || log.status === dashboardFilter.status;
                 const dateMatch = (log.attDate || "").slice(0, 10) === dashboardFilter.date;
-                return statusMatch && dateMatch;
+                if (!dateMatch) return false;
+                // 🆕 Late Arrivals: 09:05 cutoff ke baad checkIn wale, "Late" status pe depend nahi karta
+                if (isDashboardLateFilter) {
+                    return !!log.checkIn && log.checkIn.slice(0, 5) > LATE_CUTOFF;
+                }
+                const statusMatch = !dashboardFilter.status || log.status === dashboardFilter.status;
+                return statusMatch;
             })
         )
         : [];
@@ -975,9 +999,8 @@ export default function Attendance() {
                     </div>
                 ) : activeTab === "dashboard" && isCMD ? (
                     <div className="p-6">
-                        <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Executive Overview</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                            <button
+                            <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">      <button
                                 type="button"
                                 onClick={() => openDashboardFilter("Total Employees", "")}
                                 className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
@@ -1001,15 +1024,23 @@ export default function Attendance() {
                                 <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider mb-1">Absent Today</p>
                                 <p className="text-3xl font-black text-rose-700">{dashboardStats?.absentToday || 0}</p>
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => openDashboardFilter("Late Arrivals", "Late")}
-                                className={`p-5 rounded-2xl border bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Late Arrivals" ? "border-amber-400 ring-2 ring-amber-200" : "border-amber-100"}`}
-                            >
-                                <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
-                                <p className="text-3xl font-black text-amber-700">{dashboardStats?.lateToday || 0}</p>
-                            </button>
-                        </div>
+                                <button
+                                    type="button"
+                                    onClick={() => openDashboardFilter("Late Arrivals", "Present")}
+                                    className={`p-5 rounded-2xl border bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Late Arrivals" ? "border-amber-400 ring-2 ring-amber-200" : "border-amber-100"}`}
+                                >
+                                    <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
+                                    <p className="text-3xl font-black text-amber-700">{lateArrivalsCount}</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => openDashboardFilter("On Holiday", "Holiday")}
+                                    className={`p-5 rounded-2xl border bg-violet-50/50 shadow-sm hover:shadow-md hover:bg-violet-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "On Holiday" ? "border-violet-400 ring-2 ring-violet-200" : "border-violet-100"}`}
+                                >
+                                    <p className="text-[11px] text-violet-600 font-bold uppercase tracking-wider mb-1">On Holiday</p>
+                                    <p className="text-3xl font-black text-violet-700">{onHolidayCount}</p>
+                                </button>
+                            </div>
 
                         {/* 🆕 Card click ka result — same page, neeche inline list */}
                         {dashboardFilter ? (

@@ -824,6 +824,17 @@ namespace AkerpSuite.Server.Repositories
             return await conn.QueryAsync<SalesDocumentResponseDto>(
                 "sp_GetDocumentsByLead", p, commandType: CommandType.StoredProcedure);
         }
+        public async Task<bool> DeleteSalesDocumentAsync(int docId)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_DocId", docId);
+
+            var rowsAffected = await conn.ExecuteAsync(
+                "sp_DeleteSalesDocument", p, commandType: CommandType.StoredProcedure);
+
+            return rowsAffected > 0;
+        }
 
         // ---------------- Reminders ----------------
 

@@ -669,6 +669,16 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
+        [HttpDelete("documents/{docId:int}")]
+        [RequirePermission("SalesDocument", "Delete")]
+        public async Task<IActionResult> DeleteSalesDocument(int docId)
+        {
+            var result = await _service.DeleteSalesDocumentAsync(docId);
+            if (!result)
+                return NotFound(new { Success = false, Message = "Document not found" });
+
+            return Ok(new { Success = true, Message = "Document deleted successfully" });
+        }
         #endregion
 
         #region Sales – Reminders (Pop-up / Notification Till Query Attended)

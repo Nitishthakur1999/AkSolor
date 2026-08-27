@@ -6,9 +6,10 @@ const TABS = [
     { key: "overview", label: "1. Overview", icon: "fa-solid fa-address-card" },
     { key: "followups", label: "2. Follow-ups", icon: "fa-solid fa-phone-volume" },
     { key: "survey", label: "3. Site Survey & Feasibility", icon: "fa-solid fa-map-location-dot" },
-    { key: "proposal", label: "4. Proposal & Payment", icon: "fa-solid fa-file-invoice-dollar" },
-    { key: "bom", label: "5. BOM & Booking", icon: "fa-solid fa-boxes-stacked" },
-    { key: "dispatch", label: "6. Dispatch & Docs", icon: "fa-solid fa-truck-fast" },
+    { key: "bom", label: "4. BOM", icon: "fa-solid fa-boxes-stacked" },
+    { key: "proposal", label: "5. Proposal & Payment", icon: "fa-solid fa-file-invoice-dollar" },
+    { key: "booking", label: "6. Booking", icon: "fa-solid fa-clipboard-check" },
+    { key: "dispatch", label: "7. Dispatch & Docs", icon: "fa-solid fa-truck-fast" },
 ];
 
 const todayISO = () => new Date().toISOString().split("T")[0];
@@ -76,6 +77,8 @@ export default function LeadDetail() {
 
     // ── Add Item (Inventory Master) modal state ──
     const [showItemModal, setShowItemModal] = useState(false);
+    const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
+
     const [itemForm, setItemForm] = useState({
         itemCode: "",
         itemName: "",
@@ -154,7 +157,9 @@ export default function LeadDetail() {
                 if (paymentRes?.success) setPayments(paymentRes.data || []);
                 setTabLoading(false);
             }
-            if (tab === "bom" && bom === null) {
+            // 🆕 "bom" aur "booking" dono tabs same underlying data (bom + inventory items) use karte hain,
+            // isliye jo bhi pehle khula wahi fetch karega — dusra tab dobara call nahi karega
+            if ((tab === "bom" || tab === "booking") && bom === null) {
                 setTabLoading(true);
                 const [bomRes, itemsRes] = await Promise.all([
                     adminService.getBomByLead(leadId),
@@ -562,6 +567,28 @@ export default function LeadDetail() {
         }
     };
 
+    const handleDeleteDocument = async (docId: number) => {
+        if (!window.confirm("Are you sure you want to delete this document?")) return;
+
+        setDeletingDocId(docId);
+        setErrorMsg("");
+        try {
+            const res = await adminService.deleteDocument(docId);
+            if (res?.success) {
+                setSuccessMsg("Document deleted successfully.");
+                const refreshed = await adminService.getDocumentsByLead(leadId);
+                if (refreshed?.success) setDocuments(refreshed.data || []);
+            } else {
+                setErrorMsg(res?.message || "Could not delete document.");
+            }
+        } catch (err: any) {
+            console.error(err);
+            setErrorMsg(err?.message || "Something went wrong while deleting document.");
+        } finally {
+            setDeletingDocId(null);
+        }
+    };
+
     const handleCreateReminder = async () => {
         if (!reminderForm.note.trim() || !reminderForm.reminderDate) {
             setErrorMsg("Please enter a note and reminder date.");
@@ -622,6 +649,10 @@ export default function LeadDetail() {
             </div>
         );
     }
+
+    // 🆕 Booking tab ke liye — BOM me se jin items ka shortage hai (booking chahiye) unhi ko filter kar rahe hain.
+    // Ye sirf ek client-side filter hai, "bom" state ya API logic me koi badlaav nahi.
+    const bookingRows = (bom || []).filter((item: any) => Number(item.shortageQty) > 0);
 
     return (
         <div className="space-y-6 font-sans relative z-0 pb-10">
@@ -684,8 +715,8 @@ export default function LeadDetail() {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`px-5 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === tab.key
-                                    ? "border-amber-500 text-amber-600 bg-white"
-                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                ? "border-amber-500 text-amber-600 bg-white"
+                                : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                                 }`}
                         >
                             {tab.icon && <i className={`${tab.icon} text-[13px]`} />}
@@ -707,29 +738,95 @@ export default function LeadDetail() {
                         <div className="animate-in fade-in duration-300">
                             {/* TAB 1: OVERVIEW */}
                             {activeTab === "overview" && (
-                                <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-                                    <div className="flex items-center gap-3 mb-6 border-b border-slate-200/80 pb-3">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
-                                            <i className="fa-solid fa-address-card" />
+                                <div className="space-y-6">
+                                    <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-6 border-b border-slate-200/80 pb-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                                                <i className="fa-solid fa-address-card" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Client Information</h3>
                                         </div>
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Client Information</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Client Name</p>
+                                                <p className="text-sm font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.name || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Phone Number</p>
+                                                <p className="text-sm font-mono font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.contactNo || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.email || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Site Address</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl break-words">{lead.address || "—"}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Client Name</p>
-                                            <p className="text-sm font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.name || "—"}</p>
+
+                                    {/* 🆕 Additional Details — poori lead ki baaki fields yahin dikh jaayengi, koi data-fetch logic nahi badla, sirf `lead` object se hi render ho raha hai */}
+                                    <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-6 border-b border-slate-200/80 pb-3">
+                                            <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                                                <i className="fa-solid fa-circle-info" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Additional Details</h3>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Phone Number</p>
-                                            <p className="text-sm font-mono font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.contactNo || "—"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address</p>
-                                            <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.email || "—"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Site Address</p>
-                                            <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl break-words">{lead.address || "—"}</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lead ID</p>
+                                                <p className="text-sm font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">#{lead.leadId ?? "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Current Stage / Status</p>
+                                                <p className="text-sm font-bold text-slate-900 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.status || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lead Source</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.source || lead.leadSource || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">City</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.city || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">State</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.state || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Pincode</p>
+                                                <p className="text-sm font-mono font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.pincode || lead.pinCode || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assigned To</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.assignedToName || lead.assignedTo || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lead Type / Category</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.leadType || lead.category || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Requirement (kW)</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.requirementKw || lead.systemSizeKw || "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Budget</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.budget ? `₹ ${Number(lead.budget).toLocaleString("en-IN")}` : "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Created On</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.createdDate ? new Date(lead.createdDate).toLocaleDateString("en-IN") : "—"}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Last Updated</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl">{lead.updatedDate ? new Date(lead.updatedDate).toLocaleDateString("en-IN") : "—"}</p>
+                                            </div>
+                                            <div className="sm:col-span-2 lg:col-span-3">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Remarks / Notes</p>
+                                                <p className="text-sm font-medium text-slate-800 bg-white border border-slate-200 px-4 py-2.5 rounded-xl break-words min-h-[44px]">{lead.remarks || lead.notes || "—"}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -925,7 +1022,115 @@ export default function LeadDetail() {
                                 </div>
                             )}
 
-                            {/* TAB 4: PROPOSAL & PAYMENT */}
+                            {/* TAB 4: BOM */}
+                            {activeTab === "bom" && (
+                                <div className="space-y-6">
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-5">
+                                            <div className="flex items-center gap-2">
+                                                <i className="fa-solid fa-boxes-stacked text-amber-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Material Requirements (BOM)</h3>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowItemModal(true)}
+                                                className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200/60 font-bold rounded-xl text-xs hover:bg-amber-100 transition-all shadow-sm flex items-center gap-2"
+                                            >
+                                                <i className="fa-solid fa-plus" /> New Inventory Item
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end mb-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                                            <div>
+                                                <label className={labelClass}>Select Material *</label>
+                                                <select
+                                                    value={newMaterial.itemId}
+                                                    onChange={e => setNewMaterial({ ...newMaterial, itemId: e.target.value })}
+                                                    className={`${inputClass} appearance-none cursor-pointer ${materialError.itemId ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500" : ""}`}
+                                                >
+                                                    <option value="" disabled>-- Select Item --</option>
+                                                    {inventoryItems.map(item => (
+                                                        <option key={item.itemId} value={item.itemId}>{item.itemName}</option>
+                                                    ))}
+                                                </select>
+                                                {materialError.itemId && (
+                                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{materialError.itemId}</p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className={labelClass}>Required Quantity *</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    step="1"
+                                                    placeholder="e.g. 10"
+                                                    value={newMaterial.quantity}
+                                                    onChange={e => setNewMaterial({ ...newMaterial, quantity: e.target.value })}
+                                                    className={`${inputClass} ${materialError.quantity ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500" : ""}`}
+                                                />
+                                                {materialError.quantity && (
+                                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{materialError.quantity}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="w-full">
+                                                <button
+                                                    onClick={handleAddMaterialValidated}
+                                                    disabled={actionLoading}
+                                                    className="w-full px-4 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm hover:bg-[#0f3345] shadow-md shadow-[#0b2836]/20 disabled:opacity-60 transition-all h-[42px] flex items-center justify-center gap-2"
+                                                >
+                                                    {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-plus" />}
+                                                    {actionLoading ? "Adding..." : "Add to BOM"}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                                                    <tr>
+                                                        <th className="px-6 py-4">Item Name</th>
+                                                            <th className="px-6 py-4 text-center">Req. Qty</th>
+                                                            <th className="px-6 py-4 text-right">Availability Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                                    {(bom || []).length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={4} className="px-6 py-12 text-center">
+                                                                <div className="flex flex-col items-center gap-2 text-slate-400">
+                                                                    <i className="fa-solid fa-box-open text-3xl text-slate-300 mb-1" />
+                                                                    <p className="text-sm font-bold text-slate-500">No materials added to BOM yet.</p>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ) : bom.map((item: any, idx: number) => (
+                                                        <tr key={item.bomId || idx} className="hover:bg-slate-50/60 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-900">{item.itemName || "-"}</td>
+                                                            <td className="px-6 py-4 text-center font-mono font-bold text-slate-700 bg-slate-50/50">{item.requiredQty ?? "-"}</td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${item.shortageQty > 0
+                                                                    ? "bg-rose-50 text-rose-700 border-rose-200/50"
+                                                                    : "bg-emerald-50 text-emerald-700 border-emerald-200/50"
+                                                                    }`}>
+                                                                    {item.shortageQty > 0 ? (
+                                                                        <><i className="fa-solid fa-circle-exclamation" /> Needs Booking</>
+                                                                    ) : (
+                                                                        <><i className="fa-solid fa-circle-check" /> In Stock</>
+                                                                    )}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 5: PROPOSAL & PAYMENT */}
                             {activeTab === "proposal" && (
                                 <div className="space-y-8">
                                     {/* Generate Proposal form */}
@@ -1012,10 +1217,10 @@ export default function LeadDetail() {
                                                             <td className="px-6 py-4 font-mono font-bold text-emerald-600">₹ {Number(p.subsidyAmount || 0).toLocaleString("en-IN")}</td>
                                                             <td className="px-6 py-4">
                                                                 <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${p.status === "Accepted"
-                                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                                                                        : p.status === "Rejected"
-                                                                            ? "bg-rose-50 text-rose-700 border-rose-200/60"
-                                                                            : "bg-amber-50 text-amber-700 border-amber-200/60"
+                                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                                                                    : p.status === "Rejected"
+                                                                        ? "bg-rose-50 text-rose-700 border-rose-200/60"
+                                                                        : "bg-amber-50 text-amber-700 border-amber-200/60"
                                                                     }`}>
                                                                     {p.status}
                                                                 </span>
@@ -1051,105 +1256,70 @@ export default function LeadDetail() {
                                 </div>
                             )}
 
-                            {/* TAB 5: BOM & BOOKING */}
-                            {activeTab === "bom" && (
-                                <div className="space-y-6">
-                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-5">
-                                            <div className="flex items-center gap-2">
-                                                <i className="fa-solid fa-boxes-stacked text-amber-500" />
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Material Requirements (BOM)</h3>
+                            {/* TAB 6: BOOKING — 🆕 alag tab, BOM se split kiya gaya. Data wahi `bom` state se aa raha hai, sirf shortage waale items dikhaye ja rahe hain */}
+                                {activeTab === "booking" && (
+                                    <div className="space-y-6">
+                                        {/* Summary stat cards — visually differentiate Booking tab from BOM tab */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="bg-rose-50 border border-rose-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+                                                <div className="w-11 h-11 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shrink-0">
+                                                    <i className="fa-solid fa-triangle-exclamation" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Items Pending</p>
+                                                    <p className="text-2xl font-black text-rose-700">{bookingRows.length}</p>
+                                                </div>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowItemModal(true)}
-                                                className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200/60 font-bold rounded-xl text-xs hover:bg-amber-100 transition-all shadow-sm flex items-center gap-2"
-                                            >
-                                                <i className="fa-solid fa-plus" /> New Inventory Item
-                                            </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end mb-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                                            <div>
-                                                <label className={labelClass}>Select Material *</label>
-                                                <select
-                                                    value={newMaterial.itemId}
-                                                    onChange={e => setNewMaterial({ ...newMaterial, itemId: e.target.value })}
-                                                    className={`${inputClass} appearance-none cursor-pointer ${materialError.itemId ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500" : ""}`}
-                                                >
-                                                    <option value="" disabled>-- Select Item --</option>
-                                                    {inventoryItems.map(item => (
-                                                        <option key={item.itemId} value={item.itemId}>{item.itemName}</option>
-                                                    ))}
-                                                </select>
-                                                {materialError.itemId && (
-                                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{materialError.itemId}</p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label className={labelClass}>Required Quantity *</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="1"
-                                                    placeholder="e.g. 10"
-                                                    value={newMaterial.quantity}
-                                                    onChange={e => setNewMaterial({ ...newMaterial, quantity: e.target.value })}
-                                                    className={`${inputClass} ${materialError.quantity ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500" : ""}`}
-                                                />
-                                                {materialError.quantity && (
-                                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">{materialError.quantity}</p>
-                                                )}
-                                            </div>
-
-                                            <div className="w-full">
-                                                <button
-                                                    onClick={handleAddMaterialValidated}
-                                                    disabled={actionLoading}
-                                                    className="w-full px-4 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm hover:bg-[#0f3345] shadow-md shadow-[#0b2836]/20 disabled:opacity-60 transition-all h-[42px] flex items-center justify-center gap-2"
-                                                >
-                                                    {actionLoading ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-plus" />}
-                                                    {actionLoading ? "Adding..." : "Add to BOM"}
-                                                </button>
+                                            <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+                                                <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                                                    <i className="fa-solid fa-boxes-packing" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Total Shortage Qty</p>
+                                                    <p className="text-2xl font-black text-amber-700">
+                                                        {bookingRows.reduce((sum: number, item: any) => sum + Number(item.shortageQty || 0), 0)}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                                            <table className="w-full text-left border-collapse min-w-[700px]">
-                                                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                                                    <tr>
-                                                        <th className="px-6 py-4">Item Name</th>
-                                                        <th className="px-6 py-4 text-center">Req. Qty</th>
-                                                        <th className="px-6 py-4">Unit</th>
-                                                        <th className="px-6 py-4 text-right">Availability Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                                                    {(bom || []).length === 0 ? (
+                                        <div className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm">
+                                            <div className="flex items-center gap-2 border-b border-rose-100 pb-3 mb-5">
+                                                <i className="fa-solid fa-clipboard-check text-rose-500" />
+                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Items Pending Booking</h3>
+                                            </div>
+                                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-5 leading-relaxed">
+                                                These are BOM items that currently don't have enough stock and need to be booked/procured.
+                                            </p>
+
+                                            <div className="overflow-x-auto border border-rose-200/60 rounded-2xl">
+                                                <table className="w-full text-left border-collapse min-w-[700px]">
+                                                    <thead className="bg-rose-50/60 border-b border-rose-200/60 text-rose-600 text-[10px] font-bold uppercase tracking-widest">
                                                         <tr>
-                                                            <td colSpan={4} className="px-6 py-12 text-center">
+                                                            <th className="px-6 py-4">Item Name</th>
+                                                            <th className="px-6 py-4 text-center">Req. Qty</th>
+                                                            <th className="px-6 py-4 text-center">Shortage Qty</th>
+                                                            <th className="px-20 py-4 text-right">Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                                    {bookingRows.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={5} className="px-6 py-12 text-center">
                                                                 <div className="flex flex-col items-center gap-2 text-slate-400">
-                                                                    <i className="fa-solid fa-box-open text-3xl text-slate-300 mb-1" />
-                                                                    <p className="text-sm font-bold text-slate-500">No materials added to BOM yet.</p>
+                                                                    <i className="fa-solid fa-circle-check text-3xl text-emerald-300 mb-1" />
+                                                                    <p className="text-sm font-bold text-slate-500">All BOM items are fully in stock — nothing to book.</p>
                                                                 </div>
                                                             </td>
                                                         </tr>
-                                                    ) : bom.map((item: any, idx: number) => (
+                                                    ) : bookingRows.map((item: any, idx: number) => (
                                                         <tr key={item.bomId || idx} className="hover:bg-slate-50/60 transition-colors">
                                                             <td className="px-6 py-4 font-bold text-slate-900">{item.itemName || "-"}</td>
                                                             <td className="px-6 py-4 text-center font-mono font-bold text-slate-700 bg-slate-50/50">{item.requiredQty ?? "-"}</td>
-                                                            <td className="px-6 py-4 font-medium text-slate-500">{item.unit || "-"}</td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${item.shortageQty > 0
-                                                                        ? "bg-rose-50 text-rose-700 border-rose-200/50"
-                                                                        : "bg-emerald-50 text-emerald-700 border-emerald-200/50"
-                                                                    }`}>
-                                                                    {item.shortageQty > 0 ? (
-                                                                        <><i className="fa-solid fa-circle-exclamation" /> Needs Booking</>
-                                                                    ) : (
-                                                                        <><i className="fa-solid fa-circle-check" /> In Stock</>
-                                                                    )}
+                                                            <td className="px-6 py-4 text-center font-mono font-bold text-rose-600">{item.shortageQty ?? "-"}</td>
+                                                             <td className="px-6 py-4 text-right">
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-rose-50 text-rose-700 border-rose-200/50">
+                                                                    <i className="fa-solid fa-circle-exclamation" /> Needs Booking
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -1161,7 +1331,7 @@ export default function LeadDetail() {
                                 </div>
                             )}
 
-                            {/* TAB 6: DISPATCH & DOCS */}
+                            {/* TAB 7: DISPATCH & DOCS */}
                             {activeTab === "dispatch" && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                                     {/* LEFT COLUMN: Dispatch Info */}
@@ -1321,30 +1491,48 @@ export default function LeadDetail() {
                                                     <p className="text-sm font-bold text-slate-500">No documents uploaded yet.</p>
                                                     <p className="text-xs text-slate-400 mt-1 font-medium">Upload agreements, ID proofs, or site photos.</p>
                                                 </div>
-                                            ) : documents.map((doc: any, idx: number) => (
-                                                <div
-                                                    key={doc.docId ?? idx}
-                                                    onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
-                                                    className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 hover:border-amber-300 transition-all cursor-pointer flex items-center justify-between gap-4 shadow-sm group"
-                                                >
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-                                                            <i className="fa-regular fa-file-lines text-lg" />
+                                                ) : documents.map((doc: any, idx: number) => (
+                                                    <div
+                                                        key={doc.docId ?? idx}
+                                                        className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 hover:border-amber-300 transition-all flex items-center justify-between gap-4 shadow-sm group"
+                                                    >
+                                                        <div
+                                                            onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
+                                                            className="flex items-center gap-3 overflow-hidden cursor-pointer flex-1"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                                                                <i className="fa-regular fa-file-lines text-lg" />
+                                                            </div>
+                                                            <div className="truncate">
+                                                                <p className="text-sm font-bold text-slate-800 truncate group-hover:text-amber-700 transition-colors">
+                                                                    {doc.docName || "Untitled Document"}
+                                                                </p>
+                                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                                                                    Tap to view/download
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div className="truncate">
-                                                            <p className="text-sm font-bold text-slate-800 truncate group-hover:text-amber-700 transition-colors">
-                                                                {doc.docName || "Untitled Document"}
-                                                            </p>
-                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
-                                                                Tap to view/download
-                                                            </p>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <div
+                                                                onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
+                                                                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600 flex items-center justify-center cursor-pointer transition-colors"
+                                                            >
+                                                                <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteDocument(doc.docId)}
+                                                                disabled={deletingDocId === doc.docId}
+                                                                className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors disabled:opacity-50"
+                                                                title="Delete document"
+                                                            >
+                                                                {deletingDocId === doc.docId
+                                                                    ? <i className="fa-solid fa-spinner animate-spin text-xs" />
+                                                                    : <i className="fa-solid fa-trash text-xs" />}
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600 flex items-center justify-center shrink-0 transition-colors">
-                                                        <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
                                         </div>
                                     </div>
                                 </div>

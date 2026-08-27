@@ -88,6 +88,7 @@ namespace AkerpSuite.Server.Services
         // Documents
         Task<int> CreateDocumentAsync(SalesDocumentRequestDto request);
         Task<IEnumerable<SalesDocumentResponseDto>> GetDocumentsByLeadAsync(int leadId);
+        Task<bool> DeleteSalesDocumentAsync(int docId);
 
         // Reminders
         Task<int> CreateReminderAsync(SalesReminderRequestDto request);

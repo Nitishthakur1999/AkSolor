@@ -138,7 +138,6 @@ export default function BannerCarousel() {
         return () => { cancelled = true; };
     }, []);
 
-    // stage width ko resize pe bhi update karo, sirf pehle render pe nahi
     useEffect(() => {
         function updateWidth() {
             if (stageRef.current) setStageWidth(stageRef.current.offsetWidth || 1);

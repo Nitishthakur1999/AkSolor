@@ -463,7 +463,8 @@ namespace AkerpSuite.Server.Services
 
         public Task<IEnumerable<SalesDocumentResponseDto>> GetDocumentsByLeadAsync(int leadId) =>
             _repository.GetDocumentsByLeadAsync(leadId);
-
+        public Task<bool> DeleteSalesDocumentAsync(int docId) => _repository.DeleteSalesDocumentAsync(docId);
+       
         // ---------------- Reminders ----------------
 
         public Task<int> CreateReminderAsync(SalesReminderRequestDto request) =>

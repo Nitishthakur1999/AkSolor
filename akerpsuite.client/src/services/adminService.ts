@@ -298,6 +298,7 @@ export const adminService = {
     getDocumentsByLead: (leadId?: any) => apiCall(`${SALES_API_BASE}/documents/lead/${leadId}`),
     saveDocument: (data?: any) => apiCall(`${SALES_API_BASE}/documents`, "POST", data),
     uploadDocument: (data?: any) => apiCall(`${SALES_API_BASE}/documents/upload`, "POST", data),
+    deleteDocument: (docId?: any) => apiCall(`${SALES_API_BASE}/documents/${docId}`, "DELETE"),
 
     // 22g. Reminders — create + mark done
     createReminder: (data?: any) => apiCall(`${SALES_API_BASE}/reminders`, "POST", data),
