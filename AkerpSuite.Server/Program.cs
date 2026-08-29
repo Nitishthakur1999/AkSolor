@@ -5,6 +5,7 @@ using AkerpSuite.Server.Repositories;
 using AkerpSuite.Server.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
@@ -138,13 +139,32 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// 🆕 Persistent uploads folder — deployment/FTP se safe rehta hai (wwwroot ke bahar)
+var uploadsConfigPath = builder.Configuration["UploadsRootPath"];
+if (!string.IsNullOrWhiteSpace(uploadsConfigPath))
+{
+    var uploadsPath = Path.IsPathRooted(uploadsConfigPath)
+        ? uploadsConfigPath
+        : Path.Combine(builder.Environment.ContentRootPath, uploadsConfigPath);
+
+    if (!Directory.Exists(uploadsPath))
+        Directory.CreateDirectory(uploadsPath);
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uploadsPath),
+        RequestPath = ""
+    });
+}
+
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
 
-// 🔔 Recurring Job: roz subah 9:00 baje probation-completion emails HR ko bhejega
+
 RecurringJob.AddOrUpdate<IHRService>(
     "probation-completion-reminder",
     service => service.SendProbationCompletionRemindersAsync(),

@@ -255,7 +255,6 @@ export default function MyAttendance() {
                                 <th className="px-6 py-4">Punch In</th>
                                 <th className="px-6 py-4">Punch Out</th>
                                 <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Late (min)</th>
                                 <th className="px-6 py-4">Remarks</th>
                             </tr>
                         </thead>
@@ -290,8 +289,7 @@ export default function MyAttendance() {
                                         <td className="px-6 py-4 font-mono font-medium">{r.checkOut || "—"}</td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={r.status} styleMap={STATUS_STYLES} />
-                                        </td>
-                                        <td className="px-6 py-4 font-mono font-semibold text-rose-500">{r.lateMinutes ?? "—"}</td>
+                                        </td>     
                                         <td className="px-6 py-4 max-w-[200px] truncate text-xs text-slate-500 font-medium" title={r.remarks || ""}>
                                             {r.remarks || "—"}
                                         </td>

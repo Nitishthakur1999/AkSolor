@@ -568,7 +568,7 @@
     public class PurchaseOrderResponseDto
     {
         public int PoId { get; set; }
-        public int VoucherNo { get; set; }
+        public string VoucherNo { get; set; }
         public DateTime? PoDate { get; set; }
         public int SupplierId { get; set; }
         public string SupplierName { get; set; }

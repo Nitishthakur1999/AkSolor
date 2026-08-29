@@ -143,7 +143,7 @@ export default function MyProfile() {
                 <div className="bg-white p-6 sm:p-8 rounded-[24px] border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-6 sm:gap-8 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-slate-50 to-slate-100 z-0"></div>
 
-                    <div className="relative z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-amber-50 border-[6px] border-white shadow-xl flex items-center justify-center text-amber-600 text-4xl font-black shrink-0 overflow-hidden mt-4 sm:mt-0">
+                    <div className="relative z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-amber-50 border-[6px] border-amber-200 shadow-xl flex items-center justify-center text-amber-600 text-4xl font-black shrink-0 overflow-hidden mt-4 sm:mt-0">
                         {profile.photoPath && !photoLoadFailed ? (
                             <img
                                 src={getDocumentUrl(profile.photoPath)}

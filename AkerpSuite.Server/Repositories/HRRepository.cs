@@ -1848,11 +1848,10 @@ namespace AkerpSuite.Server.Repositories
 
             try
             {
-                var poId = await conn.QuerySingleAsync<int>(
+                var poResult = await conn.QuerySingleAsync<(int po_id, string voucher_no)>(
                     "sp_PurchaseOrder_Create",
                     new
                     {
-                     //   p_VoucherNo = request.VoucherNo,
                         p_PoDate = request.PoDate,
                         p_SupplierId = request.SupplierId,
                         p_ConsigneeId = request.ConsigneeId,
@@ -1866,11 +1865,12 @@ namespace AkerpSuite.Server.Repositories
                     },
                     transaction: txn, commandType: CommandType.StoredProcedure);
 
+                var poId = poResult.po_id;
+
                 foreach (var item in request.Items)
                 {
                     var itemId = item.ItemId;
 
-                    // Auto-create the inventory item master row if the person picked "new item"
                     if (itemId == null)
                     {
                         itemId = await conn.QuerySingleAsync<int>(
@@ -1904,7 +1904,6 @@ namespace AkerpSuite.Server.Repositories
                         transaction: txn, commandType: CommandType.StoredProcedure);
                 }
 
-                // Recomputes total_amount / igst_amount on the header from its item rows
                 await conn.ExecuteAsync(
                     "sp_PurchaseOrder_RecalculateTotals",
                     new { p_PoId = poId },

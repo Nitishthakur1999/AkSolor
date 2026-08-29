@@ -544,6 +544,7 @@ namespace AkerpSuite.Server.DTOs.Hr
 
     public class PurchaseOrderRequestDto
     {
+        public string? VoucherNo { get; set; }
         public DateTime? PoDate { get; set; }
         public int SupplierId { get; set; }
         public int? ConsigneeId { get; set; }

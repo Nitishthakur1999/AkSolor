@@ -449,7 +449,7 @@ export default function Attendance() {
         e.preventDefault();
 
         if (punchMode === "done") {
-            alert("Aaj ke liye attendance already mark ho chuka hai (Punch In + Punch Out dono).");
+            alert("Attendance has already been marked for today (both Punch In and Punch Out are completed).");
             return;
         }
 
@@ -466,6 +466,8 @@ export default function Attendance() {
             alert("Punch-out time can't be before punch-in time.");
             return;
         }
+
+        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && markForm.checkIn > LATE_CUTOFF;
 
         setActionLoading(true);
         try {
@@ -486,7 +488,6 @@ export default function Attendance() {
                 checkIn: checkInForPayload,
                 checkOut: markForm.checkOut ? markForm.checkOut + ":00" : null,
                 status: markForm.status,
-                source: "Manual",
                 remarks: "",
                 createdBy: user?.userId ?? user?.UserId ?? 1,
                 latitude,
@@ -499,7 +500,6 @@ export default function Attendance() {
 
             const res = await adminService.markAttendance(payload);
             if (res.Success || res.success) {
-                const isLatePunchIn = punchMode === "in" && !noPunchStatus && markForm.checkIn > LATE_CUTOFF;
                 if (isLatePunchIn) {
                     try {
                         await adminService.createRegRequest({
@@ -522,6 +522,9 @@ export default function Attendance() {
                 setTodaysRecord(null);
                 loadAttendanceData();
 
+                if (isLatePunchIn) {
+                    alert(`Aapka Punch In ${markForm.checkIn} baje hua hai (cutoff ${LATE_CUTOFF} ke baad). Attendance Present mark ho gayi hai, lekin yeh late-arrival approval ke liye Admin/HR ke paas pending rahegi.`);
+                }
             } else {
                 alert(res.Message || "Failed to mark attendance.");
             }

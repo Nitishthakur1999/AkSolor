@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -12,19 +13,21 @@ namespace AkerpSuite.Server.Helpers
     {
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<FileUploadHelper> _logger;
+        private readonly IConfiguration _configuration;
 
-        // Max Size = 10 MB
         private const long MaxFileSize = 10 * 1024 * 1024;
-        // Default allowed extensions (used when no custom list is passed in)
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
 
-        public FileUploadHelper(IWebHostEnvironment environment, ILogger<FileUploadHelper> logger)
+        public FileUploadHelper(
+            IWebHostEnvironment environment,
+            ILogger<FileUploadHelper> logger,
+            IConfiguration configuration)
         {
             _environment = environment;
             _logger = logger;
+            _configuration = configuration;
         }
 
-        // 1. Existing Standard Method (For FormData/IFormFile if needed elsewhere)
         public async Task<string?> SaveFileAsync(IFormFile file, string folderName, string[]? allowedExtensions = null)
         {
             if (file == null || file.Length == 0)
@@ -50,9 +53,6 @@ namespace AkerpSuite.Server.Helpers
             return $"{folderName}/{fileName}".Replace("\\", "/");
         }
 
-        // 2. Handles Base64 JSON payloads (used by HR document upload/update, and public job applications).
-        // Pass a custom `allowedExtensions` list (e.g. CV uploads allow .pdf/.doc/.docx) —
-        // if omitted, falls back to the default image/PDF list.
         public async Task<string?> SaveBase64FileAsync(string? base64String, string? extension, string folderName, string[]? allowedExtensions = null)
         {
             if (string.IsNullOrWhiteSpace(base64String))
@@ -61,7 +61,6 @@ namespace AkerpSuite.Server.Helpers
             if (string.IsNullOrWhiteSpace(extension))
                 throw new InvalidOperationException("File extension is required.");
 
-            // Strip data URI prefix if present (e.g. "data:image/png;base64,....")
             string base64Data = base64String.Contains(",")
                 ? base64String.Split(',')[1]
                 : base64String;
@@ -98,8 +97,6 @@ namespace AkerpSuite.Server.Helpers
             return $"{folderName}/{fileName}".Replace("\\", "/");
         }
 
-        // 3. Deletes a previously saved file given its stored relative path (e.g. "EmployeeDocuments/xxx.pdf").
-       
         public void DeleteFile(string? relativePath)
         {
             if (string.IsNullOrWhiteSpace(relativePath))
@@ -107,14 +104,13 @@ namespace AkerpSuite.Server.Helpers
 
             try
             {
-                var webRoot = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+                var uploadsRoot = GetUploadsRoot();
 
-                // Normalize and guard against path traversal outside the web root.
-                var fullPath = Path.GetFullPath(Path.Combine(webRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString())));
+                var fullPath = Path.GetFullPath(Path.Combine(uploadsRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString())));
 
-                if (!fullPath.StartsWith(Path.GetFullPath(webRoot), StringComparison.OrdinalIgnoreCase))
+                if (!fullPath.StartsWith(Path.GetFullPath(uploadsRoot), StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogWarning("Skipped deleting file outside web root: {RelativePath}", relativePath);
+                    _logger.LogWarning("Skipped deleting file outside uploads root: {RelativePath}", relativePath);
                     return;
                 }
 
@@ -127,10 +123,23 @@ namespace AkerpSuite.Server.Helpers
             }
         }
 
+        // 🆕 config se persistent uploads path resolve karta hai; agar config missing to wwwroot pe fallback
+        private string GetUploadsRoot()
+        {
+            var configuredPath = _configuration["UploadsRootPath"];
+
+            if (string.IsNullOrWhiteSpace(configuredPath))
+                return _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+            return Path.IsPathRooted(configuredPath)
+                ? configuredPath
+                : Path.Combine(_environment.ContentRootPath, configuredPath);
+        }
+
         private string GetFolderPath(string folderName)
         {
-            var webRoot = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
-            var folderPath = Path.Combine(webRoot, folderName);
+            var uploadsRoot = GetUploadsRoot();
+            var folderPath = Path.Combine(uploadsRoot, folderName);
 
             if (!Directory.Exists(folderPath))
                 Directory.CreateDirectory(folderPath);
