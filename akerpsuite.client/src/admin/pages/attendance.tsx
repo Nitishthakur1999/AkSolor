@@ -56,6 +56,15 @@ export default function Attendance() {
     const [dashboardStats, setDashboardStats] = useState(null);
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+    const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+        setToast({ message, type });
+    };
+    useEffect(() => {
+        if (!toast) return;
+        const t = setTimeout(() => setToast(null), 4000);
+        return () => clearTimeout(t);
+    }, [toast]);
     const [sundayHolidayData, setSundayHolidayData] = useState([]);
     const [sundayHolidayPeriod, setSundayHolidayPeriod] = useState({
         month: new Date().getMonth() + 1,
@@ -100,6 +109,14 @@ export default function Attendance() {
     };
 
     const LATE_CUTOFF = "09:05";
+    const toMinutes = (t) => {
+        if (!t) return null;
+        const [h, m] = t.slice(0, 5).split(":").map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) return null;
+        return h * 60 + m;
+    };
+    const LATE_CUTOFF_MIN = toMinutes(LATE_CUTOFF);
+
 
     const isSunday = (dateStr) => {
         if (!dateStr) return false;
@@ -156,7 +173,7 @@ export default function Attendance() {
         adminService.getEmployees().then(res => {
             if (res.Success || res.success) {
                 const all = res.Data || res.data || [];
-                
+
                 const filtered = all.filter(emp => {
                     const empRole = String(emp.role ?? emp.Role ?? emp.roleName ?? emp.RoleName ?? "").toUpperCase();
                     return empRole !== "DIRECTOR" && empRole !== "CMD";
@@ -272,7 +289,7 @@ export default function Attendance() {
 
     const openMarkModal = () => {
         if (!isAdminLevel && loggedInEmpId <= 0) {
-            alert("Your account is not linked to an employee record, so you can't mark attendance. Please contact HR/Admin.");
+            showToast("Your account is not linked to an employee record, so you can't mark attendance. Please contact HR/Admin.", "error");
             return;
         }
         setMarkForm({
@@ -314,7 +331,7 @@ export default function Attendance() {
 
     const openRegModal = () => {
         if (!isAdminLevel && loggedInEmpId <= 0) {
-            alert("Your account is not linked to an employee record, so you can't submit a request. Please contact HR/Admin.");
+            showToast("Your account is not linked to an employee record, so you can't submit a request. Please contact HR/Admin.", "error");
             return;
         }
         setRegForm(prev => ({
@@ -378,6 +395,24 @@ export default function Attendance() {
 
     type LocationResult = { latitude: number | null; longitude: number | null; address: string | null };
 
+    // IP-based fallback — jab GPS bilkul fail ho jaye (no signal / no permission)
+    const getIpBasedLocation = async (): Promise<LocationResult> => {
+        try {
+            const res = await fetch("https://ipapi.co/json/");
+            const data = await res.json();
+            if (data?.latitude && data?.longitude) {
+                return {
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    address: `${data.city || ""}, ${data.region || ""} (approx, IP-based)`.trim(),
+                };
+            }
+        } catch (err) {
+            console.warn("IP-based location fallback failed:", err);
+        }
+        return { latitude: null, longitude: null, address: "Location unavailable" };
+    };
+
     const captureLocation = (
         setStatus: (s: string) => void,
         setLoc: (l: LocationResult) => void
@@ -385,25 +420,40 @@ export default function Attendance() {
         setStatus("fetching");
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
-                setStatus("denied");
-                resolve({ latitude: null, longitude: null, address: null });
+                getIpBasedLocation().then((loc) => {
+                    setLoc(loc);
+                    setStatus(loc.latitude ? "captured" : "denied");
+                    resolve(loc);
+                });
                 return;
             }
+
+            const onSuccess = async (pos: GeolocationPosition) => {
+                const { latitude, longitude } = pos.coords;
+                const address = await reverseGeocode(latitude, longitude);
+                const loc = { latitude, longitude, address };
+                setLoc(loc);
+                setStatus("captured");
+                resolve(loc);
+            };
+
             navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    const { latitude, longitude } = pos.coords;
-                    const address = await reverseGeocode(latitude, longitude);
-                    const loc = { latitude, longitude, address };
-                    setLoc(loc);
-                    setStatus("captured");
-                    resolve(loc);
-                },
+                onSuccess,
                 (err) => {
-                    console.warn("Location access denied or failed:", err);
-                    setStatus("denied");
-                    resolve({ latitude: null, longitude: null, address: null });
+                    console.warn("High-accuracy location failed, retrying low-accuracy:", err.message);
+                    navigator.geolocation.getCurrentPosition(
+                        onSuccess,
+                        async (err2) => {
+                            console.warn("GPS fully failed, falling back to IP location:", err2.message);
+                            const loc = await getIpBasedLocation();
+                            setLoc(loc);
+                            setStatus(loc.latitude ? "captured" : "denied");
+                            resolve(loc);
+                        },
+                        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+                    );
                 },
-                { enableHighAccuracy: true, timeout: 8000 }
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
             );
         });
     };
@@ -449,25 +499,25 @@ export default function Attendance() {
         e.preventDefault();
 
         if (punchMode === "done") {
-            alert("Attendance has already been marked for today (both Punch In and Punch Out are completed).");
+            showToast("Attendance has already been marked for today (both Punch In and Punch Out are completed).", "info");
             return;
         }
 
         const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
         if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
-            alert("Please tap Punch In before submitting.");
+            showToast("Please tap Punch In before submitting.", "error");
             return;
         }
         if (punchMode === "out" && !markForm.checkOut) {
-            alert("Please tap Punch Out before submitting.");
+            showToast("Please tap Punch Out before submitting.", "error");
             return;
         }
         if (markForm.checkIn && markForm.checkOut && markForm.checkOut < markForm.checkIn) {
-            alert("Punch-out time can't be before punch-in time.");
+            showToast("Punch-out time can't be before punch-in time.", "error");
             return;
         }
 
-        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && markForm.checkIn > LATE_CUTOFF;
+        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && toMinutes(markForm.checkIn) > LATE_CUTOFF_MIN;
 
         setActionLoading(true);
         try {
@@ -523,14 +573,14 @@ export default function Attendance() {
                 loadAttendanceData();
 
                 if (isLatePunchIn) {
-                    alert(`Aapka Punch In ${markForm.checkIn} baje hua hai (cutoff ${LATE_CUTOFF} ke baad). Attendance Present mark ho gayi hai, lekin yeh late-arrival approval ke liye Admin/HR ke paas pending rahegi.`);
+                    showToast(`Aapka Punch In ${markForm.checkIn} baje hua hai (cutoff ${LATE_CUTOFF} ke baad). Attendance Present mark ho gayi hai, lekin yeh late-arrival approval ke liye Admin/HR ke paas pending rahegi.`, "info");
                 }
             } else {
-                alert(res.Message || "Failed to mark attendance.");
+                showToast(res.Message || "Failed to mark attendance.", "error");
             }
         } catch (err) {
             console.error("Mark attendance error:", err);
-            alert(err?.message || "Something went wrong while marking attendance.");
+            showToast(err?.message || "Something went wrong while marking attendance.", "error");
         } finally {
             setActionLoading(false);
         }
@@ -538,7 +588,7 @@ export default function Attendance() {
 
     const handleRegAction = async (requestId, statusAction) => {
         if (!isAdminLevel) {
-            alert("You don't have permission to approve or reject regularization requests.");
+            showToast("You don't have permission to approve or reject regularization requests.", "error");
             return;
         }
         try {
@@ -549,17 +599,17 @@ export default function Attendance() {
                     prev.map(req => req.requestId === requestId ? { ...req, status: statusAction } : req)
                 );
             } else {
-                alert(res.Message || "Failed to update request.");
+                showToast(res.Message || "Failed to update request.", "error");
             }
         } catch (err) {
             console.error("Reg action error:", err);
-            alert(err?.message || "Something went wrong while updating the request.");
+            showToast(err?.message || "Something went wrong while updating the request.", "error");
         }
     };
 
     const handleLateApprovalAction = async (requestId, statusAction) => {
         if (!isAdminLevel) {
-            alert("You don't have permission to approve or reject attendance.");
+            showToast("You don't have permission to approve or reject attendance.", "error");
             return;
         }
         try {
@@ -568,11 +618,11 @@ export default function Attendance() {
             if (res.Success || res.success) {
                 loadAttendanceData();
             } else {
-                alert(res.Message || "Failed to update approval.");
+                showToast(res.Message || "Failed to update approval.", "error");
             }
         } catch (err) {
             console.error("Late approval action error:", err);
-            alert(err?.message || "Something went wrong while updating approval.");
+            showToast(err?.message || "Something went wrong while updating approval.", "error");
         }
     };
 
@@ -594,11 +644,11 @@ export default function Attendance() {
                 setActiveTab("requests");
                 loadAttendanceData();
             } else {
-                alert(res.Message || "Failed to submit regularization request.");
+                showToast(res.Message || "Failed to submit regularization request.", "error");
             }
         } catch (err) {
             console.error("Create reg request error:", err);
-            alert(err?.message || "Something went wrong while submitting the request.");
+            showToast(err?.message || "Something went wrong while submitting the request.", "error");
         } finally {
             setActionLoading(false);
         }
@@ -618,11 +668,11 @@ export default function Attendance() {
                 setShowSummaryModal(false);
                 setActiveTab("summaries");
             } else {
-                alert(res.Message || "Failed to generate summary.");
+                showToast(res.Message || "Failed to generate summary.", "error");
             }
         } catch (err) {
             console.error("Generate summary error:", err);
-            alert(err?.message || "Something went wrong while generating the summary.");
+            showToast(err?.message || "Something went wrong while generating the summary.", "error");
         } finally {
             setActionLoading(false);
         }
@@ -631,7 +681,7 @@ export default function Attendance() {
     const handleMarkSundayDuty = async (e) => {
         e.preventDefault();
         if (!dutyForm.empId) {
-            alert("Please select an employee.");
+            showToast("Please select an employee.", "error");
             return;
         }
         setActionLoading(true);
@@ -650,11 +700,11 @@ export default function Attendance() {
                 setDutyForm({ empId: "", attDate: getTodayDateStr(), status: "Present", location: "", countsAsDuty: true, remarks: "" });
                 loadAttendanceData();
             } else {
-                alert(res.Message || "Failed to save Sunday/Holiday duty status.");
+                showToast(res.Message || "Failed to save Sunday/Holiday duty status.", "error");
             }
         } catch (err) {
             console.error("Mark Sunday duty error:", err);
-            alert(err?.message || "Something went wrong while saving duty status.");
+            showToast(err?.message || "Something went wrong while saving duty status.", "error");
         } finally {
             setActionLoading(false);
         }
@@ -669,7 +719,7 @@ export default function Attendance() {
             );
         } catch (err) {
             console.error("Download Sunday/Holiday PDF error:", err);
-            alert(err?.message || "Failed to download PDF.");
+            showToast(err?.message || "Failed to download PDF.", "error");
         } finally {
             setPdfDownloading(false);
         }
@@ -729,7 +779,7 @@ export default function Attendance() {
     );
 
     const isDashboardAbsentFilter = dashboardFilter?.status === "Absent";
-    const isDashboardLateFilter = dashboardFilter?.label === "Late Arrivals"; 
+    const isDashboardLateFilter = dashboardFilter?.label === "Late Arrivals";
 
     const todayStr = new Date().toISOString().split("T")[0];
     const lateArrivalsCount = attendanceLogs.filter(
@@ -878,6 +928,33 @@ export default function Attendance() {
     return (
         <div className="space-y-5 pb-10 font-sans">
 
+            {/* ── Toast Notification ── */}
+            {toast && (
+                <div className="fixed top-6 right-6 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div
+                        className={`flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl border max-w-sm ${toast.type === "success"
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                                : toast.type === "error"
+                                    ? "bg-rose-50 border-rose-200 text-rose-800"
+                                    : "bg-slate-800 border-slate-700 text-white"
+                            }`}
+                    >
+                        <i
+                            className={`fa-solid mt-0.5 ${toast.type === "success"
+                                    ? "fa-circle-check text-emerald-500"
+                                    : toast.type === "error"
+                                        ? "fa-circle-exclamation text-rose-500"
+                                        : "fa-circle-info text-amber-400"
+                                }`}
+                        />
+                        <p className="text-sm font-semibold flex-1">{toast.message}</p>
+                        <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100">
+                            <i className="fa-solid fa-xmark text-xs" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ── Compact Header Section ── */}
             <div className="bg-[#0b2532] rounded-2xl px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
                 <div className="flex items-center gap-3.5">
@@ -1002,15 +1079,15 @@ export default function Attendance() {
                     </div>
                 ) : activeTab === "dashboard" && isCMD ? (
                     <div className="p-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">      <button
-                                type="button"
-                                onClick={() => openDashboardFilter("Total Employees", "")}
-                                className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
-                            >
-                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
-                                <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
-                            </button>
+                        <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">      <button
+                            type="button"
+                            onClick={() => openDashboardFilter("Total Employees", "")}
+                            className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
+                        >
+                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
+                            <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
+                        </button>
                             <button
                                 type="button"
                                 onClick={() => openDashboardFilter("Present Today", "Present")}
@@ -1027,23 +1104,23 @@ export default function Attendance() {
                                 <p className="text-[11px] text-rose-600 font-bold uppercase tracking-wider mb-1">Absent Today</p>
                                 <p className="text-3xl font-black text-rose-700">{dashboardStats?.absentToday || 0}</p>
                             </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openDashboardFilter("Late Arrivals", "Present")}
-                                    className={`p-5 rounded-2xl border bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Late Arrivals" ? "border-amber-400 ring-2 ring-amber-200" : "border-amber-100"}`}
-                                >
-                                    <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
-                                    <p className="text-3xl font-black text-amber-700">{lateArrivalsCount}</p>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openDashboardFilter("On Holiday", "Holiday")}
-                                    className={`p-5 rounded-2xl border bg-violet-50/50 shadow-sm hover:shadow-md hover:bg-violet-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "On Holiday" ? "border-violet-400 ring-2 ring-violet-200" : "border-violet-100"}`}
-                                >
-                                    <p className="text-[11px] text-violet-600 font-bold uppercase tracking-wider mb-1">On Holiday</p>
-                                    <p className="text-3xl font-black text-violet-700">{onHolidayCount}</p>
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => openDashboardFilter("Late Arrivals", "Present")}
+                                className={`p-5 rounded-2xl border bg-amber-50/50 shadow-sm hover:shadow-md hover:bg-amber-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "Late Arrivals" ? "border-amber-400 ring-2 ring-amber-200" : "border-amber-100"}`}
+                            >
+                                <p className="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">Late Arrivals</p>
+                                <p className="text-3xl font-black text-amber-700">{lateArrivalsCount}</p>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => openDashboardFilter("On Holiday", "Holiday")}
+                                className={`p-5 rounded-2xl border bg-violet-50/50 shadow-sm hover:shadow-md hover:bg-violet-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "On Holiday" ? "border-violet-400 ring-2 ring-violet-200" : "border-violet-100"}`}
+                            >
+                                <p className="text-[11px] text-violet-600 font-bold uppercase tracking-wider mb-1">On Holiday</p>
+                                <p className="text-3xl font-black text-violet-700">{onHolidayCount}</p>
+                            </button>
+                        </div>
 
                         {/* 🆕 Card click ka result — same page, neeche inline list */}
                         {dashboardFilter ? (
@@ -1358,7 +1435,7 @@ export default function Attendance() {
                                     <th className="px-6 py-4 text-center text-emerald-600">Present</th>
                                     <th className="px-6 py-4 text-center text-rose-600">Absent</th>
                                     <th className="px-6 py-4 text-center text-amber-600">Late Marks</th>
-                                    <th className="px-6 py-4 text-center">Overtime</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
@@ -1376,7 +1453,7 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-center font-mono font-bold text-emerald-600 bg-emerald-50/30">{sum.presentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-rose-600 bg-rose-50/30">{sum.absentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-amber-600 bg-amber-50/30">{sum.lateMarks}</td>
-                                        <td className="px-6 py-4 text-center font-mono font-semibold text-slate-600">{sum.overtimeHours} hrs</td>
+                                       
                                     </tr>
                                 ))}
                             </tbody>

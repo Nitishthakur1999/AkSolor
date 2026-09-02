@@ -118,7 +118,25 @@ export default function MyLeaves() {
         fromDate: "",
         toDate: "",
         reason: "",
+        halfDay: false,
     });
+
+    // ── Edit Leave modal state ──
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingRequest, setEditingRequest] = useState<any>(null);
+    const [editSubmitting, setEditSubmitting] = useState(false);
+    const [editError, setEditError] = useState("");
+    const [editForm, setEditForm] = useState({
+        leaveTypeId: "",
+        fromDate: "",
+        toDate: "",
+        reason: "",
+        halfDay: false,
+    });
+
+    // ── Cancel Leave state ──
+    const [cancellingId, setCancellingId] = useState<number | string | null>(null);
+    const [confirmCancelId, setConfirmCancelId] = useState<number | string | null>(null);
 
     const activeLeaveTypes = leaveTypes.filter(isLeaveTypeActive);
 
@@ -184,17 +202,24 @@ export default function MyLeaves() {
         e.preventDefault();
         setApplyError("");
 
-        if (!form.leaveTypeId || !form.fromDate || !form.toDate) {
+        if (!form.leaveTypeId || !form.fromDate || (!form.halfDay && !form.toDate)) {
             setApplyError("Leave type, from date and to date are required.");
             return;
         }
 
-        const msPerDay = 1000 * 60 * 60 * 24;
-        const from = new Date(form.fromDate);
-        const to = new Date(form.toDate);
-        const totalDays = Math.round((to.getTime() - from.getTime()) / msPerDay) + 1;
+        const effectiveToDate = form.halfDay ? form.fromDate : form.toDate;
 
-        if (totalDays < 1) {
+        let totalDays: number;
+        if (form.halfDay) {
+            totalDays = 0.5;
+        } else {
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const from = new Date(form.fromDate);
+            const to = new Date(form.toDate);
+            totalDays = Math.round((to.getTime() - from.getTime()) / msPerDay) + 1;
+        }
+
+        if (totalDays < 0.5) {
             setApplyError("To date must be on or after the from date.");
             return;
         }
@@ -204,7 +229,7 @@ export default function MyLeaves() {
             const payload = {
                 leaveTypeId: Number(form.leaveTypeId),
                 fromDate: form.fromDate,
-                toDate: form.toDate,
+                toDate: effectiveToDate,
                 totalDays,
                 reason: form.reason,
             };
@@ -216,7 +241,7 @@ export default function MyLeaves() {
                 setRequests((prev) => [applied, ...prev]);
 
                 setShowApplyModal(false);
-                setForm({ leaveTypeId: "", fromDate: "", toDate: "", reason: "" });
+                setForm({ leaveTypeId: "", fromDate: "", toDate: "", reason: "", halfDay: false });
                 setApplySuccess(`Leave request for ${applied.leaveName} submitted successfully.`);
                 setTimeout(() => setApplySuccess(""), 3000);
 
@@ -233,11 +258,121 @@ export default function MyLeaves() {
     };
 
     const previewDays = (() => {
+        if (form.halfDay) return form.fromDate ? 0.5 : null;
         if (!form.fromDate || !form.toDate) return null;
         const msPerDay = 1000 * 60 * 60 * 24;
         const n = Math.round((new Date(form.toDate).getTime() - new Date(form.fromDate).getTime()) / msPerDay) + 1;
         return n >= 1 ? n : null;
     })();
+
+    // ── Edit Leave: open modal pre-filled with the selected request ──
+    const openEditModal = (req: any) => {
+        setEditingRequest(req);
+        setEditError("");
+        const isHalfDay = Number(req.totalDays) === 0.5;
+        setEditForm({
+            leaveTypeId: String(req.leaveTypeId ?? ""),
+            fromDate: req.fromDate ? String(req.fromDate).slice(0, 10) : "",
+            toDate: isHalfDay
+                ? (req.fromDate ? String(req.fromDate).slice(0, 10) : "")
+                : (req.toDate ? String(req.toDate).slice(0, 10) : ""),
+            reason: req.reason || "",
+            halfDay: isHalfDay,
+        });
+        setShowEditModal(true);
+    };
+
+    const editPreviewDays = (() => {
+        if (editForm.halfDay) return editForm.fromDate ? 0.5 : null;
+        if (!editForm.fromDate || !editForm.toDate) return null;
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const n = Math.round((new Date(editForm.toDate).getTime() - new Date(editForm.fromDate).getTime()) / msPerDay) + 1;
+        return n >= 1 ? n : null;
+    })();
+
+    const handleUpdateLeave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEditError("");
+
+        if (!editingRequest) return;
+
+        if (!editForm.leaveTypeId || !editForm.fromDate || (!editForm.halfDay && !editForm.toDate)) {
+            setEditError("Leave type, from date and to date are required.");
+            return;
+        }
+
+        const effectiveToDate = editForm.halfDay ? editForm.fromDate : editForm.toDate;
+
+        let totalDays: number;
+        if (editForm.halfDay) {
+            totalDays = 0.5;
+        } else {
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const from = new Date(editForm.fromDate);
+            const to = new Date(editForm.toDate);
+            totalDays = Math.round((to.getTime() - from.getTime()) / msPerDay) + 1;
+        }
+
+        if (totalDays < 0.5) {
+            setEditError("To date must be on or after the from date.");
+            return;
+        }
+
+        setEditSubmitting(true);
+        try {
+            const payload = {
+                leaveTypeId: Number(editForm.leaveTypeId),
+                fromDate: editForm.fromDate,
+                toDate: effectiveToDate,
+                totalDays,
+                reason: editForm.reason,
+            };
+
+            const res = await adminService.updateLeaveRequest(editingRequest.leaveId, payload);
+
+
+            if (res.Success || res.success) {
+                const updated = res.Data || res.data || { ...editingRequest, ...payload };
+                setRequests((prev) => prev.map((r: any) => (r.leaveId === editingRequest.leaveId ? updated : r)));
+
+                setShowEditModal(false);
+                setEditingRequest(null);
+                setApplySuccess(`Leave request for ${updated.leaveName || editingRequest.leaveName} updated successfully.`);
+                setTimeout(() => setApplySuccess(""), 3000);
+
+                fetchLeaveBalance();
+            } else {
+                setEditError(res.Message || res.message || "Failed to update leave request.");
+            }
+        } catch (error: any) {
+            console.error("Error updating leave:", error);
+            setEditError(error.message || "Something went wrong while updating your leave request.");
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
+    // ── Cancel Leave ──
+    const handleCancelLeave = async (req: any) => {
+        setCancellingId(req.leaveId);
+        try {
+            const res = await adminService.cancelLeaveRequest(req.leaveId);
+            if (res.Success || res.success) {
+                setApplySuccess(`Leave request for ${req.leaveName} cancelled.`);
+                setTimeout(() => setApplySuccess(""), 3000);
+
+                // refetch instead of trusting local filter — keeps UI in sync with server
+                await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
+            } else {
+                console.error(res.Message || res.message || "Failed to cancel leave request.");
+            }
+        } catch (error) {
+            console.error("Error cancelling leave:", error);
+        } finally {
+            setCancellingId(null);
+            setConfirmCancelId(null);
+        }
+    };
 
     return (
         <div className="space-y-6 font-sans relative z-0 pb-10">
@@ -367,8 +502,8 @@ export default function MyLeaves() {
                                     key={s || "all"}
                                     onClick={() => setFilterStatus(s)}
                                     className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${filterStatus === s
-                                            ? "bg-amber-500 text-white shadow-md"
-                                            : "text-slate-500 hover:bg-slate-50"
+                                        ? "bg-amber-500 text-white shadow-md"
+                                        : "text-slate-500 hover:bg-slate-50"
                                         }`}
                                 >
                                     {s || "All"}
@@ -387,12 +522,13 @@ export default function MyLeaves() {
                                 <th className="px-6 py-4">Days</th>
                                 <th className="px-6 py-4">Reason</th>
                                 <th className="px-6 py-4 text-right">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                             {requestsLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="py-20 text-center">
+                                    <td colSpan={6} className="py-20 text-center">
                                         <div className="flex flex-col items-center justify-center gap-4">
                                             <div className="relative w-10 h-10 flex items-center justify-center">
                                                 <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
@@ -404,7 +540,7 @@ export default function MyLeaves() {
                                 </tr>
                             ) : requests.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="py-20 text-center">
+                                    <td colSpan={6} className="py-20 text-center">
                                         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 text-2xl shadow-sm mb-4 border border-slate-100">
                                             <i className="fa-solid fa-inbox" />
                                         </div>
@@ -428,6 +564,47 @@ export default function MyLeaves() {
                                                 <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[req.status] || "bg-slate-400"}`} />
                                                 {req.status}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {req.status === "Pending" ? (
+                                                confirmCancelId === req.leaveId ? (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <span className="text-[11px] font-bold text-slate-500">Cancel this?</span>
+                                                        <button
+                                                            onClick={() => handleCancelLeave(req)}
+                                                            disabled={cancellingId === req.leaveId}
+                                                            className="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-bold hover:bg-rose-600 disabled:opacity-60 transition-colors"
+                                                        >
+                                                            {cancellingId === req.leaveId ? "..." : "Yes"}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setConfirmCancelId(null)}
+                                                            className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200 transition-colors"
+                                                        >
+                                                            No
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => openEditModal(req)}
+                                                            title="Edit"
+                                                            className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                                                        >
+                                                            <i className="fa-solid fa-pen text-xs" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setConfirmCancelId(req.leaveId)}
+                                                            title="Cancel"
+                                                            className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                                        >
+                                                            <i className="fa-solid fa-trash-can text-xs" />
+                                                        </button>
+                                                    </div>
+                                                )
+                                            ) : (
+                                                <span className="text-[11px] text-slate-300 font-medium flex justify-end">—</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -484,7 +661,7 @@ export default function MyLeaves() {
                                         type="date"
                                         required
                                         value={form.fromDate}
-                                        onChange={(e) => setForm({ ...form, fromDate: e.target.value })}
+                                        onChange={(e) => setForm({ ...form, fromDate: e.target.value, toDate: form.halfDay ? e.target.value : form.toDate })}
                                         className={inputClass}
                                     />
                                 </div>
@@ -492,13 +669,24 @@ export default function MyLeaves() {
                                     <label className={labelClass}>To Date *</label>
                                     <input
                                         type="date"
-                                        required
-                                        value={form.toDate}
+                                        required={!form.halfDay}
+                                        disabled={form.halfDay}
+                                        value={form.halfDay ? form.fromDate : form.toDate}
                                         onChange={(e) => setForm({ ...form, toDate: e.target.value })}
-                                        className={inputClass}
+                                        className={`${inputClass} ${form.halfDay ? "opacity-50 cursor-not-allowed" : ""}`}
                                     />
                                 </div>
                             </div>
+
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none -mt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={form.halfDay}
+                                    onChange={(e) => setForm({ ...form, halfDay: e.target.checked, toDate: e.target.checked ? form.fromDate : form.toDate })}
+                                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer"
+                                />
+                                <span className="text-xs font-bold text-slate-600">Half Day</span>
+                            </label>
 
                             {previewDays && (
                                 <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 flex items-center gap-2">
@@ -542,6 +730,126 @@ export default function MyLeaves() {
                                 >
                                     {submitting ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-paper-plane" />}
                                     {submitting ? "Submitting..." : "Submit Request"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Edit Leave Modal ── */}
+            {showEditModal && editingRequest && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md relative animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i className="fa-solid fa-pen text-amber-500" /> Edit Leave Request
+                            </h3>
+                            <button
+                                onClick={() => { setShowEditModal(false); setEditingRequest(null); }}
+                                className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                            >
+                                <i className="fa-solid fa-xmark text-lg" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateLeave} className="space-y-5">
+                            <div>
+                                <label className={labelClass}>Leave Type *</label>
+                                <select
+                                    value={editForm.leaveTypeId}
+                                    onChange={(e) => setEditForm({ ...editForm, leaveTypeId: e.target.value })}
+                                    className={`${inputClass} cursor-pointer appearance-none`}
+                                    required
+                                >
+                                    <option value="" disabled>-- Select leave type --</option>
+                                    {activeLeaveTypes.map((t: any) => {
+                                        const bal: any = balances.find((b: any) => b.leaveTypeId === t.leaveTypeId);
+                                        return (
+                                            <option key={t.leaveTypeId} value={t.leaveTypeId}>
+                                                {t.leaveName}{bal ? ` (${bal.balanceLeaves} left)` : " (balance not set)"}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelClass}>From Date *</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={editForm.fromDate}
+                                        onChange={(e) => setEditForm({ ...editForm, fromDate: e.target.value, toDate: editForm.halfDay ? e.target.value : editForm.toDate })}
+                                        className={inputClass}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>To Date *</label>
+                                    <input
+                                        type="date"
+                                        required={!editForm.halfDay}
+                                        disabled={editForm.halfDay}
+                                        value={editForm.halfDay ? editForm.fromDate : editForm.toDate}
+                                        onChange={(e) => setEditForm({ ...editForm, toDate: e.target.value })}
+                                        className={`${inputClass} ${editForm.halfDay ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    />
+                                </div>
+                            </div>
+
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none -mt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={editForm.halfDay}
+                                    onChange={(e) => setEditForm({ ...editForm, halfDay: e.target.checked, toDate: e.target.checked ? editForm.fromDate : editForm.toDate })}
+                                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer"
+                                />
+                                <span className="text-xs font-bold text-slate-600">Half Day</span>
+                            </label>
+
+                            {editPreviewDays && (
+                                <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 flex items-center gap-2">
+                                    <i className="fa-solid fa-circle-info text-amber-500" />
+                                    <p className="text-xs font-bold text-amber-700">
+                                        This request covers {editPreviewDays} day{editPreviewDays > 1 ? "s" : ""}.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className={labelClass}>Reason *</label>
+                                <textarea
+                                    value={editForm.reason}
+                                    onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
+                                    rows={3}
+                                    required
+                                    className={`${inputClass} resize-y`}
+                                    placeholder="Brief reason for your leave request..."
+                                />
+                            </div>
+
+                            {editError && (
+                                <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
+                                    <i className="fa-solid fa-triangle-exclamation" /> {editError}
+                                </div>
+                            )}
+
+                            <div className="pt-6 flex justify-end gap-3 border-t border-slate-100 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowEditModal(false); setEditingRequest(null); }}
+                                    className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editSubmitting}
+                                    className="px-6 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-600/20 hover:bg-amber-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2"
+                                >
+                                    {editSubmitting ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-check" />}
+                                    {editSubmitting ? "Updating..." : "Update Request"}
                                 </button>
                             </div>
                         </form>

@@ -1,6 +1,7 @@
 ﻿using AkerpSuite.Server.Constants;
 using AkerpSuite.Server.DTOs;
 using AkerpSuite.Server.DTOs.Hr;
+using AkerpSuite.Server.DTOs.Role;
 using AkerpSuite.Server.Helpers;
 using AkerpSuite.Server.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -208,6 +209,27 @@ namespace AkerpSuite.Server.Controllers
             var result = await _service.ApplyLeaveAsync(empId, request);
 
             return Ok(ApiResponseDto<SelfLeaveResponseDto>.Ok(result, "Leave request submitted successfully."));
+        }
+
+        [HttpPut("leave/requests/{leaveId}")]
+        public async Task<IActionResult> UpdateMyLeaveRequest(int leaveId, [FromBody] LeaveRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
+
+            var empId = User.GetEmpId();
+            var result = await _adminService.UpdateLeaveRequestAsync(leaveId, empId, request);
+
+            return Ok(ApiResponseDto<LeaveRequestResponseDto>.Ok(result, "Leave request updated successfully."));
+        }
+
+        [HttpPatch("leave/requests/{leaveId}/cancel")]
+        public async Task<IActionResult> CancelMyLeaveRequest(int leaveId)
+        {
+            var empId = User.GetEmpId();
+            var result = await _adminService.CancelLeaveRequestAsync(leaveId, empId);
+
+            return Ok(ApiResponseDto<bool>.Ok(result, "Leave request cancelled successfully."));
         }
 
         // Attendance

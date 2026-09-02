@@ -812,6 +812,57 @@ namespace AkerpSuite.Server.Services
             return await _repository.DeleteLeaveTypeAsync(id);
         }
 
+        public async Task<LeaveRequestResponseDto> UpdateLeaveRequestAsync(int leaveId, int empId, LeaveRequestDto request)
+        {
+            var leave = await _repository.GetLeaveRequestByIdAsync(leaveId);
+            if (leave == null)
+                throw new InvalidOperationException("Leave request not found.");
+
+            if (leave.EmpId != empId)
+                throw new InvalidOperationException("You are not authorized to edit this leave request.");
+
+            if (leave.Status != "Pending")
+                throw new InvalidOperationException($"Only pending leave requests can be edited. This request is already {leave.Status}.");
+
+            if (request.FromDate.Date > request.ToDate.Date)
+                throw new InvalidOperationException("From date cannot be after To date.");
+
+            if (request.FromDate.Date < DateTime.Today)
+                throw new InvalidOperationException("Cannot set leave for past dates.");
+
+            if (request.TotalDays <= 0)
+                throw new InvalidOperationException("Total days must be greater than 0.");
+
+            if (string.IsNullOrWhiteSpace(request.Reason))
+                throw new InvalidOperationException("Reason is required.");
+
+            var updated = await _repository.UpdateLeaveRequestAsync(leaveId, request);
+            if (!updated)
+                throw new InvalidOperationException("Failed to update leave request.");
+
+            var result = await _repository.GetLeaveRequestByIdAsync(leaveId);
+            return result ?? throw new InvalidOperationException("Leave request updated but could not be retrieved.");
+        }
+
+        public async Task<bool> CancelLeaveRequestAsync(int leaveId, int empId)
+        {
+            var leave = await _repository.GetLeaveRequestByIdAsync(leaveId);
+            if (leave == null)
+                throw new InvalidOperationException("Leave request not found.");
+
+            if (leave.EmpId != empId)
+                throw new InvalidOperationException("You are not authorized to cancel this leave request.");
+
+            if (leave.Status != "Pending")
+                throw new InvalidOperationException($"Only pending leave requests can be cancelled. This request is already {leave.Status}.");
+
+            var cancelled = await _repository.CancelLeaveRequestAsync(leaveId);
+            if (!cancelled)
+                throw new InvalidOperationException("Failed to cancel leave request.");
+
+            return true;
+        }
+
         // Leave Balance
 
         public async Task<bool> InitializeBalanceAsync(int empId, int year)

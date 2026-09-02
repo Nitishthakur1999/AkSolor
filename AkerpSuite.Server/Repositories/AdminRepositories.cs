@@ -848,11 +848,6 @@ namespace AkerpSuite.Server.Repositories
             "sp_attendance_summary_generate_bulk", parameters,
             commandType: CommandType.StoredProcedure,
             commandTimeout: 120) ?? string.Empty;
-
-            //return await connection.ExecuteScalarAsync<string>(
-            //    "sp_attendance_summary_generate_bulk", parameters,
-            //    commandType: CommandType.StoredProcedure,
-            //    commandTimeout: 120);
         }
 
         public async Task<IEnumerable<AttendanceSummaryResponseDto>> GetSummaryAsync(
@@ -932,6 +927,35 @@ namespace AkerpSuite.Server.Repositories
                 commandType: System.Data.CommandType.StoredProcedure);
             return rows > 0;
         }
+
+        public async Task<bool> UpdateLeaveRequestAsync(int leaveId, LeaveRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QueryFirstOrDefaultAsync<int>(
+                "sp_leave_request_update",
+                new
+                {
+                    p_leave_id = leaveId,
+                    p_leave_type_id = request.LeaveTypeId,
+                    p_from_date = request.FromDate.Date,
+                    p_to_date = request.ToDate.Date,
+                    p_total_days = request.TotalDays,
+                    p_reason = request.Reason
+                },
+                commandType: System.Data.CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> CancelLeaveRequestAsync(int leaveId)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QueryFirstOrDefaultAsync<int>(
+                "sp_leave_request_cancel",
+                new { p_leave_id = leaveId },
+                commandType: System.Data.CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
 
         //  Leave Balance
 
