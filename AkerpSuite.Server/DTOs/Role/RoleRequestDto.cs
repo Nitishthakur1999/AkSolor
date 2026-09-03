@@ -230,6 +230,8 @@ namespace AkerpSuite.Server.DTOs.Role
         public string Status { get; set; } = string.Empty;
         public int ApprovedBy { get; set; }
         public string? Remarks { get; set; }
+        public int? ForwardedTo { get; set; }
+        public string? ForwardedToRole { get; set; }
     }
 
     public class LeaveBalanceInitRequestDto

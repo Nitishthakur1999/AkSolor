@@ -102,7 +102,7 @@ namespace AkerpSuite.Server.Services
         Task<LeaveRequestResponseDto> CreateLeaveRequestAsync(LeaveRequestDto request);
         Task<IEnumerable<LeaveRequestResponseDto>> GetAllLeaveRequestsAsync(int? empId, string? status, int? month, int? year);
         Task<LeaveRequestResponseDto?> GetLeaveRequestByIdAsync(int leaveId);
-        Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request);
+        Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request, int roleId);
         Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year);
 
         #endregion

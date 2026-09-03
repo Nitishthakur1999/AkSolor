@@ -429,7 +429,8 @@ export default function Attendance() {
             }
 
             const onSuccess = async (pos: GeolocationPosition) => {
-                const { latitude, longitude } = pos.coords;
+                const { latitude, longitude, accuracy } = pos.coords;
+                console.log(`Location captured with accuracy: ${accuracy}m`);
                 const address = await reverseGeocode(latitude, longitude);
                 const loc = { latitude, longitude, address };
                 setLoc(loc);
@@ -437,23 +438,38 @@ export default function Attendance() {
                 resolve(loc);
             };
 
+            // 🆕 Attempt 1: High accuracy GPS — timeout badhaya (12s → 25s), GPS ko
+            // satellite lock lene ke liye zyada waqt chahiye hota hai, especially indoors.
             navigator.geolocation.getCurrentPosition(
                 onSuccess,
                 (err) => {
-                    console.warn("High-accuracy location failed, retrying low-accuracy:", err.message);
+                    console.warn("High-accuracy attempt 1 failed, retrying high-accuracy once more:", err.message);
+
+                    // 🆕 Attempt 2: Low-accuracy pe seedha girne se pehle high-accuracy
+                    // ko ek aur mauka do — GPS chip warm-up ke baad zyada accurate lock deta hai.
                     navigator.geolocation.getCurrentPosition(
                         onSuccess,
-                        async (err2) => {
-                            console.warn("GPS fully failed, falling back to IP location:", err2.message);
-                            const loc = await getIpBasedLocation();
-                            setLoc(loc);
-                            setStatus(loc.latitude ? "captured" : "denied");
-                            resolve(loc);
+                        (err2) => {
+                            console.warn("High-accuracy attempt 2 failed, trying low-accuracy (network-based):", err2.message);
+
+                            // 🆕 Attempt 3: Ab hi low-accuracy try karo, aur maximumAge hata diya
+                            // (pehle 60000ms tha — 60 sec purani cached/stale location accept ho jaati thi)
+                            navigator.geolocation.getCurrentPosition(
+                                onSuccess,
+                                async (err3) => {
+                                    console.warn("GPS fully failed, falling back to IP location:", err3.message);
+                                    const loc = await getIpBasedLocation();
+                                    setLoc(loc);
+                                    setStatus(loc.latitude ? "captured" : "denied");
+                                    resolve(loc);
+                                },
+                                { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+                            );
                         },
-                        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+                        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
                     );
                 },
-                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
             );
         });
     };
@@ -496,95 +512,85 @@ export default function Attendance() {
     };
 
     const handleMarkAttendance = async (e) => {
-        e.preventDefault();
-
-        if (punchMode === "done") {
-            showToast("Attendance has already been marked for today (both Punch In and Punch Out are completed).", "info");
-            return;
+    e.preventDefault();
+ 
+    if (punchMode === "done") {
+        showToast("Attendance has already been marked for today (both Punch In and Punch Out are completed).", "info");
+        return;
+    }
+ 
+    const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
+    if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
+        showToast("Please tap Punch In before submitting.", "error");
+        return;
+    }
+    if (punchMode === "out" && !markForm.checkOut) {
+        showToast("Please tap Punch Out before submitting.", "error");
+        return;
+    }
+    if (markForm.checkIn && markForm.checkOut && markForm.checkOut < markForm.checkIn) {
+        showToast("Punch-out time can't be before punch-in time.", "error");
+        return;
+    }
+ 
+    const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && toMinutes(markForm.checkIn) > LATE_CUTOFF_MIN;
+ 
+    setActionLoading(true);
+    try {
+        const { latitude, longitude, address } =
+            locationStatus === "captured" ? capturedLocation : await getCurrentLocation();
+ 
+        const checkInForPayload = punchMode === "out"
+            ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
+            : (markForm.checkIn ? markForm.checkIn + ":00" : null);
+ 
+        const checkoutLoc = markForm.checkOut
+            ? (checkoutLocationStatus === "captured" ? checkoutCapturedLocation : await getCheckoutLocation())
+            : { latitude: null, longitude: null, address: null };
+ 
+        const payload = {
+            empId: parseInt(markForm.empId, 10),
+            attDate: markForm.attDate ? `${markForm.attDate}T00:00:00` : null,
+            checkIn: checkInForPayload,
+            checkOut: markForm.checkOut ? markForm.checkOut + ":00" : null,
+            status: markForm.status,
+            remarks: "",
+            createdBy: user?.userId ?? user?.UserId ?? 1,
+            latitude,
+            longitude,
+            locationAddress: address,
+            checkOutLatitude: checkoutLoc.latitude,
+            checkOutLongitude: checkoutLoc.longitude,
+            checkOutLocationAddress: checkoutLoc.address,
+        };
+ 
+        const res = await adminService.markAttendance(payload);
+        if (res.Success || res.success) {
+            
+            setShowMarkModal(false);
+            setMarkForm({ empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: "" });
+            setLocationStatus("idle");
+            setCapturedLocation({ latitude: null, longitude: null, address: null });
+            setPunchMode(null);
+            setTodaysRecord(null);
+            loadAttendanceData();
+ 
+            if (isLatePunchIn) {
+    showToast(
+        `Your Punch In was recorded at ${markForm.checkIn}, after the designated cutoff time of ${LATE_CUTOFF}. Your attendance has been marked as Present; however, it is pending approval from Admin/HR due to the late arrival.`,
+        "info"
+    );
+    }
+        } else {
+            showToast(res.Message || "Failed to mark attendance.", "error");
         }
-
-        const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
-        if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
-            showToast("Please tap Punch In before submitting.", "error");
-            return;
-        }
-        if (punchMode === "out" && !markForm.checkOut) {
-            showToast("Please tap Punch Out before submitting.", "error");
-            return;
-        }
-        if (markForm.checkIn && markForm.checkOut && markForm.checkOut < markForm.checkIn) {
-            showToast("Punch-out time can't be before punch-in time.", "error");
-            return;
-        }
-
-        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && toMinutes(markForm.checkIn) > LATE_CUTOFF_MIN;
-
-        setActionLoading(true);
-        try {
-            const { latitude, longitude, address } =
-                locationStatus === "captured" ? capturedLocation : await getCurrentLocation();
-
-            const checkInForPayload = punchMode === "out"
-                ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
-                : (markForm.checkIn ? markForm.checkIn + ":00" : null);
-
-            const checkoutLoc = markForm.checkOut
-                ? (checkoutLocationStatus === "captured" ? checkoutCapturedLocation : await getCheckoutLocation())
-                : { latitude: null, longitude: null, address: null };
-
-            const payload = {
-                empId: parseInt(markForm.empId, 10),
-                attDate: markForm.attDate ? `${markForm.attDate}T00:00:00` : null,
-                checkIn: checkInForPayload,
-                checkOut: markForm.checkOut ? markForm.checkOut + ":00" : null,
-                status: markForm.status,
-                remarks: "",
-                createdBy: user?.userId ?? user?.UserId ?? 1,
-                latitude,
-                longitude,
-                locationAddress: address,
-                checkOutLatitude: checkoutLoc.latitude,
-                checkOutLongitude: checkoutLoc.longitude,
-                checkOutLocationAddress: checkoutLoc.address,
-            };
-
-            const res = await adminService.markAttendance(payload);
-            if (res.Success || res.success) {
-                if (isLatePunchIn) {
-                    try {
-                        await adminService.createRegRequest({
-                            empId: parseInt(markForm.empId, 10),
-                            attDate: `${markForm.attDate}T00:00:00`,
-                            requestedCheckIn: markForm.checkIn + ":00",
-                            requestedCheckOut: null,
-                            reason: `Late arrival — punched in at ${markForm.checkIn} (after ${LATE_CUTOFF} cutoff)`,
-                        });
-                    } catch (regErr) {
-                        console.error("Auto regularization request failed:", regErr);
-                    }
-                }
-
-                setShowMarkModal(false);
-                setMarkForm({ empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: "" });
-                setLocationStatus("idle");
-                setCapturedLocation({ latitude: null, longitude: null, address: null });
-                setPunchMode(null);
-                setTodaysRecord(null);
-                loadAttendanceData();
-
-                if (isLatePunchIn) {
-                    showToast(`Aapka Punch In ${markForm.checkIn} baje hua hai (cutoff ${LATE_CUTOFF} ke baad). Attendance Present mark ho gayi hai, lekin yeh late-arrival approval ke liye Admin/HR ke paas pending rahegi.`, "info");
-                }
-            } else {
-                showToast(res.Message || "Failed to mark attendance.", "error");
-            }
-        } catch (err) {
-            console.error("Mark attendance error:", err);
-            showToast(err?.message || "Something went wrong while marking attendance.", "error");
-        } finally {
-            setActionLoading(false);
-        }
-    };
+    } catch (err) {
+        console.error("Mark attendance error:", err);
+        showToast(err?.message || "Something went wrong while marking attendance.", "error");
+    } finally {
+        setActionLoading(false);
+    }
+};
 
     const handleRegAction = async (requestId, statusAction) => {
         if (!isAdminLevel) {

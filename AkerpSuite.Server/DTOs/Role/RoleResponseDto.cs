@@ -239,6 +239,8 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Remarks { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? ErrorMessage { get; set; }
+        public int? ForwardedTo { get; set; }
+        public string? ForwardedToRole { get; set; }
     }
     public class EmployeeSalaryResponseDto
     {

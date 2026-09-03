@@ -4,15 +4,26 @@ import { adminService } from "@/services/adminService";
 export default function LeaveRequests() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+    const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(user?.role);
+    const isManagerRole = ["CMD", "Director"].includes(user?.role);
+
+    const [activeTab, setActiveTab] = useState("hr"); // "hr" | "manager"
     const [loading, setLoading] = useState(false);
     const [leaveRequests, setLeaveRequests] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
+    // leaveId currently showing the "forward to..." choice
+    const [forwardPickerId, setForwardPickerId] = useState(null);
+
     useEffect(() => {
         loadRequests();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab]);
 
     const loadRequests = async () => {
         setLoading(true);
@@ -21,28 +32,40 @@ export default function LeaveRequests() {
             if (res.Success || res.success) setLeaveRequests(res.Data || res.data || []);
         } catch (err) {
             console.error("Failed to load requests:", err);
-            // 🐛 FIX: this endpoint is restricted to CMD/Admin/HR/Manager on the
-            // backend. If a user without one of those roles lands on this page,
-            // the request fails silently and they just see "No leave requests
-            // found" — which looks like there's no data, not that they lack
-            // permission. Surface a real message instead.
             alert("Failed to load leave requests. You may not have permission to view this data.");
         } finally {
             setLoading(false);
         }
     };
 
-    // 🎯 Approvals Action
-    const handleLeaveAction = async (leaveId, statusAction) => {
+    const handleLeaveAction = async (leaveId, statusAction, forwardedToRole = null) => {
         try {
+            const remarksText =
+                statusAction === "Forwarded"
+                    ? `Forwarded by HR to ${forwardedToRole} for approval`
+                    : `Request ${statusAction} by Admin/HR`;
+
             const payload = {
                 status: statusAction,
-                approvedBy: user?.userId || 1,
-                remarks: `Request ${statusAction} by Admin/HR`
+                approvedBy: user?.employeeId || 1,   // ⬅ userId ki jagah employeeId
+                remarks: remarksText,
+                ...(statusAction === "Forwarded" ? { forwardedToRole } : {}),
             };
+
             const res = await adminService.actionLeaveRequest(leaveId, payload);
             if (res.Success || res.success) {
-                setLeaveRequests(prev => prev.map(req => req.leaveId === leaveId ? { ...req, status: statusAction } : req));
+                setLeaveRequests(prev =>
+                    prev.map(req =>
+                        req.leaveId === leaveId
+                            ? {
+                                  ...req,
+                                  status: statusAction,
+                                  ...(statusAction === "Forwarded" ? { forwardedToRole } : {}),
+                              }
+                            : req
+                    )
+                );
+                setForwardPickerId(null);
             } else {
                 alert(res.Message || "Failed to process request");
             }
@@ -52,14 +75,20 @@ export default function LeaveRequests() {
         }
     };
 
-    // 🎯 Filter & Pagination
-    // 🐛 FIX: previously did `Object.values(item).join(" ")` which matches
-    // against every field including numeric IDs (empId, leaveTypeId, totalDays,
-    // etc). Searching "1" would match unrelated rows just because some number
-    // field happened to contain a "1". Restrict the search to the fields a
-    // user would actually expect to search by.
+    // Tab-based split:
+    // HR tab -> everything not yet forwarded.
+    // Manager tab -> forwarded items, and if the logged-in user IS a manager (CMD/Director),
+    //                they only see requests forwarded specifically to their own role.
+    const tabFilteredBase = leaveRequests.filter(item => {
+        if (activeTab === "hr") return item.status !== "Forwarded";
+
+        if (item.status !== "Forwarded") return false;
+        if (isManagerRole) return item.forwardedToRole === user?.role;
+        return true; // HR/admin oversight view sees all forwarded requests
+    });
+
     const SEARCHABLE_FIELDS = ["fullName", "leaveName", "reason", "status"];
-    const filteredData = leaveRequests.filter(item => {
+    const filteredData = tabFilteredBase.filter(item => {
         if (!searchTerm) return true;
         const q = searchTerm.toLowerCase();
         return SEARCHABLE_FIELDS.some(f => (item[f] ?? "").toString().toLowerCase().includes(q));
@@ -86,6 +115,26 @@ export default function LeaveRequests() {
                         </p>
                     </div>
                 </div>
+            </div>
+
+            {/* ── Tabs ── */}
+            <div className="flex gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-fit">
+                <button
+                    onClick={() => setActiveTab("hr")}
+                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        activeTab === "hr" ? "bg-[#0b2532] text-white" : "text-slate-500 hover:bg-slate-50"
+                    }`}
+                >
+                    HR Approval
+                </button>
+                <button
+                    onClick={() => setActiveTab("manager")}
+                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors ${
+                        activeTab === "manager" ? "bg-[#0b2532] text-white" : "text-slate-500 hover:bg-slate-50"
+                    }`}
+                >
+                    CMD / Director Approval
+                </button>
             </div>
 
             {/* ── Live Search Utilities Bar ── */}
@@ -130,7 +179,15 @@ export default function LeaveRequests() {
                                 <i className="fa-solid fa-folder-open text-2xl text-slate-300" />
                             </div>
                             <p className="text-base text-slate-700 font-bold">No results found</p>
-                            <p className="text-sm text-slate-400 mt-1 font-medium">{searchTerm ? "Try adjusting your search query." : "No pending leave requests found."}</p>
+                            <p className="text-sm text-slate-400 mt-1 font-medium">
+                                {searchTerm
+                                    ? "Try adjusting your search query."
+                                    : activeTab === "hr"
+                                    ? "No requests in HR queue."
+                                    : isManagerRole
+                                    ? `No requests forwarded to ${user?.role}.`
+                                    : "No requests forwarded to CMD/Director."}
+                            </p>
                         </div>
                     ) : (
                         <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
@@ -166,33 +223,97 @@ export default function LeaveRequests() {
                                             {req.reason}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${req.status === "Approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" :
-                                                    req.status === "Pending" ? "bg-amber-50 text-amber-700 border-amber-200/50" :
-                                                        "bg-rose-50 text-rose-700 border-rose-200/50"
-                                                }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${req.status === "Approved" ? "bg-emerald-500" :
-                                                        req.status === "Pending" ? "bg-amber-500" :
-                                                            "bg-rose-500"
-                                                    }`} />
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${
+                                                req.status === "Approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" :
+                                                req.status === "Pending" ? "bg-amber-50 text-amber-700 border-amber-200/50" :
+                                                req.status === "Forwarded" ? "bg-sky-50 text-sky-700 border-sky-200/50" :
+                                                "bg-rose-50 text-rose-700 border-rose-200/50"
+                                            }`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                                    req.status === "Approved" ? "bg-emerald-500" :
+                                                    req.status === "Pending" ? "bg-amber-500" :
+                                                    req.status === "Forwarded" ? "bg-sky-500" :
+                                                    "bg-rose-500"
+                                                }`} />
                                                 {req.status}
                                             </span>
+                                            {req.status === "Forwarded" && req.forwardedToRole && (
+                                                <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                                                    → {req.forwardedToRole}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            {req.status === "Pending" ? (
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => handleLeaveAction(req.leaveId, "Approved")}
-                                                        className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 transition-colors"
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
-                                                        className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 transition-colors"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
+                                            {activeTab === "hr" && req.status === "Pending" ? (
+                                                isHrRole ? (
+                                                    forwardPickerId === req.leaveId ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <span className="text-[11px] font-bold text-slate-500 mr-1">Forward to:</span>
+                                                            <button
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "CMD")}
+                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 transition-colors"
+                                                            >
+                                                                CMD
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "Director")}
+                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 transition-colors"
+                                                            >
+                                                                Director
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setForwardPickerId(null)}
+                                                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 transition-colors"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Approved")}
+                                                                className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
+                                                                className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 transition-colors"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setForwardPickerId(req.leaveId)}
+                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 transition-colors"
+                                                            >
+                                                                Forward
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                ) : (
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">HR Only</span>
+                                                )
+                                            ) : activeTab === "manager" && req.status === "Forwarded" ? (
+                                                isManagerRole && req.forwardedToRole === user?.role ? (
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => handleLeaveAction(req.leaveId, "Approved")}
+                                                            className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
+                                                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 transition-colors"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">
+                                                        {isManagerRole ? "Not addressed to you" : "CMD/Director Only"}
+                                                    </span>
+                                                )
                                             ) : (
                                                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">Action Taken</span>
                                             )}

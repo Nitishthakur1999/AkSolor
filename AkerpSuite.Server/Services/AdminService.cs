@@ -19,6 +19,7 @@ namespace AkerpSuite.Server.Services
         private readonly IConfiguration _configuration;
         private readonly IHRService _hrService;
         private readonly IEmailService _emailService;
+        private readonly IPermissionRepository _permissionRepo;
         private readonly DocxTemplateMergeService _letterMerge = new();
         private const string OfferTemplatePath = "Templates/Offer_Letter_Template.docx";
         private const string AppointmentTemplatePath = "Templates/Appointment_Letter_Template.docx";
@@ -30,13 +31,15 @@ namespace AkerpSuite.Server.Services
             FileUploadHelper fileUploadHelper,
             IConfiguration configuration,
             IHRService hrService,
-            IEmailService emailService)
+            IEmailService emailService,
+            IPermissionRepository permissionRepo)
         {
             _repository = repository;
             _fileUploadHelper = fileUploadHelper;
             _configuration = configuration;
             _hrService = hrService;
             _emailService = emailService;
+            _permissionRepo = permissionRepo;
         }
 
 
@@ -914,21 +917,53 @@ namespace AkerpSuite.Server.Services
         public async Task<LeaveRequestResponseDto?> GetLeaveRequestByIdAsync(int leaveId)
             => await _repository.GetLeaveRequestByIdAsync(leaveId);
 
-        public async Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request)
+        public async Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request, int roleId)
         {
-            var validStatuses = new[] { "Approved", "Rejected", "Cancelled" };
+            var validStatuses = new[] { "Approved", "Rejected", "Cancelled", "Forwarded" };
             if (!validStatuses.Contains(request.Status))
-                throw new InvalidOperationException($"Invalid status '{request.Status}'. Use Approved, Rejected, or Cancelled.");
+                throw new InvalidOperationException($"Invalid status '{request.Status}'. Use Approved, Rejected, Cancelled, or Forwarded.");
 
             var leave = await _repository.GetLeaveRequestByIdAsync(leaveId);
             if (leave == null)
                 throw new InvalidOperationException("Leave request not found.");
 
-            if (leave.Status != "Pending" && request.Status != "Cancelled")
-                throw new InvalidOperationException($"Leave request is already {leave.Status}.");
-
             if (request.ApprovedBy <= 0)
                 throw new InvalidOperationException("Approver ID is required.");
+
+            bool canForward = await _permissionRepo.HasPermissionAsync(roleId, "Leave", "Forward");
+            bool canFinalApprove = await _permissionRepo.HasPermissionAsync(roleId, "Leave", "FinalApprove");
+
+            if (request.Status == "Forwarded")
+            {
+                if (leave.Status != "Pending")
+                    throw new InvalidOperationException($"Only pending requests can be forwarded. This is {leave.Status}.");
+                if (!canForward)
+                    throw new InvalidOperationException("You don't have permission to forward leave requests.");
+                if (string.IsNullOrWhiteSpace(request.ForwardedToRole) || !new[] { "CMD", "Director" }.Contains(request.ForwardedToRole))
+                    throw new InvalidOperationException("Select CMD or Director to forward this request.");
+            }
+            else if (request.Status == "Approved" || request.Status == "Rejected")
+            {
+                if (leave.Status == "Pending")
+                {
+                    if (!canForward)
+                        throw new InvalidOperationException("This request has not been forwarded — you can't act on it directly.");
+                }
+                else if (leave.Status == "Forwarded")
+                {
+                    if (!canFinalApprove)
+                        throw new InvalidOperationException("You don't have permission to give final approval.");
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Leave request is already {leave.Status}.");
+                }
+            }
+            else // Cancelled
+            {
+                if (leave.Status != "Pending")
+                    throw new InvalidOperationException($"Leave request is already {leave.Status}.");
+            }
 
             return await _repository.LeaveActionAsync(leaveId, request);
         }

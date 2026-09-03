@@ -718,7 +718,11 @@ namespace AkerpSuite.Server.Controllers
                     request.ApprovedBy = empId;
             }
 
-            var result = await _service.LeaveActionAsync(leaveId, request);
+            var roleIdClaim = User.FindFirst("RoleId")?.Value;
+            if (!int.TryParse(roleIdClaim, out int roleId))
+                return Unauthorized(new { Success = false, Message = "Invalid token — RoleId missing" });
+
+            var result = await _service.LeaveActionAsync(leaveId, request, roleId);
             if (!result)
                 return BadRequest(new { Success = false, Message = "Action could not be performed" });
 

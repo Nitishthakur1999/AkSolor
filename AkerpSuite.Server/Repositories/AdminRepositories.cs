@@ -1036,17 +1036,18 @@ namespace AkerpSuite.Server.Repositories
         public async Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request)
         {
             using var conn = _context.CreateConnection();
-            var rows = await conn.QueryFirstOrDefaultAsync<int>(
+            var rows = await conn.QueryFirstOrDefaultAsync<int?>(
                 "sp_leave_request_action",
                 new
                 {
                     p_leave_id = leaveId,
                     p_status = request.Status,
                     p_approved_by = request.ApprovedBy,
-                    p_remarks = request.Remarks
+                    p_remarks = request.Remarks,
+                    p_forwarded_to_role = request.ForwardedToRole
                 },
                 commandType: System.Data.CommandType.StoredProcedure);
-            return rows > 0;
+            return (rows ?? 0) > 0;
         }
 
         public async Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year)
