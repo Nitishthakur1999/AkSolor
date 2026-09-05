@@ -75,7 +75,7 @@ export default function SalarySheet() {
                 setError(res.message || res.Message || "Salary Sheet data load nahi ho saka.");
             }
         } catch (err) {
-            setError("Server se connection fail hua.");
+            setError("Failed to connect to the server.");
         } finally {
             setLoading(false);
         }

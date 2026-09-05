@@ -971,6 +971,19 @@ namespace AkerpSuite.Server.Services
         public async Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year)
             => await _repository.GetLeaveHistoryAsync(empId, year);
 
+        //Bank entey detail
+        public async Task<int> CreateLeaveBalanceAsync(LeaveBalanceCreateRequestDto request)
+            => await _repository.CreateLeaveBalanceAsync(request);
+        
+        public async Task<bool> UpdateLeaveBalanceAsync(int balanceId, LeaveBalanceUpdateRequestDto request) 
+            => await _repository.UpdateLeaveBalanceAsync(balanceId, request);
+        
+        public async Task<bool> DeleteLeaveBalanceAsync(int balanceId) 
+            => await _repository.DeleteLeaveBalanceAsync(balanceId);
+
+        public async Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId) 
+            => await _repository.GetLeaveBalanceByIdAsync(balanceId);
+
         #endregion
 
         #region Salary Structure 

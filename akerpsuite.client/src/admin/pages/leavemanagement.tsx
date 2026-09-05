@@ -26,6 +26,15 @@ export default function LeaveManagement() {
     const [typeForm, setTypeForm] = useState({ leaveCode: "", leaveName: "", maxPerYear: 12, carryForward: false, isActive: true });
     const [initForm, setInitForm] = useState<{ empId: string; year: string | number }>({ empId: "", year: new Date().getFullYear() });
 
+    const [showEntryModal, setShowEntryModal] = useState(false);
+    const [showEditEntryModal, setShowEditEntryModal] = useState(false);
+    const [editingBalanceId, setEditingBalanceId] = useState(null);
+    const [entryForm, setEntryForm] = useState<{ empId: string; leaveTypeId: string; year: string | number; totalLeaves: string | number; usedLeaves: string | number }>({
+        empId: "", leaveTypeId: "", year: new Date().getFullYear(), totalLeaves: "", usedLeaves: ""
+    });
+    const [entryEmpSearchOpen, setEntryEmpSearchOpen] = useState(false);
+    const [entryEmpSearchText, setEntryEmpSearchText] = useState("");
+
     useEffect(() => {
         loadData();
         setCurrentPage(1);
@@ -46,7 +55,7 @@ export default function LeaveManagement() {
     const loadData = async () => {
         setLoading(true);
         try {
-            if (activeTab === "balances") {
+            if (activeTab === "balances" || activeTab === "entries") {
                 const res = await adminService.getAllLeaveBalances();
                 if (res.Success || res.success) setLeaveBalances(res.Data || res.data || []);
             } else if (activeTab === "types") {
@@ -55,7 +64,7 @@ export default function LeaveManagement() {
             }
         } catch (err) {
             console.error(err);
-            if (activeTab === "balances") {
+            if (activeTab === "balances" || activeTab === "entries") {
                 alert("Failed to load leave balances. You may not have permission to view this data.");
             } else {
                 alert("Failed to load leave types.");
@@ -64,6 +73,17 @@ export default function LeaveManagement() {
             setLoading(false);
         }
     };
+
+    // Yeh 2 employee "Manual Entries" tab se hide (dropdown + table dono se)
+    const HIDDEN_EMP_CODES = ["AKS-0000", "AKS-0001"];
+
+    const visibleEmployees = useMemo(() => {
+        return employees.filter((emp) => !HIDDEN_EMP_CODES.includes(emp.empCode));
+    }, [employees]);
+
+    const visibleLeaveBalances = useMemo(() => {
+        return leaveBalances.filter((b) => !HIDDEN_EMP_CODES.includes(b.empCode));
+    }, [leaveBalances]);
 
     const groupedBalances = useMemo(() => {
         const map = new Map();
@@ -89,18 +109,20 @@ export default function LeaveManagement() {
     const SEARCHABLE_FIELDS = {
         balances: ["fullName", "empCode"],
         types: ["leaveCode", "leaveName"],
+        entries: ["fullName", "empCode", "leaveName"],
     };
 
     const filteredData = useMemo(() => {
-        const currentData = activeTab === "balances" ? groupedBalances : leaveTypes;
+        const currentData = activeTab === "balances" ? groupedBalances : activeTab === "entries" ? visibleLeaveBalances : leaveTypes;
         if (!searchTerm) return currentData;
         const q = searchTerm.toLowerCase();
         const fields = SEARCHABLE_FIELDS[activeTab] || [];
         return currentData.filter(item => fields.some(f => (item[f] ?? "").toString().toLowerCase().includes(q)));
-    }, [activeTab, groupedBalances, leaveTypes, searchTerm]);
+    }, [activeTab, groupedBalances, leaveTypes, searchTerm, visibleLeaveBalances]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const currentItems = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const columnCount = activeTab === "balances" ? leaveTypes.length + 1 : activeTab === "entries" ? 7 : 6;
 
     const handleAddType = async (e) => {
         e.preventDefault();
@@ -206,6 +228,77 @@ export default function LeaveManagement() {
         } catch (err) { console.error(err); } finally { setActionLoading(false); }
     };
 
+    const handleAddEntry = async (e) => {
+        e.preventDefault();
+        setActionLoading(true);
+        try {
+            const payload = {
+                empId: parseInt(entryForm.empId, 10),
+                leaveTypeId: parseInt(entryForm.leaveTypeId, 10),
+                year: parseInt(String(entryForm.year), 10),
+                totalLeaves: parseInt(String(entryForm.totalLeaves), 10),
+                usedLeaves: parseFloat(String(entryForm.usedLeaves)) || 0,
+            };
+            const res = await adminService.createLeaveBalance(payload);
+            if (res.Success || res.success) {
+                setShowEntryModal(false);
+                setEntryForm({ empId: "", leaveTypeId: "", year: new Date().getFullYear(), totalLeaves: "", usedLeaves: "" });
+                loadData();
+            } else {
+                alert(res.Message || "Failed to create leave balance entry");
+            }
+        } catch (err) {
+            console.error(err);
+            alert(err?.response?.data?.Message || "Something went wrong while creating the entry.");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleEditEntryClick = (entry) => {
+        setEditingBalanceId(entry.balanceId);
+        setEntryForm({
+            empId: String(entry.empId),
+            leaveTypeId: String(entry.leaveTypeId),
+            year: entry.year,
+            totalLeaves: entry.totalLeaves,
+            usedLeaves: entry.usedLeaves,
+        });
+        setShowEditEntryModal(true);
+    };
+
+    const handleUpdateEntry = async (e) => {
+        e.preventDefault();
+        setActionLoading(true);
+        try {
+            const payload = {
+                totalLeaves: parseInt(String(entryForm.totalLeaves), 10),
+                usedLeaves: parseFloat(String(entryForm.usedLeaves)) || 0,
+            };
+            const res = await adminService.updateLeaveBalance(editingBalanceId, payload);
+            if (res.Success || res.success) {
+                setShowEditEntryModal(false);
+                setEditingBalanceId(null);
+                loadData();
+            } else alert(res.Message || "Failed to update entry");
+        } catch (err) { console.error(err); } finally { setActionLoading(false); }
+    };
+
+    const handleDeleteEntry = async (balanceId) => {
+        if (!window.confirm("Are you sure you want to delete this leave balance entry?")) return;
+        try {
+            const res = await adminService.deleteLeaveBalance(balanceId);
+            if (res.Success || res.success) {
+                loadData();
+            } else {
+                alert(res.Message || "Failed to delete entry");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong while deleting the entry.");
+        }
+    };
+
     const BalancesTableHeader = () => (
         <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
             <tr>
@@ -225,6 +318,20 @@ export default function LeaveManagement() {
                 <th className="px-6 py-4 text-center">Max/Year</th>
                 <th className="px-6 py-4 text-center">Carry Fwd</th>
                 <th className="px-6 py-4 text-center">Status</th>
+                <th className="px-6 py-4 text-center">Actions</th>
+            </tr>
+        </thead>
+    );
+
+    const EntriesTableHeader = () => (
+        <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+            <tr>
+                <th className="px-6 py-4">Employee</th>
+                <th className="px-6 py-4">Leave Type</th>
+                <th className="px-6 py-4 text-center">Year</th>
+                <th className="px-6 py-4 text-center">Total</th>
+                <th className="px-6 py-4 text-center">Used</th>
+                <th className="px-6 py-4 text-center">Balance</th>
                 <th className="px-6 py-4 text-center">Actions</th>
             </tr>
         </thead>
@@ -263,6 +370,19 @@ export default function LeaveManagement() {
                             <i className="fa-solid fa-bolt" /> Initialize Balance
                         </button>
                     )}
+                    {activeTab === "entries" && (
+                        <button
+                            onClick={() => {
+                                setEntryForm({ empId: "", leaveTypeId: "", year: new Date().getFullYear(), totalLeaves: "", usedLeaves: "" });
+                                setEntryEmpSearchOpen(false);
+                                setEntryEmpSearchText("");
+                                setShowEntryModal(true);
+                            }}
+                            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2 shadow-sm"
+                        >
+                            <i className="fa-solid fa-plus" /> Add Entry
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -285,6 +405,13 @@ export default function LeaveManagement() {
                     >
                         <i className="fa-solid fa-tags"></i> Leave Types
                     </button>
+                    <button
+                        onClick={() => { setActiveTab("entries"); setSearchTerm(""); setCurrentPage(1); }}
+                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === "entries" ? "border-amber-500 text-amber-600 bg-white" : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                            }`}
+                    >
+                        <i className="fa-solid fa-pen-to-square"></i> Manual Entries
+                    </button>
                 </div>
 
                 {/* ── Live Search Utilities Bar ── */}
@@ -293,7 +420,7 @@ export default function LeaveManagement() {
                         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder={activeTab === "balances" ? "Search by employee name or code..." : "Search by leave name or code..."}
+                            placeholder={activeTab === "balances" || activeTab === "entries" ? "Search by employee name or code..." : "Search by leave name or code..."}
                             value={searchTerm}
                             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                             className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
@@ -304,11 +431,11 @@ export default function LeaveManagement() {
                 {/* ── Table Area ── */}
                 <div className="overflow-x-auto min-h-[300px] flex flex-col justify-between">
                     <table className="w-full text-left border-collapse whitespace-nowrap">
-                        {activeTab === "balances" ? <BalancesTableHeader /> : <TypesTableHeader />}
+                        {activeTab === "balances" ? <BalancesTableHeader /> : activeTab === "entries" ? <EntriesTableHeader /> : <TypesTableHeader />}
                         <tbody className="divide-y divide-slate-100 text-sm text-slate-600">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={activeTab === "balances" ? leaveTypes.length + 1 : 6} className="py-24 text-center">
+                                    <td colSpan={columnCount} className="py-24 text-center">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <i className="fa-solid fa-spinner text-3xl text-amber-500 animate-spin" />
                                             <div className="text-sm font-medium text-slate-500 animate-pulse">Syncing data nodes...</div>
@@ -317,7 +444,7 @@ export default function LeaveManagement() {
                                 </tr>
                             ) : currentItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={activeTab === "balances" ? leaveTypes.length + 1 : 6} className="py-24 text-center">
+                                    <td colSpan={columnCount} className="py-24 text-center">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100">
                                                 <i className="fa-solid fa-magnifying-glass-minus text-xl text-slate-400" />
@@ -349,6 +476,30 @@ export default function LeaveManagement() {
                                                 </td>
                                             );
                                         })}
+                                    </tr>
+                                ))
+                            ) : activeTab === "entries" ? (
+                                currentItems.map((entry) => (
+                                    <tr key={`entry-${entry.balanceId}`} className="hover:bg-slate-50/60 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-slate-900">{entry.fullName || `EMP-${entry.empId}`}</div>
+                                            <div className="text-xs font-mono font-bold text-amber-600 mt-0.5">{entry.empCode}</div>
+                                        </td>
+                                        <td className="px-6 py-4 font-semibold text-slate-700">{entry.leaveName || entry.leaveCode}</td>
+                                        <td className="px-6 py-4 text-center font-mono font-medium text-slate-600">{entry.year}</td>
+                                        <td className="px-6 py-4 text-center font-mono font-bold text-slate-700">{entry.totalLeaves}</td>
+                                        <td className="px-6 py-4 text-center font-mono font-bold text-rose-600">{entry.usedLeaves}</td>
+                                        <td className="px-6 py-4 text-center font-mono font-bold text-emerald-600">{entry.balanceLeaves}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex justify-center gap-2">
+                                                <button onClick={() => handleEditEntryClick(entry)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" title="Edit Entry">
+                                                    <i className="fa-solid fa-pen text-[13px]" />
+                                                </button>
+                                                <button onClick={() => handleDeleteEntry(entry.balanceId)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors" title="Delete Entry">
+                                                    <i className="fa-solid fa-trash-can text-[13px]" />
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
@@ -528,6 +679,126 @@ export default function LeaveManagement() {
                             <div className="pt-5 border-t border-slate-100">
                                 <button type="submit" disabled={actionLoading} className="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-600/20 disabled:opacity-60 hover:-translate-y-0.5">
                                     {actionLoading ? "Processing..." : "Initialize Balance"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ➕ Modal popup: ADD ENTRY */}
+            {showEntryModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-slate-900">Add Leave Balance Entry</h3>
+                            <button onClick={() => setShowEntryModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                <i className="fa-solid fa-xmark text-lg" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddEntry} className="space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Employee *</label>
+                                <div className="relative group">
+                                    <input
+                                        type="text"
+                                        required={!entryForm.empId}
+                                        value={entryEmpSearchOpen ? entryEmpSearchText : (() => {
+                                            const sel = visibleEmployees.find((emp) => String(emp.empId) === String(entryForm.empId));
+                                            return sel ? `${sel.firstName} ${sel.lastName} (${sel.empCode})` : "";
+                                        })()}
+                                        onFocus={() => { setEntryEmpSearchOpen(true); setEntryEmpSearchText(""); }}
+                                        onChange={(e) => setEntryEmpSearchText(e.target.value)}
+                                        onBlur={() => setTimeout(() => setEntryEmpSearchOpen(false), 200)}
+                                        placeholder="-- Search Employee --"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                                    />
+                                    {entryEmpSearchOpen && (
+                                        <div className="absolute z-50 mt-2 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl">
+                                            {(() => {
+                                                const q = entryEmpSearchText.trim().toLowerCase();
+                                                const filtered = visibleEmployees.filter((emp) => `${emp.firstName} ${emp.lastName} ${emp.empCode}`.toLowerCase().includes(q));
+                                                if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-slate-400 font-medium italic">No employees found</div>;
+                                                return filtered.map((emp) => (
+                                                    <div
+                                                        key={emp.empId}
+                                                        onMouseDown={() => {
+                                                            setEntryForm(prev => ({ ...prev, empId: emp.empId.toString() }));
+                                                            setEntryEmpSearchText("");
+                                                            setEntryEmpSearchOpen(false);
+                                                        }}
+                                                        className="px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-700 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"
+                                                    >
+                                                        {emp.firstName} {emp.lastName} <span className="text-slate-400 text-xs ml-1">({emp.empCode})</span>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Leave Type *</label>
+                                <select required value={entryForm.leaveTypeId} onChange={e => setEntryForm({ ...entryForm, leaveTypeId: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all bg-white cursor-pointer">
+                                    <option value="" disabled>-- Select Leave Type --</option>
+                                    {leaveTypes.map(t => <option key={t.leaveTypeId} value={t.leaveTypeId}>{t.leaveName} ({t.leaveCode})</option>)}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year *</label>
+                                    <input type="number" required min="2020" max={new Date().getFullYear() + 1} value={entryForm.year} onChange={e => setEntryForm({ ...entryForm, year: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Total *</label>
+                                    <input type="number" required min="0" value={entryForm.totalLeaves} onChange={e => setEntryForm({ ...entryForm, totalLeaves: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Used *</label>
+                                    <input type="number" step="0.5" required min="0" value={entryForm.usedLeaves} onChange={e => setEntryForm({ ...entryForm, usedLeaves: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400 font-medium ml-1">Balance = Total − Used, automatically calculated on save.</p>
+                            <div className="pt-5 border-t border-slate-100">
+                                <button type="submit" disabled={actionLoading} className="w-full py-3.5 bg-[#0b2836] hover:bg-[#0f3345] text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-[#0b2836]/20 disabled:opacity-60 hover:-translate-y-0.5">
+                                    {actionLoading ? "Saving..." : "Save Entry"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ✏️ Modal popup: EDIT ENTRY */}
+            {showEditEntryModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-slate-900">Edit Leave Balance Entry</h3>
+                            <button onClick={() => setShowEditEntryModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                <i className="fa-solid fa-xmark text-lg" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateEntry} className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year</label>
+                                    <input type="number" disabled value={entryForm.year} className="w-full px-4 py-3 rounded-xl border border-slate-100 text-sm bg-slate-50 text-slate-500 cursor-not-allowed" />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Total *</label>
+                                    <input type="number" required min="0" value={entryForm.totalLeaves} onChange={e => setEntryForm({ ...entryForm, totalLeaves: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Used *</label>
+                                    <input type="number" step="0.5" required min="0" value={entryForm.usedLeaves} onChange={e => setEntryForm({ ...entryForm, usedLeaves: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400 font-medium ml-1">Balance = Total − Used, automatically recalculated on save.</p>
+                            <div className="flex justify-end gap-3 border-t border-slate-100 pt-5 mt-4">
+                                <button type="button" onClick={() => setShowEditEntryModal(false)} className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors">Cancel</button>
+                                <button type="submit" disabled={actionLoading} className="flex-1 py-3 bg-[#0b2836] hover:bg-[#0f3345] text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-[#0b2836]/20 disabled:opacity-60 hover:-translate-y-0.5">
+                                    {actionLoading ? "Updating..." : "Update Entry"}
                                 </button>
                             </div>
                         </form>

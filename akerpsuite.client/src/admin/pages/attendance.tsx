@@ -766,7 +766,20 @@ export default function Attendance() {
         const dateMatch = !dateFilter || (log.attDate || "").slice(0, 10) === dateFilter;
         return statusMatch && dateMatch;
     });
-    const filteredLogs = filterBySearch(scopeToEmployee(filteredLogsBase), ["fullName", "status", "source"]);
+    const filteredLogs = filterBySearch(scopeToEmployee(filteredLogsBase), ["fullName", "status", "source"])
+    .slice()
+    .sort((a, b) => {
+        const ad = (a.attDate || "").slice(0, 10);
+        const bd = (b.attDate || "").slice(0, 10);
+        if (ad !== bd) return bd.localeCompare(ad); // naya date pehle
+
+        const at = a.checkIn ? a.checkIn.slice(0, 5) : "";
+        const bt = b.checkIn ? b.checkIn.slice(0, 5) : "";
+        if (!at && !bt) return 0;
+        if (!at) return 1;
+        if (!bt) return -1;
+        return bt.localeCompare(at); // late time pehle
+    });
     const filteredRequests = filterBySearch(scopeToEmployee(regRequests), ["fullName", "reason", "status"]);
     const filteredSummaries = filterBySearch(scopeToEmployee(summaries), ["fullName"]);
     const sundayDateColumns = (
@@ -1238,6 +1251,7 @@ export default function Attendance() {
                                     <th className="px-6 py-4">Check In</th>
                                     <th className="px-6 py-4">Check Out</th>
                                     <th className="px-6 py-4">Location</th>
+                                        <th className="px-6 py-4">Checkout Location</th>   
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Approval</th>
                                     <th className="px-6 py-4">Source</th>
@@ -1246,8 +1260,8 @@ export default function Attendance() {
                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                 {filteredLogs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-16 text-center text-slate-400 font-medium">
-                                            {searchTerm ? "No matching attendance records found" : "No attendance records found"}
+                                        <td colSpan={9} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                            {searchTerm ? "No matching attendance records found" : "No attendance records found"}                                    
                                         </td>
                                     </tr>
                                 ) : pagedLogs.map((log) => (
@@ -1270,6 +1284,9 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-[13px] text-slate-500 max-w-[200px] truncate" title={log.locationAddress || ""}>
                                             {log.locationAddress ? log.locationAddress : log.latitude && log.longitude ? `${Number(log.latitude).toFixed(5)}, ${Number(log.longitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
                                         </td>
+                                         <td className="px-6 py-4 text-[13px] text-slate-500 max-w-[200px] truncate" title={log.checkOutLocationAddress || ""}>
+                                            {log.checkOutLocationAddress ? log.checkOutLocationAddress : log.checkOutLatitude && log.checkOutLongitude ? `${Number(log.checkOutLatitude).toFixed(5)}, ${Number(log.checkOutLongitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
+                                        </td> 
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />

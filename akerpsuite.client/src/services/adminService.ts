@@ -143,6 +143,9 @@ export const adminService = {
     getAllLeaveRequests: (filters?: any) => apiCall(`${API_BASE}/requests${buildQuery(filters)}`),
     createLeaveRequest: (data?: any) => apiCall(`${API_BASE}/request`, "POST", data),
     actionLeaveRequest: (leaveId?: any, payload?: any) => apiCall(`${API_BASE}/requests/${leaveId}/action`, "PATCH", payload),
+    createLeaveBalance: (data?: any) => apiCall(`${API_BASE}/balance`, "POST", data),
+    updateLeaveBalance: (balanceId?: any, data?: any) => apiCall(`${API_BASE}/balance/${balanceId}`, "PUT", data),
+    deleteLeaveBalance: (balanceId?: any) => apiCall(`${API_BASE}/balance/${balanceId}`, "DELETE"),
 
     // 10. Page Master
     getAllPages: () => apiCall(`${API_BASE}/getallpages`),

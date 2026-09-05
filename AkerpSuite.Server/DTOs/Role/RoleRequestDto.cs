@@ -239,6 +239,23 @@ namespace AkerpSuite.Server.DTOs.Role
         public int EmpId { get; set; }
         public int Year { get; set; }
     }
+
+    public class LeaveBalanceCreateRequestDto
+    {
+        public int EmpId { get; set; }
+        public int LeaveTypeId { get; set; }
+        public int Year { get; set; }
+        public int TotalLeaves { get; set; }
+        public decimal UsedLeaves { get; set; }
+    }
+
+    public class LeaveBalanceUpdateRequestDto
+    {
+        public int TotalLeaves { get; set; }
+        public decimal UsedLeaves { get; set; }
+    }
+
+
     public class EmployeeSalaryRequestDto
     {
         public int EmpId { get; set; }

@@ -118,13 +118,17 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Remarks { get; set; }
         public int? CreatedBy { get; set; }
         public DateTime? CreatedAt { get; set; }
-        public decimal? Latitude { get; set; }       
+        public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string? LocationAddress { get; set; }
-        public bool IsLate { get; set; }             
+        public decimal? CheckOutLatitude { get; set; }
+        public decimal? CheckOutLongitude { get; set; }
+        public string? CheckOutLocationAddress { get; set; }
+        public bool IsLate { get; set; }
         public string? ApprovalStatus { get; set; }
         public int? ApprovalRequestId { get; set; }
     }
+
     public class AttendanceRegResponseDto
     {
         public int RequestId { get; set; }
@@ -218,6 +222,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public decimal UsedLeaves { get; set; }
         public decimal BalanceLeaves { get; set; }
     }
+
     public class LeaveRequestResponseDto
     {
         public int LeaveId { get; set; }

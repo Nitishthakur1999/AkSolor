@@ -738,6 +738,59 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
+        // Back Entry Detail
+
+        // POST api/leave/balance
+        [HttpPost("balance")]
+        [RequirePermission("Leave", "Create")]
+        public async Task<IActionResult> CreateLeaveBalance([FromBody] LeaveBalanceCreateRequestDto request)
+        {
+            try
+            {
+                var id = await _service.CreateLeaveBalanceAsync(request);
+                return Ok(new { Success = true, Message = "Leave balance entry created successfully", Data = new { BalanceId = id } });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        // GET api/leave/balance/5
+        [HttpGet("balance/{balanceId}")]
+        [RequirePermission("Leave", "View")]
+        public async Task<IActionResult> GetLeaveBalanceById(int balanceId)
+        {
+            var data = await _service.GetLeaveBalanceByIdAsync(balanceId);
+            if (data == null)
+                return NotFound(new { Success = false, Message = "Leave balance entry not found" });
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // PUT api/leave/balance/5
+        [HttpPut("balance/{balanceId}")]
+        [RequirePermission("Leave", "Update")]
+        public async Task<IActionResult> UpdateLeaveBalance(int balanceId, [FromBody] LeaveBalanceUpdateRequestDto request)
+        {
+            var updated = await _service.UpdateLeaveBalanceAsync(balanceId, request);
+            if (!updated)
+                return NotFound(new { Success = false, Message = "Leave balance entry not found" });
+            return Ok(new { Success = true, Message = "Leave balance updated successfully" });
+        }
+
+        // DELETE api/leave/balance/5
+        [HttpDelete("balance/{balanceId}")]
+        [RequirePermission("Leave", "Delete")]
+        public async Task<IActionResult> DeleteLeaveBalance(int balanceId)
+        {
+            var deleted = await _service.DeleteLeaveBalanceAsync(balanceId);
+            if (!deleted)
+                return NotFound(new { Success = false, Message = "Leave balance entry not found" });
+            return Ok(new { Success = true, Message = "Leave balance entry deleted successfully" });
+        }
+
+
+
         #endregion
 
         #region Payroll – Salary Structure, Processing, Payslip & Deductions

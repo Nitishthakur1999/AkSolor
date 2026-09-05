@@ -106,8 +106,14 @@ namespace AkerpSuite.Server.Repositories
         Task<LeaveRequestResponseDto> CreateLeaveRequestAsync(LeaveRequestDto request);
         Task<IEnumerable<LeaveRequestResponseDto>> GetAllLeaveRequestsAsync(int? empId, string? status, int? month, int? year);
         Task<LeaveRequestResponseDto?> GetLeaveRequestByIdAsync(int leaveId);
-        Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request );
+        Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request);
         Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year);
+
+        //Bank entry detail
+        Task<int> CreateLeaveBalanceAsync(LeaveBalanceCreateRequestDto request);
+        Task<bool> UpdateLeaveBalanceAsync(int balanceId, LeaveBalanceUpdateRequestDto request);
+        Task<bool> DeleteLeaveBalanceAsync(int balanceId);
+        Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId);
 
         #endregion
 

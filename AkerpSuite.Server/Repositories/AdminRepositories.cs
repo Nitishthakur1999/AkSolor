@@ -1059,6 +1059,58 @@ namespace AkerpSuite.Server.Repositories
                 commandType: System.Data.CommandType.StoredProcedure);
         }
 
+        //Bank entey detail
+        public async Task<int> CreateLeaveBalanceAsync(LeaveBalanceCreateRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_emp_id", request.EmpId);
+            parameters.Add("p_leave_type_id", request.LeaveTypeId);
+            parameters.Add("p_year", request.Year);
+            parameters.Add("p_total_leaves", request.TotalLeaves);
+            parameters.Add("p_used_leaves", request.UsedLeaves);
+
+            return await connection.ExecuteScalarAsync<int>(
+                "sp_leave_balance_create", parameters,
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateLeaveBalanceAsync(int balanceId, LeaveBalanceUpdateRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_balance_id", balanceId);
+            parameters.Add("p_total_leaves", request.TotalLeaves);
+            parameters.Add("p_used_leaves", request.UsedLeaves);
+
+            var rows = await connection.ExecuteScalarAsync<int>(
+                "sp_leave_balance_update", parameters,
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteLeaveBalanceAsync(int balanceId)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_balance_id", balanceId);
+
+            var rows = await connection.ExecuteScalarAsync<int>(
+                "sp_leave_balance_delete", parameters,
+                commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_balance_id", balanceId);
+
+            return await connection.QueryFirstOrDefaultAsync<LeaveBalanceResponseDto>(
+                "sp_leave_balance_get_by_id", parameters,
+                commandType: CommandType.StoredProcedure);
+        }
         #endregion
 
         #region Salary Structure 

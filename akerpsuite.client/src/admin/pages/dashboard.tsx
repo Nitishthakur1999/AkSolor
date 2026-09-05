@@ -93,10 +93,10 @@ export default function Dashboard() {
                 if (res.success) {
                     setCards(res.data);
                 } else {
-                    setError("Dashboard data load nahi ho saka.");
+                    setError("Failed to load dashboard data.");
                 }
             })
-            .catch(() => setError("Server se connection fail hua."))
+            .catch(() => setError("Failed to connect to the server."))
             .finally(() => setLoading(false));
     }, []);
 
