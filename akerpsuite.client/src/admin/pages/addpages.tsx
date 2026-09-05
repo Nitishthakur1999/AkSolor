@@ -421,8 +421,8 @@ export default function PageManagement() {
                                                             key={number}
                                                             onClick={() => setCurrentPage(number)}
                                                             className={`w-8 h-8 rounded-lg border text-sm font-bold transition-all shadow-sm flex items-center justify-center ${currentPage === number
-                                                                    ? "bg-amber-500 border-amber-500 text-white"
-                                                                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                                ? "bg-amber-500 border-amber-500 text-white"
+                                                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                                                                 }`}
                                                         >
                                                             {number}
@@ -454,14 +454,6 @@ export default function PageManagement() {
                                         >
                                             <option value="" disabled>-- Choose a Role to Manage Permissions --</option>
                                             {roles
-                                                .filter(r => {
-                                                    const roleName = (r.roleName || r.RoleName || "").toLowerCase();
-                                                    const currentRole = currentUserRole?.toLowerCase();
-                                                    if (roleName === currentRole) return false;
-                                                    const currentLevel = getLevel(currentRole);
-                                                    const targetLevel = getLevel(roleName);
-                                                    return targetLevel >= currentLevel;
-                                                })
                                                 .map(r => (
                                                     <option key={r.roleId || r.RoleId} value={r.roleId || r.RoleId}>{r.roleName || r.RoleName}</option>
                                                 ))

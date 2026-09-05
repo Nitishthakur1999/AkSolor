@@ -33,6 +33,19 @@ namespace AkerpSuite.Server.Repositories
             );
         }
 
+        // Repository
+        public async Task<IEnumerable<dynamic>> GetDashboardCardDetailAsync(string cardKey)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_card_key", cardKey);
+
+            return await connection.QueryAsync(
+                "sp_GetDashboardCardDetail",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+        }
         #endregion
 
         #region Role Management
@@ -866,7 +879,6 @@ namespace AkerpSuite.Server.Repositories
         #endregion
 
         #region Leave Types
-
         public async Task<int> CreateLeaveTypeAsync(LeaveTypeRequestDto request)
         {
             using var conn = _context.CreateConnection();
@@ -936,11 +948,11 @@ namespace AkerpSuite.Server.Repositories
                 new
                 {
                     p_leave_id = leaveId,
-                    p_leave_type_id = request.LeaveTypeId,
                     p_from_date = request.FromDate.Date,
                     p_to_date = request.ToDate.Date,
                     p_total_days = request.TotalDays,
                     p_reason = request.Reason
+                    // p_leave_type_id hataya — edit time leave_type touch nahi hota, sirf approve time
                 },
                 commandType: System.Data.CommandType.StoredProcedure);
             return rows > 0;
@@ -956,9 +968,7 @@ namespace AkerpSuite.Server.Repositories
             return rows > 0;
         }
 
-
         //  Leave Balance
-
         public async Task<bool> InitializeBalanceAsync(int empId, int year)
         {
             using var conn = _context.CreateConnection();
@@ -1032,7 +1042,6 @@ namespace AkerpSuite.Server.Repositories
                 new { p_leave_id = leaveId },
                 commandType: System.Data.CommandType.StoredProcedure);
         }
-
         public async Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request)
         {
             using var conn = _context.CreateConnection();
@@ -1044,7 +1053,8 @@ namespace AkerpSuite.Server.Repositories
                     p_status = request.Status,
                     p_approved_by = request.ApprovedBy,
                     p_remarks = request.Remarks,
-                    p_forwarded_to_role = request.ForwardedToRole
+                    p_forwarded_to_role = request.ForwardedToRole,
+                    p_leave_type_id = request.LeaveTypeId   // WAPAS ADD
                 },
                 commandType: System.Data.CommandType.StoredProcedure);
             return (rows ?? 0) > 0;

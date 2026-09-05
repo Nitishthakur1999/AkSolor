@@ -232,6 +232,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Remarks { get; set; }
         public int? ForwardedTo { get; set; }
         public string? ForwardedToRole { get; set; }
+        public int? LeaveTypeId { get; set; }
     }
 
     public class LeaveBalanceInitRequestDto

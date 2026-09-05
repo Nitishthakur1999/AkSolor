@@ -43,7 +43,14 @@ namespace AkerpSuite.Server.Controllers
 
             return Ok(new { Success = true, Data = data });
         }
-
+        // Controller
+        [HttpGet("dashboard/detail/{cardKey}")]
+        [Authorize]
+        public async Task<IActionResult> GetDashboardDetail(string cardKey)
+        {
+            var data = await _service.GetDashboardDetailAsync(cardKey);
+            return Ok(new { Success = true, Data = data });
+        }
         #endregion
 
         #region Role Management (CRUD)
@@ -722,11 +729,18 @@ namespace AkerpSuite.Server.Controllers
             if (!int.TryParse(roleIdClaim, out int roleId))
                 return Unauthorized(new { Success = false, Message = "Invalid token — RoleId missing" });
 
-            var result = await _service.LeaveActionAsync(leaveId, request, roleId);
-            if (!result)
-                return BadRequest(new { Success = false, Message = "Action could not be performed" });
+            try
+            {
+                var result = await _service.LeaveActionAsync(leaveId, request, roleId);
+                if (!result)
+                    return BadRequest(new { Success = false, Message = "No matching leave request found, or nothing changed." }); // CHANGED: clearer than generic text
 
-            return Ok(new { Success = true, Message = $"Leave request {request.Status} successfully" });
+                return Ok(new { Success = true, Message = $"Leave request {request.Status} successfully" });
+            }
+            catch (InvalidOperationException ex) 
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
         }
 
         // GET api/leave/history/{empId}?year=2025
@@ -788,8 +802,6 @@ namespace AkerpSuite.Server.Controllers
                 return NotFound(new { Success = false, Message = "Leave balance entry not found" });
             return Ok(new { Success = true, Message = "Leave balance entry deleted successfully" });
         }
-
-
 
         #endregion
 

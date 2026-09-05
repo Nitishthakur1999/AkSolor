@@ -114,7 +114,6 @@ export default function MyLeaves() {
     const [applyError, setApplyError] = useState("");
     const [applySuccess, setApplySuccess] = useState("");
     const [form, setForm] = useState({
-        leaveTypeId: "",
         fromDate: "",
         toDate: "",
         reason: "",
@@ -127,7 +126,6 @@ export default function MyLeaves() {
     const [editSubmitting, setEditSubmitting] = useState(false);
     const [editError, setEditError] = useState("");
     const [editForm, setEditForm] = useState({
-        leaveTypeId: "",
         fromDate: "",
         toDate: "",
         reason: "",
@@ -202,8 +200,8 @@ export default function MyLeaves() {
         e.preventDefault();
         setApplyError("");
 
-        if (!form.leaveTypeId || !form.fromDate || (!form.halfDay && !form.toDate)) {
-            setApplyError("Leave type, from date and to date are required.");
+        if (!form.fromDate || (!form.halfDay && !form.toDate)) {
+            setApplyError("From date and to date are required.");
             return;
         }
 
@@ -227,7 +225,6 @@ export default function MyLeaves() {
         setSubmitting(true);
         try {
             const payload = {
-                leaveTypeId: Number(form.leaveTypeId),
                 fromDate: form.fromDate,
                 toDate: effectiveToDate,
                 totalDays,
@@ -241,8 +238,8 @@ export default function MyLeaves() {
                 setRequests((prev) => [applied, ...prev]);
 
                 setShowApplyModal(false);
-                setForm({ leaveTypeId: "", fromDate: "", toDate: "", reason: "", halfDay: false });
-                setApplySuccess(`Leave request for ${applied.leaveName} submitted successfully.`);
+                setForm({ fromDate: "", toDate: "", reason: "", halfDay: false });
+                setApplySuccess("Leave request submitted successfully. It's pending approval.");
                 setTimeout(() => setApplySuccess(""), 3000);
 
                 fetchLeaveBalance();
@@ -271,7 +268,6 @@ export default function MyLeaves() {
         setEditError("");
         const isHalfDay = Number(req.totalDays) === 0.5;
         setEditForm({
-            leaveTypeId: String(req.leaveTypeId ?? ""),
             fromDate: req.fromDate ? String(req.fromDate).slice(0, 10) : "",
             toDate: isHalfDay
                 ? (req.fromDate ? String(req.fromDate).slice(0, 10) : "")
@@ -296,8 +292,8 @@ export default function MyLeaves() {
 
         if (!editingRequest) return;
 
-        if (!editForm.leaveTypeId || !editForm.fromDate || (!editForm.halfDay && !editForm.toDate)) {
-            setEditError("Leave type, from date and to date are required.");
+        if (!editForm.fromDate || (!editForm.halfDay && !editForm.toDate)) {
+            setEditError("From date and to date are required.");
             return;
         }
 
@@ -321,7 +317,6 @@ export default function MyLeaves() {
         setEditSubmitting(true);
         try {
             const payload = {
-                leaveTypeId: Number(editForm.leaveTypeId),
                 fromDate: editForm.fromDate,
                 toDate: effectiveToDate,
                 totalDays,
@@ -337,7 +332,7 @@ export default function MyLeaves() {
 
                 setShowEditModal(false);
                 setEditingRequest(null);
-                setApplySuccess(`Leave request for ${updated.leaveName || editingRequest.leaveName} updated successfully.`);
+                setApplySuccess("Leave request updated successfully.");
                 setTimeout(() => setApplySuccess(""), 3000);
 
                 fetchLeaveBalance();
@@ -551,7 +546,16 @@ export default function MyLeaves() {
                             ) : (
                                 requests.map((req: any) => (
                                     <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-slate-900">{req.leaveName}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900">
+                                            {req.leaveName ? (
+                                                req.leaveName
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 text-slate-400 italic font-semibold">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                                    Pending Type
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 font-medium text-slate-600">
                                             {new Date(req.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                                             <span className="text-xs text-slate-400 mx-2">to</span>
@@ -631,29 +635,6 @@ export default function MyLeaves() {
                         </div>
 
                         <form onSubmit={handleApplyLeave} className="space-y-5">
-                            <div>
-                                <label className={labelClass}>Leave Type *</label>
-                                <select
-                                    value={form.leaveTypeId}
-                                    onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
-                                    className={`${inputClass} cursor-pointer appearance-none`}
-                                    required
-                                >
-                                    <option value="" disabled>-- Select leave type --</option>
-                                    {activeLeaveTypes.map((t: any) => {
-                                        const bal: any = balances.find((b: any) => b.leaveTypeId === t.leaveTypeId);
-                                        return (
-                                            <option key={t.leaveTypeId} value={t.leaveTypeId}>
-                                                {t.leaveName}{bal ? ` (${bal.balanceLeaves} left)` : " (balance not set)"}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                                {activeLeaveTypes.length === 0 && (
-                                    <p className="text-[10px] font-bold text-rose-500 mt-1 ml-1">No leave types configured yet.</p>
-                                )}
-                            </div>
-
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClass}>From Date *</label>
@@ -754,26 +735,6 @@ export default function MyLeaves() {
                         </div>
 
                         <form onSubmit={handleUpdateLeave} className="space-y-5">
-                            <div>
-                                <label className={labelClass}>Leave Type *</label>
-                                <select
-                                    value={editForm.leaveTypeId}
-                                    onChange={(e) => setEditForm({ ...editForm, leaveTypeId: e.target.value })}
-                                    className={`${inputClass} cursor-pointer appearance-none`}
-                                    required
-                                >
-                                    <option value="" disabled>-- Select leave type --</option>
-                                    {activeLeaveTypes.map((t: any) => {
-                                        const bal: any = balances.find((b: any) => b.leaveTypeId === t.leaveTypeId);
-                                        return (
-                                            <option key={t.leaveTypeId} value={t.leaveTypeId}>
-                                                {t.leaveName}{bal ? ` (${bal.balanceLeaves} left)` : " (balance not set)"}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                            </div>
-
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClass}>From Date *</label>

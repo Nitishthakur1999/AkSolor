@@ -224,7 +224,6 @@ namespace AkerpSuite.Server.Repositories
         }
 
         // Leave
-
         public async Task<IEnumerable<SelfLeaveBalanceResponseDto>> GetLeaveBalanceAsync(int empId, int year)
         {
             using var connection = _context.CreateConnection();
@@ -268,6 +267,7 @@ namespace AkerpSuite.Server.Repositories
                 parameters,
                 commandType: CommandType.StoredProcedure);
         }
+
         // Attendance
 
         public async Task<IEnumerable<SelfAttendanceResponseDto>> GetMyAttendanceAsync(int empId, DateTime? fromDate, DateTime? toDate)

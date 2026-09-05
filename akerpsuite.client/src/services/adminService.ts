@@ -80,6 +80,7 @@ export const adminService = {
 
     // 1. Dashboard
     getDashboard: () => apiCall(`${API_BASE}/dashboard`),
+    getDashboardDetail: (cardKey) => apiCall(`${API_BASE}/dashboard/detail/${cardKey}`),
 
     // 2. Roles
     getRoles: () => apiCall(`${API_BASE}/getallroles`),

@@ -47,6 +47,10 @@ namespace AkerpSuite.Server.Services
         public async Task<IEnumerable<DashboardCardDto>> GetDashboardAsync(int roleId)
             => await _repository.GetDashboardByRoleAsync(roleId);
 
+        // Service
+        public async Task<IEnumerable<dynamic>> GetDashboardDetailAsync(string cardKey)
+            => await _repository.GetDashboardCardDetailAsync(cardKey);
+
         #endregion
 
         #region Role Management

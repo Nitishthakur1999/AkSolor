@@ -79,7 +79,7 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? EmpCode { get; set; }
         public string? FullName { get; set; }
         public string? Department { get; set; }
-        public int LeaveTypeId { get; set; }
+        public int? LeaveTypeId { get; set; }
         public string? LeaveCode { get; set; }
         public string? LeaveName { get; set; }
         public DateTime? FromDate { get; set; }

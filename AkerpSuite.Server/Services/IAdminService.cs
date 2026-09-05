@@ -8,7 +8,7 @@ namespace AkerpSuite.Server.Services
 
         #region Dashboard
         Task<IEnumerable<DashboardCardDto>> GetDashboardAsync(int roleId);
-
+        Task<IEnumerable<dynamic>> GetDashboardDetailAsync(string cardKey);
         #endregion
 
         #region Role Management
