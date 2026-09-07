@@ -9,10 +9,10 @@ export default function AboutPage() {
     return (
         <>
             <PageHeader
-                eyebrow="About AKS Solar"
+                eyebrow="About AKS Solar Systems Private Limited"
                 title="Built in the hills of"
                 highlight="Himachal Pradesh."
-                desc="Incorporated in 2023 and based in Sunder Nagar, Mandi — we design, install, and maintain solar systems for homes, institutions, and businesses across North India."
+                desc="AKS Solar Systems Private Limited was incorporated in 2023 and is based in Sunder Nagar, Mandi, Himachal Pradesh — we design, install, and maintain solar systems for homes, institutions, and businesses across North India."
             />
             <Process />
             <Team />

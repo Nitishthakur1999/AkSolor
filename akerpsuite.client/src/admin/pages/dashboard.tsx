@@ -1,88 +1,6 @@
 // pages/Dashboard.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { adminService } from "@/services/adminService";
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
-
-const SNAPSHOT_TITLES = ["Total Employees", "Departments", "Designations", "Roles", "Total Users"];
-const PENDING_TITLES = [
-    "Pending Leaves",
-    "Monthly Leave Requests",
-    "Pending Payroll",
-    "Pending Payments",
-    "Pending Overtime",
-    "Low Stock Items",
-];
-
-const CHART_BAR_COLOR = "#d97706"; // amber-600, matches the accent used across the app
-const CHART_GRID_COLOR = "#e2e8f0"; // slate-200
-const CHART_TEXT_COLOR = "#64748b"; // slate-500
-
-function CardBarChart({ title, icon, data, onBarClick, activeName }) {
-    if (data.length === 0) return null;
-
-    return (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-                <i className={`fa-solid ${icon} text-amber-500 text-sm`} />
-                <h3 className="text-slate-700 text-xs sm:text-sm font-sans font-bold uppercase tracking-wider">
-                    {title}
-                </h3>
-                <span className="text-[10px] text-slate-400 font-normal normal-case ml-auto">Tap a bar for details</span>
-            </div>
-            <div className="h-64 sm:h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 8 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} vertical={false} />
-                        <XAxis
-                            dataKey="name"
-                            tick={{ fill: CHART_TEXT_COLOR, fontSize: 10 }}
-                            axisLine={{ stroke: CHART_GRID_COLOR }}
-                            tickLine={false}
-                            interval={0}
-                            angle={-35}
-                            textAnchor="end"
-                            height={64}
-                        />
-                        <YAxis
-                            tick={{ fill: CHART_TEXT_COLOR, fontSize: 11 }}
-                            axisLine={false}
-                            tickLine={false}
-                            allowDecimals={false}
-                        />
-                        <Tooltip
-                            cursor={{ fill: "rgba(217, 119, 6, 0.08)" }}
-                            contentStyle={{
-                                borderRadius: 10,
-                                border: "1px solid #e2e8f0",
-                                fontSize: 12,
-                                fontFamily: "inherit",
-                            }}
-                            formatter={(value, _name, item) => [
-                                item?.payload?.prefix === "₹" ? `₹${Number(value).toLocaleString("en-IN")}` : value,
-                                "",
-                            ]}
-                        />
-                        <Bar
-                            dataKey="value"
-                            radius={[6, 6, 0, 0]}
-                            maxBarSize={44}
-                            cursor="pointer"
-                            onClick={(barData) => onBarClick && onBarClick(barData)}
-                        >
-                            {data.map((entry, idx) => (
-                                <Cell
-                                    key={idx}
-                                    fill={entry.name === activeName ? "#b45309" : CHART_BAR_COLOR}
-                                />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-    );
-}
 
 export default function Dashboard() {
     const [cards, setCards] = useState([]);
@@ -90,7 +8,7 @@ export default function Dashboard() {
     const [error, setError] = useState(null);
     const [fullName, setFullName] = useState("");
 
-    // 🆕 Inline detail-table state (replaces navigate-to-page behaviour)
+    // Inline detail-table state (replaces navigate-to-page behaviour)
     const [selectedCard, setSelectedCard] = useState(null); // the card object that's expanded
     const [detailRows, setDetailRows] = useState([]);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -134,31 +52,7 @@ export default function Dashboard() {
             .catch(() => setFullName(username || "there"));
     }, [username]);
 
-    // Split the flat card list into "chart" groups (rendered as bars) and
-    // everything else (still rendered as the original number tiles), so
-    // existing cards aren't duplicated between the grid and the charts.
-    const { snapshotData, pendingData, tileCards } = useMemo(() => {
-        const toChartPoint = (card) => ({
-            name: card.cardTitle,
-            value: Number(card.cardValue) || 0,
-            prefix: card.prefix,
-            cardKey: card.cardKey,
-        });
-
-        const snapshot = cards.filter((c) => SNAPSHOT_TITLES.includes(c.cardTitle));
-        const pending = cards.filter((c) => PENDING_TITLES.includes(c.cardTitle));
-        const chartedTitles = new Set([...SNAPSHOT_TITLES, ...PENDING_TITLES]);
-
-        return {
-            snapshotData: snapshot.map(toChartPoint),
-            pendingData: pending.map(toChartPoint),
-            tileCards: cards.filter((c) => !chartedTitles.has(c.cardTitle)),
-        };
-    }, [cards]);
-
-    // 🆕 Handle click on any card (tile OR chart bar) — fetches row-level
-    // detail data for that card and expands it in a table below, instead
-    // of navigating to a different page.
+    // Har card ab tile ke roop mein hi dikhega — koi bhi chart-only grouping nahi
     const handleCardClick = async (card) => {
         // Clicking the same card again collapses it
         if (selectedCard?.cardKey === card.cardKey) {
@@ -245,7 +139,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ── Cards Grid (everything not pulled into a chart below) ── */}
+            {/* ── Cards Grid (SAB cards ab yahin tile ke roop mein) ── */}
             {cards.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[160px] gap-2 bg-white border border-slate-200 rounded-2xl">
                     <i className="fa-solid fa-table-columns text-3xl text-slate-300" />
@@ -253,46 +147,18 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <>
-                    {tileCards.length > 0 && (
-                        <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                            {tileCards.map((card) => (
-                                <DashboardCard
-                                    key={card.cardKey}
-                                    card={card}
-                                    onClick={handleCardClick}
-                                    isActive={selectedCard?.cardKey === card.cardKey}
-                                />
-                            ))}
-                        </div>
-                    )}
-
-                    {/* ── Chart panels ── */}
-                    {(snapshotData.length > 0 || pendingData.length > 0) && (
-                        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-                            <CardBarChart
-                                title="Organisation Snapshot"
-                                icon="fa-building"
-                                data={snapshotData}
-                                activeName={selectedCard?.cardTitle}
-                                onBarClick={(bar) => {
-                                    const card = cards.find((c) => c.cardKey === bar.cardKey);
-                                    if (card) handleCardClick(card);
-                                }}
+                    <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                        {cards.map((card) => (
+                            <DashboardCard
+                                key={card.cardKey}
+                                card={card}
+                                onClick={handleCardClick}
+                                isActive={selectedCard?.cardKey === card.cardKey}
                             />
-                            <CardBarChart
-                                title="Pending & Actionable"
-                                icon="fa-triangle-exclamation"
-                                data={pendingData}
-                                activeName={selectedCard?.cardTitle}
-                                onBarClick={(bar) => {
-                                    const card = cards.find((c) => c.cardKey === bar.cardKey);
-                                    if (card) handleCardClick(card);
-                                }}
-                            />
-                        </div>
-                    )}
+                        ))}
+                    </div>
 
-                    {/* ── 🆕 Inline Detail Table (expands below when a card is clicked) ── */}
+                    {/* ── Inline Detail Table (expands below when a card is clicked) ── */}
                     {selectedCard && (
                         <DetailTable
                             card={selectedCard}
@@ -355,28 +221,114 @@ function DashboardCard({ card, onClick, isActive }) {
     );
 }
 
-// ─── 🆕 Inline Detail Table Component ─────────────────────────────────────────
+// ─── Inline Detail Table Component ─────────────────────────────────────────
 // Renders whatever rows the backend's `detail_query` for this card returns.
 // Columns are derived dynamically from the keys of the first row, so no
 // per-card table definition is needed on the frontend.
+
+const STATUS_STYLES = {
+    present: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    approved: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    won: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    active: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    open: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    published: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    completed: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    absent: "bg-rose-50 text-rose-700 ring-rose-600/20",
+    rejected: "bg-rose-50 text-rose-700 ring-rose-600/20",
+    cancelled: "bg-rose-50 text-rose-700 ring-rose-600/20",
+    lost: "bg-rose-50 text-rose-700 ring-rose-600/20",
+    fail: "bg-rose-50 text-rose-700 ring-rose-600/20",
+    pending: "bg-amber-50 text-amber-700 ring-amber-600/20",
+    draft: "bg-amber-50 text-amber-700 ring-amber-600/20",
+    hold: "bg-amber-50 text-amber-700 ring-amber-600/20",
+};
+
+function StatusPill({ value }) {
+    const key = String(value).toLowerCase();
+    const style = STATUS_STYLES[key] || "bg-slate-100 text-slate-600 ring-slate-500/20";
+    return (
+        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${style}`}>
+            {value}
+        </span>
+    );
+}
+
+function initialsOf(name) {
+    return String(name)
+        .split(" ")
+        .map((w) => w[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+}
+
+const AVATAR_COLORS = [
+    "bg-amber-100 text-amber-700",
+    "bg-sky-100 text-sky-700",
+    "bg-violet-100 text-violet-700",
+    "bg-rose-100 text-rose-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-indigo-100 text-indigo-700",
+];
+
+function avatarColor(name) {
+    const sum = String(name)
+        .split("")
+        .reduce((a, c) => a + c.charCodeAt(0), 0);
+    return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
+function formatCellValue(col, value) {
+    if (value === null || value === undefined || value === "") return "-";
+
+    const colLower = col.toLowerCase();
+
+    // ISO datetime → readable date/time
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}t\d{2}:\d{2}:\d{2}/i.test(value)) {
+        const d = new Date(value);
+        const hasTime = !(d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0);
+        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) +
+            (hasTime ? ", " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "");
+    }
+
+    // Amount-ish columns → currency
+    if (/amount|total|value/i.test(col) && !isNaN(Number(value))) {
+        return `₹${Number(value).toLocaleString("en-IN")}`;
+    }
+
+    // Status-ish columns → pill
+    if (colLower === "status" || colLower === "active") {
+        const display = value === 1 || value === "1" ? "Active" : value === 0 || value === "0" ? "Inactive" : value;
+        return <StatusPill value={display} />;
+    }
+
+    return String(value);
+}
+
 function DetailTable({ card, rows, loading, error, onClose }) {
     const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+    const nameCol = columns.find((c) => /employee|name|lead|candidate|supplier/i.test(c));
     const today = new Date().toLocaleDateString("en-GB", {
         day: "numeric",
-        month: "numeric",
+        month: "long",
         year: "numeric",
     });
 
     return (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100">
-                <h3 className="text-base sm:text-lg font-bold text-slate-800">
-                    {card.cardTitle} — {today}
-                </h3>
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800">
+                        {card.cardTitle}
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">{today} · {rows.length} record{rows.length !== 1 ? "s" : ""}</p>
+                </div>
                 <button
                     onClick={onClose}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-rose-600 transition-colors"
+                    className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors"
                 >
                     <i className="fa-solid fa-xmark" /> Close
                 </button>
@@ -406,7 +358,7 @@ function DetailTable({ card, rows, loading, error, onClose }) {
                                 {columns.map((col) => (
                                     <th
                                         key={col}
-                                        className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500"
+                                        className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sticky top-0 bg-slate-50/95 backdrop-blur"
                                     >
                                         {col}
                                     </th>
@@ -415,12 +367,19 @@ function DetailTable({ card, rows, loading, error, onClose }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm">
                             {rows.map((row, idx) => (
-                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                <tr key={idx} className="hover:bg-amber-50/40 transition-colors">
                                     {columns.map((col) => (
                                         <td key={col} className="px-6 py-3.5 text-slate-700 font-medium">
-                                            {row[col] === null || row[col] === undefined || row[col] === ""
-                                                ? "-"
-                                                : String(row[col])}
+                                            {col === nameCol && row[col] ? (
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${avatarColor(row[col])}`}>
+                                                        {initialsOf(row[col])}
+                                                    </span>
+                                                    <span>{row[col]}</span>
+                                                </div>
+                                            ) : (
+                                                formatCellValue(col, row[col])
+                                            )}
                                         </td>
                                     ))}
                                 </tr>

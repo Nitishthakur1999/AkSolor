@@ -39,6 +39,8 @@ export const footerLinks = {
         { label: 'Our Team', href: '/about#team' },
         { label: 'Careers', href: '/careers' },
         { label: 'Contact', href: '/contact' },
+        { label: 'Terms & Conditions', href: '/terms-and-conditions' },
+        { label: 'Privacy Policy', href: '/privacy-policy' },
     ],
     Services: [
         { label: 'PM Surya Ghar Muft Bijli Yojna', href: '/services' },
@@ -198,7 +200,7 @@ export const CONTACT = {
     address1: 'House No. 67-A/4, NH-21, Near IDBI Bank, Bhojpur',
     address2: 'Sunder Nagar, Distt. Mandi, Himachal Pradesh – 175002',
     tel: '01907-265350',
-    mobiles: '+91-9805763000, 9418060350, 8988353500',
+    mobiles: '+91-9805763000, 9418060350',
     email: 'akssolarsystems@gmail.com',
     hours: 'Mon–Sat: 9:00 AM – 6:00 PM',
     whatsapp: 'https://wa.me/919805763000',

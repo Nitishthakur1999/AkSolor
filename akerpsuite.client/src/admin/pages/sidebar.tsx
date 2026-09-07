@@ -452,6 +452,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 // ── Group Icons ──
+
 function getGroupIcon(group) {
     const icons = {
         General: "fa-table-cells-large",

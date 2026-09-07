@@ -7,54 +7,18 @@ const inputCls = 'w-full border border-line-strong bg-mist px-4 py-[13px] font-s
 const inputErrorCls = 'w-full border border-red-400 bg-mist px-4 py-[13px] font-sans text-[0.9rem] text-charcoal transition-colors duration-200 placeholder:text-slate-light focus:border-red-500 focus:bg-paper focus:outline-none'
 const labelCls = 'mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-slate'
 
-// All Indian States + Union Territories (alphabetical)
 const INDIA_STATES = [
-    'Andaman and Nicobar Islands',
-    'Andhra Pradesh',
-    'Arunachal Pradesh',
-    'Assam',
-    'Bihar',
-    'Chandigarh',
-    'Chhattisgarh',
-    'Dadra and Nagar Haveli and Daman and Diu',
-    'Delhi / NCR',
-    'Goa',
-    'Gujarat',
-    'Haryana',
-    'Himachal Pradesh',
-    'Jammu and Kashmir',
-    'Jharkhand',
-    'Karnataka',
-    'Kerala',
-    'Ladakh',
-    'Lakshadweep',
-    'Madhya Pradesh',
-    'Maharashtra',
-    'Manipur',
-    'Meghalaya',
-    'Mizoram',
-    'Nagaland',
-    'Odisha',
-    'Puducherry',
-    'Punjab',
-    'Rajasthan',
-    'Sikkim',
-    'Tamil Nadu',
-    'Telangana',
-    'Tripura',
-    'Uttar Pradesh',
-    'Uttarakhand',
-    'West Bengal',
-    'Other',
+    'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+    'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi / NCR',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir', 'Jharkhand',
+    'Karnataka', 'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra',
+    'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+    'Uttarakhand', 'West Bengal', 'Other',
 ]
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// A searchable "select" — types like a normal input, filters the option
-// list as you type, but submits through a hidden field so it still works
-// with the existing FormData-based submit flow. Visually it matches the
-// other inputs on the form (same inputCls), so the form doesn't look any
-// different until you start typing.
 function SearchableSelect({
     name,
     options,
@@ -182,15 +146,11 @@ export default function Contact() {
         const budget = fd.get('budget')?.toString().trim() || ''
         const message = fd.get('message')?.toString().trim() || ''
 
-        // Email is optional, but if the person entered one it must be a
-        // properly formed address before we submit.
         if (email && !EMAIL_REGEX.test(email)) {
             setEmailError('Please enter a valid email address.')
             return
         }
 
-        // Phone always carries the +91 country code; only the 10-digit
-        // number is typed by the user.
         const digits = phoneDigits.replace(/\D/g, '')
         if (digits.length !== 10) {
             setError('Please enter a valid 10-digit mobile number.')
@@ -201,8 +161,6 @@ export default function Contact() {
         setError('')
         setSubmitting(true)
 
-        // Backend ContactQuery only has Name / Phone / Email / Subject / Message,
-        // so fold the extra form fields (location, service, budget) into Subject/Message.
         const subject = service || 'General Enquiry'
         const fullMessage = [
             location && `Location: ${location}`,
@@ -262,6 +220,16 @@ export default function Contact() {
                     {/* ---------- Info column ---------- */}
                     <Reveal delay={1}>
                         <div className="border border-line border-l-[3px] border-l-gold bg-chalk px-5 py-6 sm:px-6 sm:py-7">
+                            {/* Legal business name — shown explicitly per verification requirement */}
+                            <div className="mb-6 border-b border-dashed border-line pb-6">
+                                <div className="mb-1 font-mono text-[0.7rem] uppercase tracking-wide text-slate">
+                                    Registered Business Name
+                                </div>
+                                <div className="text-[1.05rem] font-bold leading-[1.4] text-charcoal">
+                                    AKS Solar Systems Private Limited
+                                </div>
+                            </div>
+
                             <InfoRow icon="fa-map-marker-alt" label="Address">
                                 {CONTACT.address1}<br />{CONTACT.address2}
                             </InfoRow>

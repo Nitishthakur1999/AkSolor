@@ -1,8 +1,9 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../assets/logo.png'
 import { CONTACT, footerLinks } from '../data/siteData'
 
-const FACEBOOK_URL = 'https://www.facebook.com/share/1BPxRmiKBy/'
+const FACEBOOK_URL = 'https://www.facebook.com/akssolarsystemsprivatelimited/'
 const INSTAGRAM_URL = 'https://www.instagram.com/aks_solar_systems_pvt_ltd'
 const LINKEDIN_URL = 'https://www.linkedin.com/in/aks-solar'
 
@@ -11,9 +12,23 @@ const socialLinkCls =
 const socialClipStyle = { clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }
 
 export default function Footer() {
+    useEffect(() => {
+        if (document.getElementById('facebook-jssdk')) {
+            if ((window as any).FB) (window as any).FB.XFBML.parse()
+            return
+        }
+
+        const script = document.createElement('script')
+        script.id = 'facebook-jssdk'
+        script.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0'
+        script.async = true
+        script.defer = true
+        script.crossOrigin = 'anonymous'
+        document.body.appendChild(script)
+    }, [])
+
     return (
         <footer className="relative overflow-hidden border-t border-line bg-paper text-charcoal">
-            {/* dotted texture — uses the --color-line var directly, so it re-tints itself in dark mode too */}
             <div
                 className="pointer-events-none absolute inset-0"
                 style={{ backgroundImage: 'radial-gradient(circle, var(--color-line) 1.2px, transparent 1.2px)', backgroundSize: '24px 24px' }}
@@ -22,21 +37,45 @@ export default function Footer() {
             {/* top gold hairline */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" aria-hidden="true" />
 
+            {/* fb-root required by FB SDK — sirf yahin, page mein duplicate mat karna */}
+            <div id="fb-root"></div>
+
             <div className="container relative mx-auto max-w-[1240px] px-5 pb-7 pt-14 sm:px-7 sm:pt-20">
-                <div className="mb-10 grid grid-cols-1 gap-10 sm:mb-14 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-12 lg:grid-cols-[1.4fr_0.8fr_0.8fr_1.4fr] lg:gap-10">
+                <div className="mb-10 grid grid-cols-1 gap-10 sm:mb-14 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-12 lg:grid-cols-[1.3fr_0.7fr_0.9fr_0.7fr_1.1fr] lg:gap-8">
                     {/* Brand + about + socials */}
                     <div className="sm:col-span-2 lg:col-span-1">
                         <Link to="/" className="mb-4 flex items-center">
                             <img
                                 src={logo}
                                 alt="AKS Solar Systems Private Limited"
-                                className="block h-11 w-auto dark:brightness-0 dark:invert sm:h-[52px]"
+                                className="block h-24 w-auto sm:h-22 object-contain invert dark:invert-0"
                             />
                         </Link>
                         <p className="max-w-[320px] text-[0.88rem] leading-[1.8] text-slate sm:max-w-[280px]">
                             Enhancing ideas with solar energy from Sunder Nagar, Mandi. Incorporated 2023, serving clients
                             across North India.
                         </p>
+                        <div className="mt-4 flex flex-col gap-2.5 max-w-[320px] sm:max-w-[280px]">
+                            <div className="flex items-start gap-2.5 text-[0.85rem] leading-[1.6] text-charcoal-soft">
+                                <i className="fas fa-location-dot mt-1 shrink-0 text-gold-deep" />
+                                <span>
+                                    HOUSE NO. 67-A/4, NH-21, DISTT, near IDBI BANK, Bhojpur, Sundar Nagar,
+                                    Himachal Pradesh 175002
+                                </span>
+                            </div>
+                            <a
+                                href="tel:+918988353500"
+                                className="flex items-center gap-2.5 text-[0.85rem] text-charcoal-soft transition-colors hover:text-gold-deep"
+                            >
+                                <i className="fas fa-phone shrink-0 text-gold-deep" />
+                                <span>+91 89883 53500</span>
+                            </a>
+                            <div className="flex items-start gap-2.5 text-[0.85rem] leading-[1.6] text-charcoal-soft">
+                                <i className="fas fa-id-card mt-1 shrink-0 text-gold-deep" />
+                                <span>MSME Reg. No.: UDYAM-HP-08-0011484</span>
+                            </div>
+                        
+                        </div>
                         <div className="mt-6 flex flex-wrap gap-2.5">
                             <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className={socialLinkCls} style={socialClipStyle} aria-label="Facebook">
                                 <i className="fab fa-facebook-f text-[0.8rem] sm:text-[0.85rem]" />
@@ -91,7 +130,7 @@ export default function Footer() {
                                 data-href={FACEBOOK_URL}
                                 data-tabs="timeline"
                                 data-width=""
-                                data-height="300"
+                                data-height="350"
                                 data-small-header="true"
                                 data-adapt-container-width="true"
                                 data-hide-cover="false"
@@ -105,8 +144,9 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-4 border-t border-dashed border-line pt-7 text-center text-[0.78rem] text-slate sm:flex-row sm:justify-between sm:text-left">
-                    <span>{'\u00A9'} {new Date().getFullYear()} AKS Solar Systems Private Limited. All rights reserved.</span>
+                <div className="flex flex-col items-center gap-2 border-t border-dashed border-line pt-7 text-center text-[0.78rem] text-slate sm:flex-row sm:justify-center sm:gap-2">
+                    <span>{'\u00A9'} 2023 AKS Solar Systems Private Limited. All rights reserved.</span>
+                    <span className="hidden sm:inline">|</span>
                     <span>
                         Powered By{' '}
                         <a
@@ -120,6 +160,7 @@ export default function Footer() {
                     </span>
                 </div>
             </div>
+
         </footer>
     )
 }

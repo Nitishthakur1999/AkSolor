@@ -10,6 +10,8 @@ import AboutPage from "@/pages/AboutPage";
 import ServicesPage from "@/pages/ServicesPage";
 import GalleryPage from "@/pages/GalleryPage";
 import ContactPage from "@/pages/ContactPage";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import CmdLayout from "@/layout/cmdlayout";
 import Login from "@/admin/pages/LoginPage";
 import Dashboard from "@/admin/pages/dashboard";
@@ -148,6 +150,8 @@ function Router() {
                     <Route path="/gallery" element={<GalleryPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/careers" element={<Careers />} />
+                    <Route path="/terms-and-conditions" element={<TermsPage />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                     <Route path="/messages/founder" element={<FoundersMessage />} />
                     <Route path="/messages/cmd" element={<CmdMessage />} />
                     <Route path="/messages/director" element={<DirectorMessage />} />
