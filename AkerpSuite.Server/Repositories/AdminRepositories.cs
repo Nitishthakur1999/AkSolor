@@ -766,6 +766,24 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
         }
 
+        public async Task<bool> EditAttendanceAsync(int attId, AttendanceRequestDto request)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_att_id", attId);
+            parameters.Add("p_status", request.Status);
+            parameters.Add("p_check_in", request.CheckIn);
+            parameters.Add("p_check_out", request.CheckOut);
+            parameters.Add("p_remarks", request.Remarks);
+            parameters.Add("p_modified_by", request.CreatedBy);
+
+            var result = await connection.QuerySingleAsync<int>(
+                "sp_attendance_edit", parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return result > 0;
+        }
+
         public async Task<IEnumerable<AttendanceResponseDto>> GetAttendanceByEmpAsync(
             int empId, DateTime? fromDate, DateTime? toDate)
         {

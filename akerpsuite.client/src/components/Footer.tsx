@@ -48,7 +48,7 @@ export default function Footer() {
                             <img
                                 src={logo}
                                 alt="AKS Solar Systems Private Limited"
-                                className="block h-24 w-auto sm:h-22 object-contain invert dark:invert-0"
+                                className="block h-24 w-auto sm:h-22 object-contain"
                             />
                         </Link>
                         <p className="max-w-[320px] text-[0.88rem] leading-[1.8] text-slate sm:max-w-[280px]">

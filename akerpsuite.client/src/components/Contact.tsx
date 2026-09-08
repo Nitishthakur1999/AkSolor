@@ -219,7 +219,7 @@ export default function Contact() {
                 <div className="mt-10 grid grid-cols-1 gap-10 sm:mt-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
                     {/* ---------- Info column ---------- */}
                     <Reveal delay={1}>
-                        <div className="border border-line border-l-[3px] border-l-gold bg-chalk px-5 py-6 sm:px-6 sm:py-7">
+                        <div className="border border-line border-l-[3px] border-l-gold bg-chalk px-5 py-6 sm:px-6 sm:py-3">
                             {/* Legal business name — shown explicitly per verification requirement */}
                             <div className="mb-6 border-b border-dashed border-line pb-6">
                                 <div className="mb-1 font-mono text-[0.7rem] uppercase tracking-wide text-slate">
@@ -234,17 +234,13 @@ export default function Contact() {
                                 {CONTACT.address1}<br />{CONTACT.address2}
                             </InfoRow>
                             <InfoRow icon="fa-phone-alt" label="Phone">
-                                Tel: {CONTACT.tel}<br />Mobile: {CONTACT.mobiles}
+                                Mobile: {CONTACT.mobiles}
                             </InfoRow>
                             <InfoRow icon="fa-envelope" label="Email">
                                 {CONTACT.email}
                             </InfoRow>
                             <InfoRow icon="fa-clock" label="Working Hours">
                                 {CONTACT.hours}
-                            </InfoRow>
-                            <InfoRow icon="fa-building" label="Sister Concern" last>
-                                M/S Sharma Associates (Proprietorship Firm)<br />
-                                Same address — Bhojpur, Sunder Nagar, Mandi, HP
                             </InfoRow>
                         </div>
 
@@ -259,7 +255,7 @@ export default function Contact() {
                             style={{ clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%)' }}
                         >
                             <span
-                                className="pointer-events-none absolute right-0 top-0 z-[2] border-b-[20px] border-l-[20px] border-b-transparent border-l-gold/30"
+                                className="pointer-events-none absolute right-0 top-0 z-[2] border-b-[20px] border-l-[20px] border-b-transparent border-l-gold/60"
                                 aria-hidden="true"
                             ></span>
                             <iframe

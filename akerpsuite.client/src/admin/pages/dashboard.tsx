@@ -299,9 +299,12 @@ function formatCellValue(col, value) {
     }
 
     // Status-ish columns → pill
-    if (colLower === "status" || colLower === "active") {
-        const display = value === 1 || value === "1" ? "Active" : value === 0 || value === "0" ? "Inactive" : value;
-        return <StatusPill value={display} />;
+    if (colLower === "status") {
+        return <StatusPill value={value} />;
+    }
+    if (colLower === "active" || colLower === "is_active") {
+        const isActive = value === 1 || value === "1" || value === true;
+        return <StatusPill value={isActive ? "Active" : "Inactive"} />;
     }
 
     return String(value);

@@ -73,6 +73,7 @@ namespace AkerpSuite.Server.Services
 
         #region Attendance Management
         Task<MarkAttendanceResultDto> MarkAttendanceAsync(AttendanceRequestDto request);
+        Task<bool> EditAttendanceAsync(int attId, AttendanceRequestDto request);
         Task<IEnumerable<AttendanceResponseDto>> GetAttendanceByEmpAsync(int empId, DateTime? fromDate, DateTime? toDate);
         Task<IEnumerable<AttendanceResponseDto>> GetAllAttendanceAsync(int? empId, DateTime? attDate, string? status, DateTime? fromDate, DateTime? toDate);
         Task<int> CreateRegRequestAsync(AttendanceRegRequestDto request);

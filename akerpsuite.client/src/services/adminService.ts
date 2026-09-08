@@ -124,6 +124,7 @@ export const adminService = {
     getDashboardStats: () => apiCall(`${ATTENDANCE_API_BASE}/dashboard-stats`),
     getAttendanceAll: (filters?: any) => apiCall(`${ATTENDANCE_API_BASE}/all${buildQuery(filters)}`),
     markAttendance: (payload?: any) => apiCall(`${ATTENDANCE_API_BASE}/mark`, "POST", payload),
+    editAttendance: (attId?: any, payload?: any) => apiCall(`${ATTENDANCE_API_BASE}/${attId}/edit`, "PUT", payload),
     getRegRequests: (filters?: any) => apiCall(`${ATTENDANCE_API_BASE}/regularization${buildQuery(filters)}`),
     updateRegStatus: (reqId?: any, status?: any, approvedBy?: any) => apiCall(`${ATTENDANCE_API_BASE}/regularization/${reqId}/action?status=${status}&approvedBy=${approvedBy}`, "PATCH"),
     generateSummary: (payload?: any) => apiCall(`${ATTENDANCE_API_BASE}/summary/generate`, "POST", payload),

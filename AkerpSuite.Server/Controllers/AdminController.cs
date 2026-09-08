@@ -483,6 +483,23 @@ namespace AkerpSuite.Server.Controllers
                 LateMinutes = result.LateMinutes
             });
         }
+
+        // PUT /api/attendance/{attId}/edit
+        [HttpPut("{attId}/edit")]
+        [RequirePermission("Attendance", "Manage")]
+        public async Task<IActionResult> EditAttendance(int attId, [FromBody] AttendanceRequestDto request)
+        {
+            var empIdClaim = User.FindFirst("emp_id")?.Value;
+            int.TryParse(empIdClaim, out int editedBy);
+            request.CreatedBy = editedBy; // reuse field as "EditedBy" tracking
+
+            var result = await _service.EditAttendanceAsync(attId, request);
+            if (!result)
+                return NotFound(new { Success = false, Message = "Attendance record not found" });
+
+            return Ok(new { Success = true, Message = "Attendance updated successfully" });
+        }
+
         // GET /api/attendance/employee/{empId}?fromDate=&toDate=
         [HttpGet("employee/{empId}")]
         [RequirePermission("Attendance", "View")]

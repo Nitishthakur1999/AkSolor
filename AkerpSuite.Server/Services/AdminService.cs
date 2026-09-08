@@ -682,6 +682,19 @@ namespace AkerpSuite.Server.Services
             return await _repository.MarkAttendanceAsync(request);
         }
 
+        public async Task<bool> EditAttendanceAsync(int attId, AttendanceRequestDto request)
+        {
+            var validStatuses = new[] { "Present", "Absent", "Half-Day", "Holiday", "WeekOff", "Leave" };
+            if (!string.IsNullOrEmpty(request.Status) && !validStatuses.Contains(request.Status))
+                throw new InvalidOperationException($"Invalid status '{request.Status}'.");
+
+            if (!string.IsNullOrEmpty(request.CheckIn) && !string.IsNullOrEmpty(request.CheckOut)
+                && TimeSpan.Parse(request.CheckOut) < TimeSpan.Parse(request.CheckIn))
+                throw new InvalidOperationException("Check-out time cannot be before check-in time.");
+
+            return await _repository.EditAttendanceAsync(attId, request);
+        }
+
         public async Task<IEnumerable<AttendanceResponseDto>> GetAttendanceByEmpAsync(
             int empId, DateTime? fromDate, DateTime? toDate)
             => await _repository.GetAttendanceByEmpAsync(empId, fromDate, toDate);

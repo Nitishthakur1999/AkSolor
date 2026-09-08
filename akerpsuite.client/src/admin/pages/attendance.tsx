@@ -96,6 +96,11 @@ export default function Attendance() {
     const [dutyCapturedLocation, setDutyCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
     const [checkoutLocationStatus, setCheckoutLocationStatus] = useState("idle");
     const [checkoutCapturedLocation, setCheckoutCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
+
+    // 🆕 Edit Attendance modal state
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState({ attId: null, empName: "", attDate: "", status: "", checkIn: "", checkOut: "", remarks: "" });
+
     const getTodayDateStr = () => {
         const now = new Date();
         const yyyy = now.getFullYear();
@@ -357,6 +362,47 @@ export default function Attendance() {
         setShowDutyModal(true);
     };
 
+    // 🆕 Edit Attendance handlers
+    const openEditModal = (log) => {
+        setEditForm({
+            attId: log.attId,
+            empName: log.fullName || `EMP-${log.empId}`,
+            attDate: (log.attDate || "").slice(0, 10),
+            status: log.status,
+            checkIn: (log.checkIn || "").slice(0, 5),
+            checkOut: (log.checkOut || "").slice(0, 5),
+            remarks: log.remarks || ""
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditAttendance = async (e) => {
+        e.preventDefault();
+        setActionLoading(true);
+        try {
+            const payload = {
+                status: editForm.status,
+                checkIn: editForm.checkIn ? editForm.checkIn + ":00" : null,
+                checkOut: editForm.checkOut ? editForm.checkOut + ":00" : null,
+                remarks: editForm.remarks,
+                createdBy: user?.userId ?? user?.UserId ?? 1,
+            };
+            const res = await adminService.editAttendance(editForm.attId, payload);
+            if (res.Success || res.success) {
+                setShowEditModal(false);
+                loadAttendanceData();
+                showToast("Attendance updated successfully", "success");
+            } else {
+                showToast(res.Message || "Failed to update attendance.", "error");
+            }
+        } catch (err) {
+            console.error("Edit attendance error:", err);
+            showToast(err?.message || "Something went wrong while updating.", "error");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const reverseGeocode = async (latitude, longitude) => {
         try {
             const res = await fetch(
@@ -512,85 +558,85 @@ export default function Attendance() {
     };
 
     const handleMarkAttendance = async (e) => {
-    e.preventDefault();
- 
-    if (punchMode === "done") {
-        showToast("Attendance has already been marked for today (both Punch In and Punch Out are completed).", "info");
-        return;
-    }
- 
-    const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
-    if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
-        showToast("Please tap Punch In before submitting.", "error");
-        return;
-    }
-    if (punchMode === "out" && !markForm.checkOut) {
-        showToast("Please tap Punch Out before submitting.", "error");
-        return;
-    }
-    if (markForm.checkIn && markForm.checkOut && markForm.checkOut < markForm.checkIn) {
-        showToast("Punch-out time can't be before punch-in time.", "error");
-        return;
-    }
- 
-    const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && toMinutes(markForm.checkIn) > LATE_CUTOFF_MIN;
- 
-    setActionLoading(true);
-    try {
-        const { latitude, longitude, address } =
-            locationStatus === "captured" ? capturedLocation : await getCurrentLocation();
- 
-        const checkInForPayload = punchMode === "out"
-            ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
-            : (markForm.checkIn ? markForm.checkIn + ":00" : null);
- 
-        const checkoutLoc = markForm.checkOut
-            ? (checkoutLocationStatus === "captured" ? checkoutCapturedLocation : await getCheckoutLocation())
-            : { latitude: null, longitude: null, address: null };
- 
-        const payload = {
-            empId: parseInt(markForm.empId, 10),
-            attDate: markForm.attDate ? `${markForm.attDate}T00:00:00` : null,
-            checkIn: checkInForPayload,
-            checkOut: markForm.checkOut ? markForm.checkOut + ":00" : null,
-            status: markForm.status,
-            remarks: "",
-            createdBy: user?.userId ?? user?.UserId ?? 1,
-            latitude,
-            longitude,
-            locationAddress: address,
-            checkOutLatitude: checkoutLoc.latitude,
-            checkOutLongitude: checkoutLoc.longitude,
-            checkOutLocationAddress: checkoutLoc.address,
-        };
- 
-        const res = await adminService.markAttendance(payload);
-        if (res.Success || res.success) {
-            
-            setShowMarkModal(false);
-            setMarkForm({ empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: "" });
-            setLocationStatus("idle");
-            setCapturedLocation({ latitude: null, longitude: null, address: null });
-            setPunchMode(null);
-            setTodaysRecord(null);
-            loadAttendanceData();
- 
-            if (isLatePunchIn) {
-    showToast(
-        `Your Punch In was recorded at ${markForm.checkIn}, after the designated cutoff time of ${LATE_CUTOFF}. Your attendance has been marked as Present; however, it is pending approval from Admin/HR due to the late arrival.`,
-        "info"
-    );
-    }
-        } else {
-            showToast(res.Message || "Failed to mark attendance.", "error");
+        e.preventDefault();
+
+        if (punchMode === "done") {
+            showToast("Attendance has already been marked for today (both Punch In and Punch Out are completed).", "info");
+            return;
         }
-    } catch (err) {
-        console.error("Mark attendance error:", err);
-        showToast(err?.message || "Something went wrong while marking attendance.", "error");
-    } finally {
-        setActionLoading(false);
-    }
-};
+
+        const noPunchStatus = ["Absent", "Leave", "Holiday"].includes(markForm.status);
+        if (punchMode === "in" && !noPunchStatus && !markForm.checkIn) {
+            showToast("Please tap Punch In before submitting.", "error");
+            return;
+        }
+        if (punchMode === "out" && !markForm.checkOut) {
+            showToast("Please tap Punch Out before submitting.", "error");
+            return;
+        }
+        if (markForm.checkIn && markForm.checkOut && markForm.checkOut < markForm.checkIn) {
+            showToast("Punch-out time can't be before punch-in time.", "error");
+            return;
+        }
+
+        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && toMinutes(markForm.checkIn) > LATE_CUTOFF_MIN;
+
+        setActionLoading(true);
+        try {
+            const { latitude, longitude, address } =
+                locationStatus === "captured" ? capturedLocation : await getCurrentLocation();
+
+            const checkInForPayload = punchMode === "out"
+                ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
+                : (markForm.checkIn ? markForm.checkIn + ":00" : null);
+
+            const checkoutLoc = markForm.checkOut
+                ? (checkoutLocationStatus === "captured" ? checkoutCapturedLocation : await getCheckoutLocation())
+                : { latitude: null, longitude: null, address: null };
+
+            const payload = {
+                empId: parseInt(markForm.empId, 10),
+                attDate: markForm.attDate ? `${markForm.attDate}T00:00:00` : null,
+                checkIn: checkInForPayload,
+                checkOut: markForm.checkOut ? markForm.checkOut + ":00" : null,
+                status: markForm.status,
+                remarks: "",
+                createdBy: user?.userId ?? user?.UserId ?? 1,
+                latitude,
+                longitude,
+                locationAddress: address,
+                checkOutLatitude: checkoutLoc.latitude,
+                checkOutLongitude: checkoutLoc.longitude,
+                checkOutLocationAddress: checkoutLoc.address,
+            };
+
+            const res = await adminService.markAttendance(payload);
+            if (res.Success || res.success) {
+
+                setShowMarkModal(false);
+                setMarkForm({ empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: "" });
+                setLocationStatus("idle");
+                setCapturedLocation({ latitude: null, longitude: null, address: null });
+                setPunchMode(null);
+                setTodaysRecord(null);
+                loadAttendanceData();
+
+                if (isLatePunchIn) {
+                    showToast(
+                        `Your Punch In was recorded at ${markForm.checkIn}, after the designated cutoff time of ${LATE_CUTOFF}. Your attendance has been marked as Present; however, it is pending approval from Admin/HR due to the late arrival.`,
+                        "info"
+                    );
+                }
+            } else {
+                showToast(res.Message || "Failed to mark attendance.", "error");
+            }
+        } catch (err) {
+            console.error("Mark attendance error:", err);
+            showToast(err?.message || "Something went wrong while marking attendance.", "error");
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const handleRegAction = async (requestId, statusAction) => {
         if (!isAdminLevel) {
@@ -767,19 +813,19 @@ export default function Attendance() {
         return statusMatch && dateMatch;
     });
     const filteredLogs = filterBySearch(scopeToEmployee(filteredLogsBase), ["fullName", "status", "source"])
-    .slice()
-    .sort((a, b) => {
-        const ad = (a.attDate || "").slice(0, 10);
-        const bd = (b.attDate || "").slice(0, 10);
-        if (ad !== bd) return bd.localeCompare(ad); // naya date pehle
+        .slice()
+        .sort((a, b) => {
+            const ad = (a.attDate || "").slice(0, 10);
+            const bd = (b.attDate || "").slice(0, 10);
+            if (ad !== bd) return bd.localeCompare(ad); // naya date pehle
 
-        const at = a.checkIn ? a.checkIn.slice(0, 5) : "";
-        const bt = b.checkIn ? b.checkIn.slice(0, 5) : "";
-        if (!at && !bt) return 0;
-        if (!at) return 1;
-        if (!bt) return -1;
-        return bt.localeCompare(at); // late time pehle
-    });
+            const at = a.checkIn ? a.checkIn.slice(0, 5) : "";
+            const bt = b.checkIn ? b.checkIn.slice(0, 5) : "";
+            if (!at && !bt) return 0;
+            if (!at) return 1;
+            if (!bt) return -1;
+            return bt.localeCompare(at); // late time pehle
+        });
     const filteredRequests = filterBySearch(scopeToEmployee(regRequests), ["fullName", "reason", "status"]);
     const filteredSummaries = filterBySearch(scopeToEmployee(summaries), ["fullName"]);
     const sundayDateColumns = (
@@ -952,18 +998,18 @@ export default function Attendance() {
                 <div className="fixed top-6 right-6 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                     <div
                         className={`flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl border max-w-sm ${toast.type === "success"
-                                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                                : toast.type === "error"
-                                    ? "bg-rose-50 border-rose-200 text-rose-800"
-                                    : "bg-slate-800 border-slate-700 text-white"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            : toast.type === "error"
+                                ? "bg-rose-50 border-rose-200 text-rose-800"
+                                : "bg-slate-800 border-slate-700 text-white"
                             }`}
                     >
                         <i
                             className={`fa-solid mt-0.5 ${toast.type === "success"
-                                    ? "fa-circle-check text-emerald-500"
-                                    : toast.type === "error"
-                                        ? "fa-circle-exclamation text-rose-500"
-                                        : "fa-circle-info text-amber-400"
+                                ? "fa-circle-check text-emerald-500"
+                                : toast.type === "error"
+                                    ? "fa-circle-exclamation text-rose-500"
+                                    : "fa-circle-info text-amber-400"
                                 }`}
                         />
                         <p className="text-sm font-semibold flex-1">{toast.message}</p>
@@ -1251,17 +1297,18 @@ export default function Attendance() {
                                     <th className="px-6 py-4">Check In</th>
                                     <th className="px-6 py-4">Check Out</th>
                                     <th className="px-6 py-4">Location</th>
-                                        <th className="px-6 py-4">Checkout Location</th>   
+                                    <th className="px-6 py-4">Checkout Location</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Approval</th>
                                     <th className="px-6 py-4">Source</th>
+                                    <th className="px-6 py-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                 {filteredLogs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-16 text-center text-slate-400 font-medium">
-                                            {searchTerm ? "No matching attendance records found" : "No attendance records found"}                                    
+                                        <td colSpan={10} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                            {searchTerm ? "No matching attendance records found" : "No attendance records found"}
                                         </td>
                                     </tr>
                                 ) : pagedLogs.map((log) => (
@@ -1284,9 +1331,9 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-[13px] text-slate-500 max-w-[200px] truncate" title={log.locationAddress || ""}>
                                             {log.locationAddress ? log.locationAddress : log.latitude && log.longitude ? `${Number(log.latitude).toFixed(5)}, ${Number(log.longitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
                                         </td>
-                                         <td className="px-6 py-4 text-[13px] text-slate-500 max-w-[200px] truncate" title={log.checkOutLocationAddress || ""}>
+                                        <td className="px-6 py-4 text-[13px] text-slate-500 max-w-[200px] truncate" title={log.checkOutLocationAddress || ""}>
                                             {log.checkOutLocationAddress ? log.checkOutLocationAddress : log.checkOutLatitude && log.checkOutLongitude ? `${Number(log.checkOutLatitude).toFixed(5)}, ${Number(log.checkOutLongitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
-                                        </td> 
+                                        </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />
@@ -1330,6 +1377,16 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-xs font-semibold">
                                             <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500">{log.source}</span>
                                         </td>
+                                        {isAdminLevel && (
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    onClick={() => openEditModal(log)}
+                                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                                >
+                                                    <i className="fa-solid fa-pen" /> Edit
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -1458,7 +1515,7 @@ export default function Attendance() {
                                     <th className="px-6 py-4 text-center text-emerald-600">Present</th>
                                     <th className="px-6 py-4 text-center text-rose-600">Absent</th>
                                     <th className="px-6 py-4 text-center text-amber-600">Late Marks</th>
-                                    
+
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
@@ -1476,7 +1533,7 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-center font-mono font-bold text-emerald-600 bg-emerald-50/30">{sum.presentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-rose-600 bg-rose-50/30">{sum.absentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-amber-600 bg-amber-50/30">{sum.lateMarks}</td>
-                                       
+
                                     </tr>
                                 ))}
                             </tbody>
@@ -1942,6 +1999,80 @@ export default function Attendance() {
                                     className="flex-1 py-3 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-lg shadow-amber-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
                                 >
                                     {actionLoading ? "Saving..." : "Log Duty"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 🆕 Edit Attendance Modal (Admin Only) */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-[24px] p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xl font-bold text-slate-900">Edit Attendance</h3>
+                            <button onClick={() => setShowEditModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                <i className="fa-solid fa-xmark text-lg" />
+                            </button>
+                        </div>
+                        <div className="px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-700">
+                            {editForm.empName} — {editForm.attDate}
+                        </div>
+                        <form onSubmit={handleEditAttendance} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Check In</label>
+                                    <input
+                                        type="time"
+                                        value={editForm.checkIn}
+                                        onChange={e => setEditForm({ ...editForm, checkIn: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all shadow-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Check Out</label>
+                                    <input
+                                        type="time"
+                                        value={editForm.checkOut}
+                                        onChange={e => setEditForm({ ...editForm, checkOut: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all shadow-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
+                                <select
+                                    value={editForm.status}
+                                    onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-bold focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all cursor-pointer shadow-sm"
+                                >
+                                    <option>Present</option><option>Absent</option><option>Half-Day</option><option>Holiday</option><option>Leave</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Remarks</label>
+                                <textarea
+                                    rows={2}
+                                    value={editForm.remarks}
+                                    onChange={e => setEditForm({ ...editForm, remarks: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all resize-none shadow-sm"
+                                />
+                            </div>
+                            <div className="pt-2 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="flex-1 py-3.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-lg shadow-[#0b2836]/20 disabled:opacity-60 transition-all hover:bg-[#0f3345]"
+                                >
+                                    {actionLoading ? "Saving..." : "Save Changes"}
                                 </button>
                             </div>
                         </form>
