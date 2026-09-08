@@ -17,37 +17,50 @@ export default function LeaveRequests() {
     // leaveId currently showing the "forward to..." choice
     const [forwardPickerId, setForwardPickerId] = useState(null);
 
-    // NEW: leaveId currently showing the "select leave type to approve" picker
+    // leaveId currently showing the "select leave type to approve" picker
     const [approvePickerId, setApprovePickerId] = useState(null);
     const [selectedLeaveTypeId, setSelectedLeaveTypeId] = useState("");
     const [leaveTypes, setLeaveTypes] = useState([]);
 
-    // NEW: leaveId currently mid-flight (prevents double-submit)
+    // leaveId currently mid-flight (prevents double-submit)
     const [actioningId, setActioningId] = useState(null);
 
+    // load once + polling + focus refresh, so HR/Manager tab
+    // status (Approved/Rejected/Forwarded) stays in sync across users
     useEffect(() => {
         loadRequests();
-        loadLeaveTypes(); // NEW
+        loadLeaveTypes();
+
+        const interval = setInterval(() => {
+            loadRequests(true); // silent refresh, no spinner flicker
+        }, 15000); // 15s poll
+
+        const onFocus = () => loadRequests(true);
+        window.addEventListener("focus", onFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", onFocus);
+        };
     }, []);
 
     useEffect(() => {
         setCurrentPage(1);
     }, [activeTab]);
 
-    const loadRequests = async () => {
-        setLoading(true);
+    const loadRequests = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const res = await adminService.getAllLeaveRequests();
             if (res.Success || res.success) setLeaveRequests(res.Data || res.data || []);
         } catch (err) {
             console.error("Failed to load requests:", err);
-            alert("Failed to load leave requests. You may not have permission to view this data.");
+            if (!silent) alert("Failed to load leave requests. You may not have permission to view this data.");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
-    // NEW: fetch leave types for the approve dropdown
     const loadLeaveTypes = async () => {
         try {
             const res = await adminService.getLeaveTypes();
@@ -58,8 +71,8 @@ export default function LeaveRequests() {
     };
 
     const handleLeaveAction = async (leaveId, statusAction, forwardedToRole = null, leaveTypeId = null) => {
-        if (actioningId === leaveId) return; // NEW: block duplicate call on same row
-        setActioningId(leaveId);             // NEW
+        if (actioningId === leaveId) return;
+        setActioningId(leaveId);
         try {
             const remarksText =
                 statusAction === "Forwarded"
@@ -68,10 +81,10 @@ export default function LeaveRequests() {
 
             const payload = {
                 status: statusAction,
-                approvedBy: user?.employeeId || 1,   // ⬅ userId ki jagah employeeId
+                approvedBy: user?.employeeId || 1,
                 remarks: remarksText,
                 ...(statusAction === "Forwarded" ? { forwardedToRole } : {}),
-                ...(statusAction === "Approved" ? { leaveTypeId } : {}), // NEW
+                ...(statusAction === "Approved" ? { leaveTypeId } : {}),
             };
 
             const res = await adminService.actionLeaveRequest(leaveId, payload);
@@ -83,23 +96,25 @@ export default function LeaveRequests() {
                                 ...req,
                                 status: statusAction,
                                 ...(statusAction === "Forwarded" ? { forwardedToRole } : {}),
-                                ...(statusAction === "Approved" ? { leaveTypeId } : {}), // NEW
+                                ...(statusAction === "Approved" ? { leaveTypeId } : {}),
                                 ...(statusAction === "Approved" || statusAction === "Rejected"
-                                    ? { approvedBy: user?.employeeId || 1 } // CHANGED: mirror what backend stores, so this manager's Approve/Reject tab filter keeps the row visible right away
+                                    ? { approvedBy: user?.employeeId || 1 }
                                     : {}),
                             }
                             : req
                     )
                 );
                 setForwardPickerId(null);
-                setApprovePickerId(null);       // NEW
-                setSelectedLeaveTypeId("");     // NEW
+                setApprovePickerId(null);
+                setSelectedLeaveTypeId("");
+
+                // pull fresh truth from server right after own action too
+                loadRequests(true);
             } else {
-                alert(res.Message || res.message || "Failed to process request"); // CHANGED: also check lowercase
+                alert(res.Message || res.message || "Failed to process request");
             }
         } catch (err) {
             console.error(err);
-            // NEW: try to pull the real backend message out of the error, whatever shape it comes in
             const backendMsg =
                 err?.response?.data?.Message ||
                 err?.response?.data?.message ||
@@ -108,23 +123,17 @@ export default function LeaveRequests() {
                 err?.message;
             alert(backendMsg || "Something went wrong while processing this request.");
         } finally {
-            setActioningId(null); // NEW
+            setActioningId(null);
         }
     };
 
-    // Tab-based split:
-    // HR tab -> CHANGED: now shows every leave request regardless of status, so HR keeps
-    //           seeing entries even after CMD/Director have approved or rejected them.
-    // Manager tab -> requests currently forwarded to this manager's role (pending action),
-    //                PLUS requests this manager has personally approved/rejected before
-    //                (matched via approvedBy), so their own history stays visible below.
     const tabFilteredBase = leaveRequests.filter(item => {
-        if (activeTab === "hr") return true; // CHANGED: no status filtering — HR sees all leaves
+        if (activeTab === "hr") return true;
 
         if (isManagerRole) {
-            return item.forwardedToRole === user?.role || item.approvedBy === user?.employeeId; // CHANGED
+            return item.forwardedToRole === user?.role || item.approvedBy === user?.employeeId;
         }
-        return item.status === "Forwarded"; // non-manager oversight view still sees forwarded items
+        return item.status === "Forwarded";
     });
 
     const SEARCHABLE_FIELDS = ["fullName", "leaveName", "reason", "status"];
@@ -142,7 +151,7 @@ export default function LeaveRequests() {
     return (
         <div className="space-y-5 pb-10 font-sans">
 
-            {/* ── Compact Header Section ── */}
+            {/* Header */}
             <div className="bg-[#0b2532] rounded-2xl px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
                 <div className="flex items-center gap-3.5">
                     <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
@@ -157,7 +166,7 @@ export default function LeaveRequests() {
                 </div>
             </div>
 
-            {/* ── Tabs ── */}
+            {/* Tabs */}
             <div className="flex gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-fit">
                 <button
                     onClick={() => setActiveTab("hr")}
@@ -175,7 +184,7 @@ export default function LeaveRequests() {
                 </button>
             </div>
 
-            {/* ── Live Search Utilities Bar ── */}
+            {/* Search */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">Search Requests</label>
                 <div className="relative group flex items-center gap-3">
@@ -200,7 +209,7 @@ export default function LeaveRequests() {
                 </div>
             </div>
 
-            {/* ── Core Records Table ── */}
+            {/* Table */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
                 <div className="overflow-x-auto min-h-[300px]">
                     {loading ? (
@@ -283,7 +292,6 @@ export default function LeaveRequests() {
                                             {activeTab === "hr" && req.status === "Pending" ? (
                                                 isHrRole ? (
                                                     approvePickerId === req.leaveId ? (
-                                                        // NEW: leave-type picker shown before final approve
                                                         <div className="flex items-center justify-center gap-2">
                                                             <select
                                                                 value={selectedLeaveTypeId}
@@ -368,7 +376,6 @@ export default function LeaveRequests() {
                                             ) : activeTab === "manager" && req.status === "Forwarded" ? (
                                                 isManagerRole && req.forwardedToRole === user?.role ? (
                                                     approvePickerId === req.leaveId ? (
-                                                        // NEW: same leave-type picker for CMD/Director approval
                                                         <div className="flex items-center justify-center gap-2">
                                                             <select
                                                                 value={selectedLeaveTypeId}
@@ -431,7 +438,6 @@ export default function LeaveRequests() {
                     )}
                 </div>
 
-                {/* 🔢 PAGINATION WIDGET BAR */}
                 {!loading && filteredData.length > 0 && (
                     <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border-t border-slate-200 text-sm text-slate-500 gap-4">
                         <div>

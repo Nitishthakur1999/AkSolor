@@ -1760,7 +1760,15 @@ namespace AkerpSuite.Server.Services
         }
 
         public async Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy)
-            => await _repository.UpsertSundayDutyAsync(request, createdBy);
+        {
+            await _repository.UpsertSundayDutyAsync(request, createdBy);
+
+            await _repository.RecalculateLedgerAsync(
+                request.EmpId,
+                request.DutyDate.Month,
+                request.DutyDate.Year
+            );
+        }
 
         private static List<DateTime> GetSundaysInMonth(int month, int year)
         {

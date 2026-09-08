@@ -592,7 +592,6 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
-
         [HttpGet("sunday-holiday-status/pdf")]
         [RequirePermission("Attendance", "Report")]
         public async Task<IActionResult> DownloadSundayHolidayStatusPdf([FromQuery] int month, [FromQuery] int year)
@@ -612,7 +611,6 @@ namespace AkerpSuite.Server.Controllers
             await _service.MarkSundayDutyAsync(request, createdBy);
             return Ok(new { Success = true, Message = "Sunday/Holiday duty status saved" });
         }
-
 
         #endregion
 

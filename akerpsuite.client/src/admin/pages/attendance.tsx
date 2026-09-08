@@ -101,6 +101,14 @@ export default function Attendance() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editForm, setEditForm] = useState({ attId: null, empName: "", attDate: "", status: "", checkIn: "", checkOut: "", remarks: "" });
 
+    // 🆕🆕 Back Date Attendance (HR direct entry) state
+    const [showBackDateModal, setShowBackDateModal] = useState(false);
+    const [backDateEmpSearchOpen, setBackDateEmpSearchOpen] = useState(false);
+    const [backDateEmpSearchText, setBackDateEmpSearchText] = useState("");
+    const [backDateForm, setBackDateForm] = useState({
+        empId: "", attDate: "", checkIn: "", checkOut: "", status: "Present", remarks: ""
+    });
+
     const getTodayDateStr = () => {
         const now = new Date();
         const yyyy = now.getFullYear();
@@ -195,6 +203,10 @@ export default function Attendance() {
         if (!isTeamLevel && activeTab === "sundayWorking") {
             setActiveTab("logs");
         }
+        // 🆕 backDate tab bhi admin-only, non-admin ko wapas logs pe bhejo
+        if (!isAdminLevel && activeTab === "backDate") {
+            setActiveTab("logs");
+        }
     }, [activeTab, isAdminLevel, isTeamLevel]);
 
     const loadAttendanceData = async () => {
@@ -206,6 +218,11 @@ export default function Attendance() {
             setLoading(false);
             return;
         }
+        // 🆕
+        if (!isAdminLevel && activeTab === "backDate") {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
             if (activeTab === "dashboard") {
@@ -214,6 +231,10 @@ export default function Attendance() {
                 const logsRes = await adminService.getAttendanceAll();
                 if (logsRes.Success || logsRes.success) setAttendanceLogs(logsRes.Data || logsRes.data || []);
             } else if (activeTab === "logs") {
+                const res = await adminService.getAttendanceAll();
+                if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
+            } else if (activeTab === "backDate") {
+                // 🆕 back-date tab bhi attendanceLogs hi use karta hai (already-added back entries dikhane ke liye)
                 const res = await adminService.getAttendanceAll();
                 if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
             } else if (activeTab === "sundayWorking") {
@@ -398,6 +419,76 @@ export default function Attendance() {
         } catch (err) {
             console.error("Edit attendance error:", err);
             showToast(err?.message || "Something went wrong while updating.", "error");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // 🆕🆕 Back Date Attendance handlers (HR/Admin direct entry, no GPS, no approval)
+    const openBackDateModal = () => {
+        setBackDateForm({
+            empId: "",
+            attDate: "",
+            checkIn: "",
+            checkOut: "",
+            status: "Present",
+            remarks: ""
+        });
+        setBackDateEmpSearchOpen(false);
+        setBackDateEmpSearchText("");
+        setShowBackDateModal(true);
+    };
+
+    const handleBackDateAttendance = async (e) => {
+        e.preventDefault();
+
+        if (!backDateForm.empId) {
+            showToast("Please select an employee.", "error");
+            return;
+        }
+        if (!backDateForm.attDate) {
+            showToast("Please select a date.", "error");
+            return;
+        }
+        if (backDateForm.attDate > getTodayDateStr()) {
+            showToast("Future date is not allowed for back-date entry.", "error");
+            return;
+        }
+        if (backDateForm.checkIn && backDateForm.checkOut && backDateForm.checkOut < backDateForm.checkIn) {
+            showToast("Punch-out time can't be before punch-in time.", "error");
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const payload = {
+                empId: parseInt(backDateForm.empId, 10),
+                attDate: `${backDateForm.attDate}T00:00:00`,
+                checkIn: backDateForm.checkIn ? backDateForm.checkIn + ":00" : null,
+                checkOut: backDateForm.checkOut ? backDateForm.checkOut + ":00" : null,
+                status: backDateForm.status,
+                remarks: backDateForm.remarks,
+                createdBy: user?.userId ?? user?.UserId ?? 1,
+                source: "Manual",
+                latitude: null,
+                longitude: null,
+                locationAddress: null,
+                checkOutLatitude: null,
+                checkOutLongitude: null,
+                checkOutLocationAddress: null,
+            };
+            const res = await adminService.markAttendance(payload);
+            if (res.Success || res.success) {
+                setShowBackDateModal(false);
+                setBackDateForm({ empId: "", attDate: "", checkIn: "", checkOut: "", status: "Present", remarks: "" });
+                loadAttendanceData();
+                showToast("Back-date attendance added successfully", "success");
+            } else {
+                showToast(res.Message || "Failed to add back-date attendance.", "error");
+            }
+        } catch (err) {
+            console.error("Back-date attendance error:", err);
+            showToast(err?.message || "Something went wrong while adding back-date attendance.", "error");
         } finally {
             setActionLoading(false);
         }
@@ -782,7 +873,9 @@ export default function Attendance() {
         { key: "logs", label: "Attendance Logs" },
         { key: "requests", label: "Attendance Approval Requests" },
         ...(isTeamLevel ? [{ key: "sundayWorking", label: "Sunday Working" }] : []),
-        ...(isAdminLevel ? [{ key: "summaries", label: "Monthly Summary" }] : [])
+        ...(isAdminLevel ? [{ key: "summaries", label: "Monthly Summary" }] : []),
+        // 🆕🆕 Back Date Attendance tab — HR/Admin only
+        ...(isAdminLevel ? [{ key: "backDate", label: "Back Date Attendance" }] : [])
     ];
 
     const filterBySearch = (list, fields) => {
@@ -843,6 +936,13 @@ export default function Attendance() {
         ["fullName"]
     );
 
+    // 🆕🆕 Back Date tab ke liye — sirf past-date, Manual-source entries dikhao (jo HR ne back-add ki)
+    const todayStrForBackDate = getTodayDateStr();
+    const backDateLogsBase = attendanceLogs.filter((log) => (log.attDate || "").slice(0, 10) < todayStrForBackDate);
+    const filteredBackDateLogs = filterBySearch(scopeToEmployee(backDateLogsBase), ["fullName", "status", "source"])
+        .slice()
+        .sort((a, b) => (b.attDate || "").slice(0, 10).localeCompare((a.attDate || "").slice(0, 10)));
+
     const isDashboardAbsentFilter = dashboardFilter?.status === "Absent";
     const isDashboardLateFilter = dashboardFilter?.label === "Late Arrivals";
 
@@ -891,12 +991,16 @@ export default function Attendance() {
     const pagedSummaries = paginate(filteredSummaries);
     const pagedSundayHoliday = paginate(filteredSundayHolidayData);
     const pagedDashboardLogs = dashboardFilter ? paginate(dashboardRows) : [];
+    // 🆕🆕
+    const pagedBackDateLogs = paginate(filteredBackDateLogs);
 
     const activeListMeta = {
         logs: { total: filteredLogs.length, placeholder: "Search by employee, status, or source..." },
         requests: { total: filteredRequests.length, placeholder: "Search by employee, reason, or status..." },
         summaries: { total: filteredSummaries.length, placeholder: "Search by employee name..." },
         sundayWorking: { total: filteredSundayHolidayData.length, placeholder: "Search by employee name..." },
+        // 🆕🆕
+        backDate: { total: filteredBackDateLogs.length, placeholder: "Search by employee, status..." },
     }[activeTab];
 
     const totalPages = activeListMeta ? Math.max(1, Math.ceil(activeListMeta.total / ITEMS_PER_PAGE)) : 1;
@@ -972,24 +1076,6 @@ export default function Attendance() {
         );
     };
 
-    const SearchBar = () => {
-        if (!activeListMeta) return null;
-        return (
-            <div className="bg-white px-6 pt-5 pb-2">
-                <div className="relative group max-w-sm">
-                    <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder={activeListMeta.placeholder}
-                        className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
-                    />
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="space-y-5 pb-10 font-sans">
 
@@ -1051,6 +1137,14 @@ export default function Attendance() {
                                     <i className="fa-solid fa-file-pdf" /> {pdfDownloading ? "Downloading..." : "Download PDF"}
                                 </button>
                             </>
+                        ) : activeTab === "backDate" && isAdminLevel ? (
+                            // 🆕🆕 Back Date tab ka apna header action button
+                            <button
+                                onClick={openBackDateModal}
+                                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2"
+                            >
+                                <i className="fa-solid fa-clock-rotate-left" /> Add Back Date Attendance
+                            </button>
                         ) : (
                             <>
                                 <button
@@ -1132,7 +1226,23 @@ export default function Attendance() {
                 )}
 
                 {/* Search & Loading States */}
-                {!loading && <SearchBar />}
+                {/* 🆕 FIX: pehle ek "SearchBar" function-component tha jo har render pe naya define hota
+                    tha — React use naya component treat karke remount kar deta, isliye ek character
+                    type karte hi input focus lose ho jaata tha. Ab seedha inline JSX hai, koi remount nahi. */}
+                {!loading && activeListMeta && (
+                    <div className="bg-white px-6 pt-5 pb-2">
+                        <div className="relative group max-w-sm">
+                            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder={activeListMeta.placeholder}
+                                className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="p-24 flex flex-col items-center justify-center gap-4">
@@ -1534,6 +1644,61 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-center font-mono font-bold text-rose-600 bg-rose-50/30">{sum.absentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-amber-600 bg-amber-50/30">{sum.lateMarks}</td>
 
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <PaginationBar />
+                    </div>
+                ) : activeTab === "backDate" && isAdminLevel ? (
+                    // 🆕🆕 Back Date Attendance tab content — HR/Admin ne jo bhi back-date entries daali hain unki list
+                    <div className="overflow-x-auto flex-1">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                                    <th className="px-6 py-4">Employee</th>
+                                    <th className="px-6 py-4">Date</th>
+                                    <th className="px-6 py-4">Check In</th>
+                                    <th className="px-6 py-4">Check Out</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Source</th>
+                                    <th className="px-6 py-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                                {filteredBackDateLogs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                            {searchTerm ? "No matching records found" : "No back-date entries yet. Use \"Add Back Date Attendance\" above."}
+                                        </td>
+                                    </tr>
+                                ) : pagedBackDateLogs.map((log) => (
+                                    <tr key={log.attId} className="hover:bg-slate-50/60 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-slate-900">
+                                            {log.fullName || `EMP-${log.empId}`}
+                                        </td>
+                                        <td className="px-6 py-4 font-medium text-slate-600">
+                                            {new Date(log.attDate).toLocaleDateString("en-IN")}
+                                        </td>
+                                        <td className="px-6 py-4 font-mono font-medium text-slate-600">{log.checkIn || "--:--"}</td>
+                                        <td className="px-6 py-4 font-mono font-medium text-slate-600">{log.checkOut || "--:--"}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                                {log.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-semibold">
+                                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500">{log.source}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => openEditModal(log)}
+                                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                            >
+                                                <i className="fa-solid fa-pen" /> Edit
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -2073,6 +2238,135 @@ export default function Attendance() {
                                     className="flex-1 py-3.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-lg shadow-[#0b2836]/20 disabled:opacity-60 transition-all hover:bg-[#0f3345]"
                                 >
                                     {actionLoading ? "Saving..." : "Save Changes"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 🆕🆕 Back Date Attendance Modal (HR/Admin Only) */}
+            {showBackDateModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-md rounded-[24px] p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xl font-bold text-slate-900">Add Back Date Attendance</h3>
+                            <button onClick={() => setShowBackDateModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                <i className="fa-solid fa-xmark text-lg" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleBackDateAttendance} className="space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Employee *</label>
+                                <div className="relative group">
+                                    <input
+                                        type="text"
+                                        required={!backDateForm.empId}
+                                        value={backDateEmpSearchOpen ? backDateEmpSearchText : (() => {
+                                            const sel = employees.find((emp) => String(emp.empId) === String(backDateForm.empId));
+                                            return sel ? `${sel.firstName} ${sel.lastName} (${sel.empCode})` : "";
+                                        })()}
+                                        onFocus={() => { setBackDateEmpSearchOpen(true); setBackDateEmpSearchText(""); }}
+                                        onChange={(e) => setBackDateEmpSearchText(e.target.value)}
+                                        onBlur={() => setTimeout(() => setBackDateEmpSearchOpen(false), 200)}
+                                        placeholder="-- Search Employee --"
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-bold focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-slate-50 focus:bg-white transition-all shadow-sm"
+                                    />
+                                    {backDateEmpSearchOpen && (
+                                        <div className="absolute z-50 mt-2 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl">
+                                            {(() => {
+                                                const q = backDateEmpSearchText.trim().toLowerCase();
+                                                const filtered = employees.filter((emp) => `${emp.firstName} ${emp.lastName} ${emp.empCode}`.toLowerCase().includes(q));
+                                                if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-slate-400 font-medium italic">No employees found</div>;
+                                                return filtered.map((emp) => (
+                                                    <div
+                                                        key={emp.empId}
+                                                        onMouseDown={() => {
+                                                            setBackDateForm(prev => ({ ...prev, empId: emp.empId.toString() }));
+                                                            setBackDateEmpSearchText("");
+                                                            setBackDateEmpSearchOpen(false);
+                                                        }}
+                                                        className="px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-700 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"
+                                                    >
+                                                        {emp.firstName} {emp.lastName} <span className="text-slate-400 text-xs ml-1">({emp.empCode})</span>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Date * (past dates only)</label>
+                                <input
+                                    type="date"
+                                    required
+                                    max={getTodayDateStr()}
+                                    value={backDateForm.attDate}
+                                    onChange={e => setBackDateForm({ ...backDateForm, attDate: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all shadow-sm"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Check In</label>
+                                    <input
+                                        type="time"
+                                        value={backDateForm.checkIn}
+                                        onChange={e => setBackDateForm({ ...backDateForm, checkIn: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all shadow-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Check Out</label>
+                                    <input
+                                        type="time"
+                                        value={backDateForm.checkOut}
+                                        onChange={e => setBackDateForm({ ...backDateForm, checkOut: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all shadow-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
+                                <select
+                                    value={backDateForm.status}
+                                    onChange={e => setBackDateForm({ ...backDateForm, status: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-bold focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all cursor-pointer shadow-sm"
+                                >
+                                    <option>Present</option><option>Absent</option><option>Half-Day</option><option>Holiday</option><option>Leave</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Remarks</label>
+                                <textarea
+                                    rows={2}
+                                    placeholder="Reason for back-date entry..."
+                                    value={backDateForm.remarks}
+                                    onChange={e => setBackDateForm({ ...backDateForm, remarks: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 bg-white transition-all resize-none shadow-sm"
+                                />
+                            </div>
+
+                            <div className="pt-2 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBackDateModal(false)}
+                                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-300 hover:bg-slate-50 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="flex-1 py-3.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-lg shadow-[#0b2836]/20 disabled:opacity-60 transition-all hover:bg-[#0f3345]"
+                                >
+                                    {actionLoading ? "Saving..." : "Add Attendance"}
                                 </button>
                             </div>
                         </form>

@@ -145,7 +145,7 @@ export default function Footer() {
                 </div>
 
                 <div className="flex flex-col items-center gap-2 border-t border-dashed border-line pt-7 text-center text-[0.78rem] text-slate sm:flex-row sm:justify-center sm:gap-2">
-                    <span>{'\u00A9'} 2023 AKS Solar Systems Private Limited. All rights reserved.</span>
+                    <span>{'\u00A9'} 2026 AKS Solar Systems Private Limited. All rights reserved.</span>
                     <span className="hidden sm:inline">|</span>
                     <span>
                         Powered By{' '}
