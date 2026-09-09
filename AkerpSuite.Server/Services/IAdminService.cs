@@ -114,6 +114,11 @@ namespace AkerpSuite.Server.Services
 
         #endregion
 
+        #region Notification Management
+        Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int empId);
+        Task MarkNotificationReadAsync(int notificationId, int empId);
+        #endregion
+
         #region Salary Structure
         Task<int> SetEmployeeSalaryAsync(EmployeeSalaryRequestDto request);
         Task<EmployeeSalaryResponseDto?> GetEmployeeSalaryAsync(int empId);

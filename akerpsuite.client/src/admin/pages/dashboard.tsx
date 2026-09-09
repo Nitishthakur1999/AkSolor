@@ -1,18 +1,25 @@
 // pages/Dashboard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [cards, setCards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [fullName, setFullName] = useState("");
 
-    // Inline detail-table state (replaces navigate-to-page behaviour)
-    const [selectedCard, setSelectedCard] = useState(null); // the card object that's expanded
+    // Inline detail-table state
+    const [selectedCard, setSelectedCard] = useState(null);
     const [detailRows, setDetailRows] = useState([]);
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState(null);
+
+    // notification state
+    const [notifications, setNotifications] = useState([]);
+    const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+    const notifRef = useRef(null);
 
     const role = localStorage.getItem("role") ?? "User";
     const username = localStorage.getItem("username") ?? "";
@@ -38,7 +45,6 @@ export default function Dashboard() {
             .finally(() => setLoading(false));
     }, []);
 
-    // Fetch first/last name for the greeting (localStorage only has username)
     useEffect(() => {
         adminService
             .getMyProfile()
@@ -52,9 +58,55 @@ export default function Dashboard() {
             .catch(() => setFullName(username || "there"));
     }, [username]);
 
-    // Har card ab tile ke roop mein hi dikhega — koi bhi chart-only grouping nahi
+    // notification load + 15s poll
+    useEffect(() => {
+        loadNotifications();
+
+        const interval = setInterval(() => {
+            loadNotifications();
+        }, 15000);
+
+        const onFocus = () => loadNotifications();
+        window.addEventListener("focus", onFocus);
+
+        const onClickOutside = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setShowNotifDropdown(false);
+            }
+        };
+        document.addEventListener("mousedown", onClickOutside);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("focus", onFocus);
+            document.removeEventListener("mousedown", onClickOutside);
+        };
+    }, []);
+
+    const loadNotifications = async () => {
+        try {
+            const res = await adminService.getUnreadNotifications();
+            if (res.Success || res.success) setNotifications(res.Data || res.data || []);
+        } catch (err) {
+            console.error("Failed to load notifications:", err);
+        }
+    };
+
+    const handleNotificationClick = async (notif) => {
+        try {
+            await adminService.markNotificationRead(notif.notificationId ?? notif.NotificationId);
+        } catch (err) {
+            console.error("Failed to mark notification read:", err);
+        }
+        setNotifications((prev) =>
+            prev.filter((n) => (n.notificationId ?? n.NotificationId) !== (notif.notificationId ?? notif.NotificationId))
+        );
+        setShowNotifDropdown(false);
+
+        const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(role);
+        navigate(isHrRole ? "/hr/leave/requests?tab=hr" : "/hr/leave/requests?tab=manager");
+    };
     const handleCardClick = async (card) => {
-        // Clicking the same card again collapses it
         if (selectedCard?.cardKey === card.cardKey) {
             setSelectedCard(null);
             setDetailRows([]);
@@ -87,7 +139,6 @@ export default function Dashboard() {
         setDetailError(null);
     };
 
-    // ─── Loading State ────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
@@ -97,7 +148,6 @@ export default function Dashboard() {
         );
     }
 
-    // ─── Error State ──────────────────────────────────────────────────────────
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
@@ -113,33 +163,84 @@ export default function Dashboard() {
         );
     }
 
-    // ─── Dashboard ────────────────────────────────────────────────────────────
     return (
         <div className="space-y-5 sm:space-y-6">
 
-            {/* ── Header ── */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[#0b2836] shadow-sm">
-                <div className="pointer-events-none absolute -right-10 -top-16 w-56 h-56 rounded-full bg-amber-300/10 blur-2xl" />
-                <div className="pointer-events-none absolute right-16 bottom-0 w-24 h-24 rounded-full bg-amber-300/10 blur-xl" />
-                <div className="relative flex items-center gap-3 p-5 sm:p-6">
-                    <div className="hidden sm:flex shrink-0 w-11 h-11 rounded-xl bg-white/[0.08] items-center justify-center">
-                        <i className="fa-solid fa-sun text-amber-300 text-lg" />
+            {/* ── Header (FIXED — overflow-hidden hataya, blobs alag layer mein) ── */}
+            <div className="relative rounded-2xl border border-slate-200 bg-[#0b2836] shadow-sm">
+                <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
+                    <div className="absolute -right-10 -top-16 w-56 h-56 rounded-full bg-amber-300/10 blur-2xl" />
+                    <div className="absolute right-16 bottom-0 w-24 h-24 rounded-full bg-amber-300/10 blur-xl" />
+                </div>
+
+                <div className="relative flex items-center justify-between gap-3 p-5 sm:p-6">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="hidden sm:flex shrink-0 w-11 h-11 rounded-xl bg-white/[0.08] items-center justify-center">
+                            <i className="fa-solid fa-sun text-amber-300 text-lg" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] sm:text-xs font-mono font-semibold text-amber-300/80 uppercase tracking-[0.2em]">
+                                {greeting} · {role}
+                            </p>
+                            <h1 className="font-display text-xl sm:text-2xl md:text-[26px] font-bold tracking-tight text-white leading-tight">
+                                {fullName}
+                            </h1>
+                            <p className="text-slate-400 text-[11px] sm:text-xs font-medium mt-0.5">
+                                Real-time organization overview — AkerpSuite ERP
+                            </p>
+                        </div>
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-[10px] sm:text-xs font-mono font-semibold text-amber-300/80 uppercase tracking-[0.2em]">
-                            {greeting} · {role}
-                        </p>
-                        <h1 className="font-display text-xl sm:text-2xl md:text-[26px] font-bold tracking-tight text-white leading-tight">
-                            {fullName}
-                        </h1>
-                        <p className="text-slate-400 text-[11px] sm:text-xs font-medium mt-0.5">
-                            Real-time organization overview — AkerpSuite ERP
-                        </p>
+
+                    {/* Bell notification */}
+                    <div className="relative shrink-0" ref={notifRef}>
+                        <button
+                            onClick={() => setShowNotifDropdown((prev) => !prev)}
+                            className="relative w-10 h-10 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] flex items-center justify-center transition-colors"
+                        >
+                            <i className="fa-solid fa-bell text-amber-300 text-base" />
+                            {notifications.length > 0 && (
+                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                    {notifications.length > 9 ? "9+" : notifications.length}
+                                </span>
+                            )}
+                        </button>
+
+                        {showNotifDropdown && (
+                            <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-lg z-50">
+                                <div className="px-4 py-3 border-b border-slate-100">
+                                    <p className="text-sm font-bold text-slate-800">Notifications</p>
+                                </div>
+                                {notifications.length === 0 ? (
+                                    <div className="px-4 py-8 text-center">
+                                        <i className="fa-solid fa-inbox text-2xl text-slate-300" />
+                                        <p className="text-xs text-slate-400 mt-2">No new notifications.</p>
+                                    </div>
+                                ) : (
+                                    notifications.map((notif) => (
+                                        <button
+                                            key={notif.notificationId ?? notif.NotificationId}
+                                            onClick={() => handleNotificationClick(notif)}
+                                            className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-amber-50/60 transition-colors flex items-start gap-2.5"
+                                        >
+                                            <span className="shrink-0 w-2 h-2 rounded-full bg-sky-500 mt-1.5" />
+                                            <div>
+                                                <p className="text-xs font-semibold text-slate-700">
+                                                    {notif.message ?? notif.Message}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                                    {new Date(notif.createdAt ?? notif.CreatedAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* ── Cards Grid (SAB cards ab yahin tile ke roop mein) ── */}
+            {/* Cards Grid */}
             {cards.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[160px] gap-2 bg-white border border-slate-200 rounded-2xl">
                     <i className="fa-solid fa-table-columns text-3xl text-slate-300" />
@@ -158,7 +259,6 @@ export default function Dashboard() {
                         ))}
                     </div>
 
-                    {/* ── Inline Detail Table (expands below when a card is clicked) ── */}
                     {selectedCard && (
                         <DetailTable
                             card={selectedCard}
@@ -190,13 +290,9 @@ function DashboardCard({ card, onClick, isActive }) {
             className={`group relative bg-white border rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer active:scale-[0.98] ${isActive ? "border-amber-400 ring-1 ring-amber-300/60" : "border-slate-200 hover:border-amber-300/60"
                 }`}
         >
-
-            {/* Top accent bar */}
             <div
                 className={`absolute top-0 left-3 right-3 h-0.5 rounded-full ${card.bgColor} opacity-70`}
             />
-
-            {/* Top row: label + icon */}
             <div className="flex items-start justify-between gap-2">
                 <p className="text-slate-500 text-[10px] sm:text-[11px] font-sans font-bold uppercase tracking-wider leading-snug">
                     {card.cardTitle}
@@ -207,8 +303,6 @@ function DashboardCard({ card, onClick, isActive }) {
                     <i className={`ti ${card.cardIcon} ${card.iconColor} text-sm sm:text-base`} />
                 </div>
             </div>
-
-            {/* Value */}
             <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
                 <h2 className="font-display text-xl sm:text-[26px] font-bold text-slate-900 tracking-tight tabular-nums">
                     {formattedValue}
@@ -220,11 +314,6 @@ function DashboardCard({ card, onClick, isActive }) {
         </div>
     );
 }
-
-// ─── Inline Detail Table Component ─────────────────────────────────────────
-// Renders whatever rows the backend's `detail_query` for this card returns.
-// Columns are derived dynamically from the keys of the first row, so no
-// per-card table definition is needed on the frontend.
 
 const STATUS_STYLES = {
     present: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -285,7 +374,6 @@ function formatCellValue(col, value) {
 
     const colLower = col.toLowerCase();
 
-    // ISO datetime → readable date/time
     if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}t\d{2}:\d{2}:\d{2}/i.test(value)) {
         const d = new Date(value);
         const hasTime = !(d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0);
@@ -293,12 +381,10 @@ function formatCellValue(col, value) {
             (hasTime ? ", " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "");
     }
 
-    // Amount-ish columns → currency
     if (/amount|total|value/i.test(col) && !isNaN(Number(value))) {
         return `₹${Number(value).toLocaleString("en-IN")}`;
     }
 
-    // Status-ish columns → pill
     if (colLower === "status") {
         return <StatusPill value={value} />;
     }
@@ -321,7 +407,6 @@ function DetailTable({ card, rows, loading, error, onClose }) {
 
     return (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                 <div>
                     <h3 className="text-base sm:text-lg font-bold text-slate-800">
@@ -337,7 +422,6 @@ function DetailTable({ card, rows, loading, error, onClose }) {
                 </button>
             </div>
 
-            {/* Body */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-14 gap-2">
                     <i className="fa-solid fa-spinner text-2xl text-amber-500 animate-spin" />
@@ -395,21 +479,18 @@ function DetailTable({ card, rows, loading, error, onClose }) {
     );
 }
 
-// ─── Value Formatter ──────────────────────────────────────────────────────────
 function formatValue(value, prefix) {
     if (value === null || value === undefined) return "—";
 
     const num = Number(value);
 
     if (prefix === "₹") {
-        // Currency formatting
         if (num >= 10_000_000) return `₹${(num / 10_000_000).toFixed(1)}Cr`;
         if (num >= 100_000) return `₹${(num / 100_000).toFixed(1)}L`;
         if (num >= 1_000) return `₹${(num / 1_000).toFixed(1)}K`;
         return `₹${num.toLocaleString("en-IN")}`;
     }
 
-    // Plain number
     if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
     if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
     return num.toLocaleString("en-IN");

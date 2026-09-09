@@ -75,7 +75,6 @@ namespace AkerpSuite.Server.Repositories
         #endregion
 
         #region Attendance Management
-        //Task<int> MarkAttendanceAsync(AttendanceRequestDto request);
         Task<MarkAttendanceResultDto> MarkAttendanceAsync(AttendanceRequestDto request);
         Task<bool> EditAttendanceAsync(int attId, AttendanceRequestDto request);
         Task<IEnumerable<AttendanceResponseDto>> GetAttendanceByEmpAsync(int empId, DateTime? fromDate, DateTime? toDate);
@@ -110,6 +109,9 @@ namespace AkerpSuite.Server.Repositories
         Task<LeaveRequestResponseDto?> GetLeaveRequestByIdAsync(int leaveId);
         Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request);
         Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year);
+        Task InsertLeaveNotificationAsync(int empId, string forwardedToRole, int leaveId, string message);
+        Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int userId);
+        Task MarkNotificationReadAsync(int notificationId, int userId);
 
         //Bank entry detail
         Task<int> CreateLeaveBalanceAsync(LeaveBalanceCreateRequestDto request);

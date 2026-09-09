@@ -1078,6 +1078,39 @@ namespace AkerpSuite.Server.Repositories
             return (rows ?? 0) > 0;
         }
 
+        public async Task InsertLeaveNotificationAsync(int empId, string forwardedToRole, int leaveId, string message)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_leave_notification_insert",
+                new
+                {
+                    p_emp_id = empId,
+                    p_forwarded_to_role = forwardedToRole,
+                    p_leave_id = leaveId,
+                    p_message = message
+                },
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int userId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<NotificationDto>(
+                "sp_notifications_get_unread",
+                new { p_emp_id = userId },
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+
+        public async Task MarkNotificationReadAsync(int notificationId, int userId)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_notification_mark_read",
+                new { p_notification_id = notificationId, p_emp_id = userId },   
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+
         public async Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year)
         {
             using var conn = _context.CreateConnection();
@@ -1140,6 +1173,8 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
         }
         #endregion
+
+
 
         #region Salary Structure 
         public async Task<int> SetEmployeeSalaryAsync(EmployeeSalaryRequestDto request)

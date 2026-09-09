@@ -820,6 +820,32 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
+        #region Notifications
+
+        [HttpGet("notifications/unread")]
+        [Authorize]
+        public async Task<IActionResult> GetUnreadNotifications()
+        {
+            if (!User.TryGetEmpId(out int empId))
+                return Unauthorized(new { Success = false, Message = "Invalid token — emp_id missing" });
+
+            var data = await _service.GetUnreadNotificationsAsync(empId);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        [HttpPut("notifications/{id}/read")]
+        [Authorize]
+        public async Task<IActionResult> MarkNotificationRead(int id)
+        {
+            if (!User.TryGetEmpId(out int empId))
+                return Unauthorized(new { Success = false, Message = "Invalid token — emp_id missing" });
+
+            await _service.MarkNotificationReadAsync(id, empId);
+            return Ok(new { Success = true, Message = "Marked as read" });
+        }
+
+        #endregion
+
         #region Payroll – Salary Structure, Processing, Payslip & Deductions
 
         // POST api/payroll/salary/set
@@ -1381,7 +1407,7 @@ namespace AkerpSuite.Server.Controllers
         }
         #endregion
 
-        #region Issue offer latter and appointemt latter
+        #region Issue Offer Letter and Appointment Letter
 
         // GET api/admin/candidates/5/offer-letter
         [HttpGet("candidates/{candidateId}/offer-letter")]

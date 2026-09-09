@@ -904,6 +904,29 @@ namespace AkerpSuite.Server.Services
 
         // Leave Requests
 
+        //public async Task<LeaveRequestResponseDto> CreateLeaveRequestAsync(LeaveRequestDto request)
+        //{
+        //    if (request.FromDate.Date > request.ToDate.Date)
+        //        throw new InvalidOperationException("From date cannot be after To date.");
+
+        //    if (request.FromDate.Date < DateTime.Today)
+        //        throw new InvalidOperationException("Cannot apply leave for past dates.");
+
+        //    if (request.TotalDays <= 0)
+        //        throw new InvalidOperationException("Total days must be greater than 0.");
+
+        //    if (string.IsNullOrWhiteSpace(request.Reason))
+        //        throw new InvalidOperationException("Reason is required.");
+
+        //    var result = await _repository.CreateLeaveRequestAsync(request);
+
+        //    // SP returns -1 or -2 for balance errors
+        //    if (result.LeaveId < 0)
+        //        throw new InvalidOperationException(result.ErrorMessage ?? "Failed to submit leave request.");
+
+        //    return result;
+        //}
+
         public async Task<LeaveRequestResponseDto> CreateLeaveRequestAsync(LeaveRequestDto request)
         {
             if (request.FromDate.Date > request.ToDate.Date)
@@ -924,9 +947,16 @@ namespace AkerpSuite.Server.Services
             if (result.LeaveId < 0)
                 throw new InvalidOperationException(result.ErrorMessage ?? "Failed to submit leave request.");
 
+            // NEW — HR ko notify karo naya leave apply hone pe
+            await _repository.InsertLeaveNotificationAsync(
+                request.EmpId,
+                "HR",
+                result.LeaveId,
+                "New leave request submitted for approval"
+            );
+
             return result;
         }
-
         public async Task<IEnumerable<LeaveRequestResponseDto>> GetAllLeaveRequestsAsync(
             int? empId, string? status, int? month, int? year)
             => await _repository.GetAllLeaveRequestsAsync(empId, status, month, year);
@@ -934,6 +964,56 @@ namespace AkerpSuite.Server.Services
         public async Task<LeaveRequestResponseDto?> GetLeaveRequestByIdAsync(int leaveId)
             => await _repository.GetLeaveRequestByIdAsync(leaveId);
 
+        //public async Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request, int roleId)
+        //{
+        //    var validStatuses = new[] { "Approved", "Rejected", "Cancelled", "Forwarded" };
+        //    if (!validStatuses.Contains(request.Status))
+        //        throw new InvalidOperationException($"Invalid status '{request.Status}'. Use Approved, Rejected, Cancelled, or Forwarded.");
+
+        //    var leave = await _repository.GetLeaveRequestByIdAsync(leaveId);
+        //    if (leave == null)
+        //        throw new InvalidOperationException("Leave request not found.");
+
+        //    if (request.ApprovedBy <= 0)
+        //        throw new InvalidOperationException("Approver ID is required.");
+
+        //    bool canForward = await _permissionRepo.HasPermissionAsync(roleId, "Leave", "Forward");
+        //    bool canFinalApprove = await _permissionRepo.HasPermissionAsync(roleId, "Leave", "FinalApprove");
+
+        //    if (request.Status == "Forwarded")
+        //    {
+        //        if (leave.Status != "Pending")
+        //            throw new InvalidOperationException($"Only pending requests can be forwarded. This is {leave.Status}.");
+        //        if (!canForward)
+        //            throw new InvalidOperationException("You don't have permission to forward leave requests.");
+        //        if (string.IsNullOrWhiteSpace(request.ForwardedToRole) || !new[] { "CMD", "Director" }.Contains(request.ForwardedToRole))
+        //            throw new InvalidOperationException("Select CMD or Director to forward this request.");
+        //    }
+        //    else if (request.Status == "Approved" || request.Status == "Rejected")
+        //    {
+        //        if (leave.Status == "Pending")
+        //        {
+        //            if (!canForward)
+        //                throw new InvalidOperationException("This request has not been forwarded — you can't act on it directly.");
+        //        }
+        //        else if (leave.Status == "Forwarded")
+        //        {
+        //            if (!canFinalApprove)
+        //                throw new InvalidOperationException("You don't have permission to give final approval.");
+        //        }
+        //        else
+        //        {
+        //            throw new InvalidOperationException($"Leave request is already {leave.Status}.");
+        //        }
+        //    }
+        //    else // Cancelled
+        //    {
+        //        if (leave.Status != "Pending")
+        //            throw new InvalidOperationException($"Leave request is already {leave.Status}.");
+        //    }
+
+        //    return await _repository.LeaveActionAsync(leaveId, request);
+        //}
         public async Task<bool> LeaveActionAsync(int leaveId, LeaveActionRequestDto request, int roleId)
         {
             var validStatuses = new[] { "Approved", "Rejected", "Cancelled", "Forwarded" };
@@ -982,7 +1062,20 @@ namespace AkerpSuite.Server.Services
                     throw new InvalidOperationException($"Leave request is already {leave.Status}.");
             }
 
-            return await _repository.LeaveActionAsync(leaveId, request);
+            var result = await _repository.LeaveActionAsync(leaveId, request);
+
+            // NEW — forward succeed hua toh CMD/Director ko notify karo
+            if (result && request.Status == "Forwarded")
+            {
+                await _repository.InsertLeaveNotificationAsync(
+                    leave.EmpId,
+                    request.ForwardedToRole,
+                    leaveId,
+                    $"{leave.FullName}'s leave request forwarded to you for approval"
+                );
+            }
+
+            return result;
         }
 
         public async Task<IEnumerable<LeaveRequestResponseDto>> GetLeaveHistoryAsync(int empId, int? year)
@@ -1000,6 +1093,15 @@ namespace AkerpSuite.Server.Services
 
         public async Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId) 
             => await _repository.GetLeaveBalanceByIdAsync(balanceId);
+
+        #endregion
+
+        #region Notification Management
+        public async Task<IEnumerable<NotificationDto>> GetUnreadNotificationsAsync(int empId)
+             => await _repository.GetUnreadNotificationsAsync(empId);
+
+        public async Task MarkNotificationReadAsync(int notificationId, int empId)
+            => await _repository.MarkNotificationReadAsync(notificationId, empId);
 
         #endregion
 

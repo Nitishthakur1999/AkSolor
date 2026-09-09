@@ -16,14 +16,16 @@ const handleUnauthorized = () => {
     window.location.href = "/login"; 
 };
 
-const apiCall = async (url: string, method: string = "GET", body: any = null): Promise<any> => {
+const apiCall = async (url: string, method: string = "GET", body: any = null, skipAuthRedirect: boolean = false): Promise<any> => {
     const options: RequestInit = { method, headers: getHeaders() };
     if (body) options.body = JSON.stringify(body);
 
     const res = await fetch(url, options);
 
     if (res.status === 401) {
-        handleUnauthorized();
+        if (!skipAuthRedirect) {
+            handleUnauthorized();
+        }
         throw new Error("Session expired, please login again.");
     }
 
@@ -81,6 +83,10 @@ export const adminService = {
     // 1. Dashboard
     getDashboard: () => apiCall(`${API_BASE}/dashboard`),
     getDashboardDetail: (cardKey) => apiCall(`${API_BASE}/dashboard/detail/${cardKey}`),
+
+    // 1b. Notifications — NEW
+    getUnreadNotifications: () => apiCall(`${API_BASE}/notifications/unread`, "GET", null, true),
+    markNotificationRead: (id?: any) => apiCall(`${API_BASE}/notifications/${id}/read`, "PUT", null, true),
 
     // 2. Roles
     getRoles: () => apiCall(`${API_BASE}/getallroles`),

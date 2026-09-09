@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
 export default function LeaveRequests() {
@@ -7,7 +8,8 @@ export default function LeaveRequests() {
     const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(user?.role);
     const isManagerRole = ["CMD", "Director"].includes(user?.role);
 
-    const [activeTab, setActiveTab] = useState("hr"); // "hr" | "manager"
+    const [searchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "manager" ? "manager" : "hr");
     const [loading, setLoading] = useState(false);
     const [leaveRequests, setLeaveRequests] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -282,9 +284,9 @@ export default function LeaveRequests() {
                                                     }`} />
                                                 {req.status}
                                             </span>
-                                            {req.status === "Forwarded" && req.forwardedToRole && (
+                                            {req.forwardedToRole && (
                                                 <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                                                    → {req.forwardedToRole}
+                                                    {req.status === "Forwarded" ? `→ ${req.forwardedToRole}` : `${req.status} by ${req.forwardedToRole}`}
                                                 </div>
                                             )}
                                         </td>

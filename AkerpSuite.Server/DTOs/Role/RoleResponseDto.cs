@@ -247,6 +247,16 @@ namespace AkerpSuite.Server.DTOs.Role
         public int? ForwardedTo { get; set; }
         public string? ForwardedToRole { get; set; }
     }
+    public class NotificationDto
+    {
+        public int NotificationId { get; set; }
+        public string Type { get; set; }
+        public int RefId { get; set; }
+        public string Message { get; set; }
+        public bool IsRead { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
     public class EmployeeSalaryResponseDto
     {
         public int SalId { get; set; }
