@@ -487,7 +487,16 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? Subject { get; set; }
         public string Message { get; set; } = string.Empty;
     }
-
+    public class TrackVisitRequestDto
+    {
+        public string PagePath { get; set; }
+    }
+    public class VisitorStatsDto
+    {
+        public int TotalVisits { get; set; }
+        public int UniqueVisitors { get; set; }
+        public int TodayVisits { get; set; }
+    }
     public enum PoStatus
     {
         Draft,

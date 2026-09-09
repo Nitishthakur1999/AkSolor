@@ -1740,6 +1740,25 @@ namespace AkerpSuite.Server.Repositories
 
         #endregion
 
+        #region Visitor Tracking
+        public async Task TrackVisitAsync(string pagePath, string ip, string userAgent)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_track_visit",
+                new { p_page_path = pagePath, p_ip = ip, p_user_agent = userAgent },
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+
+        public async Task<VisitorStatsDto> GetVisitorStatsAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstAsync<VisitorStatsDto>(
+                "sp_get_visitor_stats",
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+        #endregion
+
         #region Suppliers
         public async Task<int> CreateSupplierAsync(SupplierRequestDto request)
         {

@@ -102,7 +102,26 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
+        #region Visitor Tracking
 
+        [HttpPost("track-visit")]
+        public async Task<IActionResult> TrackVisit([FromBody] TrackVisitRequestDto request)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var userAgent = Request.Headers["User-Agent"].ToString();
+
+            await _service.TrackVisitAsync(request.PagePath, ip, userAgent);
+            return Ok(ApiResponseDto<object>.Ok(null, "Tracked"));
+        }
+
+        [HttpGet("visitor-count")]
+        public async Task<IActionResult> GetVisitorCount()
+        {
+            var stats = await _service.GetVisitorStatsAsync();
+            return Ok(ApiResponseDto<int>.Ok(stats.TotalVisits));
+        }
+
+        #endregion
 
     }
 }

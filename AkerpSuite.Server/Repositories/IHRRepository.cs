@@ -208,6 +208,11 @@ namespace AkerpSuite.Server.Repositories
         Task<bool> DeleteContactQueryAsync(int id);
         #endregion
 
+        #region Visitor Tracking
+        Task TrackVisitAsync(string pagePath, string ip, string userAgent);
+        Task<VisitorStatsDto> GetVisitorStatsAsync();
+        #endregion
+
         #region Suppliers
         Task<int> CreateSupplierAsync(SupplierRequestDto request);
         Task<bool> UpdateSupplierAsync(SupplierUpdateRequestDto request);

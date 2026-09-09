@@ -822,7 +822,6 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Public Site – Contact Query (no images)
-
         public async Task<int> CreateContactQueryAsync(ContactQueryRequestDto request)
             => await _repository.CreateContactQueryAsync(request);
 
@@ -835,6 +834,14 @@ namespace AkerpSuite.Server.Services
         public async Task<bool> DeleteContactQueryAsync(int id)
             => await _repository.DeleteContactQueryAsync(id);
 
+        #endregion
+
+        #region Visitor Tracking
+        public async Task TrackVisitAsync(string pagePath, string ip, string userAgent)
+            => await _repository.TrackVisitAsync(pagePath, ip, userAgent);
+
+        public async Task<VisitorStatsDto> GetVisitorStatsAsync()
+            => await _repository.GetVisitorStatsAsync();
         #endregion
 
         #region Private Helper

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../assets/logo.png'
 import { CONTACT, footerLinks } from '../data/siteData'
@@ -25,6 +25,21 @@ export default function Footer() {
         script.defer = true
         script.crossOrigin = 'anonymous'
         document.body.appendChild(script)
+    }, [])
+
+    const [visitorCount, setVisitorCount] = useState<number | null>(null)
+
+    useEffect(() => {
+        fetch('/api/public/track-visit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pagePath: window.location.pathname }),
+        }).catch(() => { })
+
+        fetch('/api/public/visitor-count')
+            .then((res) => res.json())
+            .then((data) => setVisitorCount(data.data ?? data.Data ?? null))
+            .catch(() => { })
     }, [])
 
     return (
@@ -147,20 +162,26 @@ export default function Footer() {
                 <div className="flex flex-col items-center gap-2 border-t border-dashed border-line pt-7 text-center text-[0.78rem] text-slate sm:flex-row sm:justify-center sm:gap-2">
                     <span>{'\u00A9'} 2026 AKS Solar Systems Private Limited. All rights reserved.</span>
                     <span className="hidden sm:inline">|</span>
-                    <span>
+                  <span>
                         Powered By{' '}
-                        <a
-                            href="https://www.appilogics.com/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-gold-deep transition-colors hover:underline"
-                        >
-                            Appilogics
-                        </a>
-                    </span>
-                </div>
-            </div>
-
-        </footer>
+                     <a href="https://www.appilogics.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-gold-deep transition-colors hover:underline">
+                        Appilogics
+                      </a>
+                  </span>
+                {visitorCount !== null && (
+                    <>
+                        <span className="hidden sm:inline">|</span>
+                        <span>
+                            <i className="fas fa-eye mr-1 text-gold-deep" />
+                            {visitorCount.toLocaleString('en-IN')} Visitors
+                        </span>
+                    </>
+                )}
+             </div>
+           </div>
+       </footer>
     )
 }
