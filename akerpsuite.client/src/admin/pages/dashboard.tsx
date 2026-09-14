@@ -106,7 +106,21 @@ export default function Dashboard() {
         const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(role);
         navigate(isHrRole ? "/hr/leave/requests?tab=hr" : "/hr/leave/requests?tab=manager");
     };
+
+    // ── NEW: cards that should navigate to a real page instead of opening the inline detail table ──
+    // Add more cardKey → route mappings here in future if needed.
+    const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(role);
+    const CARD_ROUTES = {
+        leaveApprovals: isHrRole ? "/hr/leave/requests?tab=hr" : "/hr/leave/requests?tab=manager",
+    };
+
     const handleCardClick = async (card) => {
+        // NEW: direct-navigation cards (e.g. "Leave Approvals") skip the modal entirely
+        if (CARD_ROUTES[card.cardKey]) {
+            navigate(CARD_ROUTES[card.cardKey]);
+            return;
+        }
+
         if (selectedCard?.cardKey === card.cardKey) {
             setSelectedCard(null);
             setDetailRows([]);
@@ -166,7 +180,7 @@ export default function Dashboard() {
     return (
         <div className="space-y-5 sm:space-y-6">
 
-            {/* ── Header (FIXED — overflow-hidden hataya, blobs alag layer mein) ── */}
+            {/* ── Header ── */}
             <div className="relative rounded-2xl border border-slate-200 bg-[#0b2836] shadow-sm">
                 <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
                     <div className="absolute -right-10 -top-16 w-56 h-56 rounded-full bg-amber-300/10 blur-2xl" />
