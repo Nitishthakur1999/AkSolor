@@ -51,6 +51,7 @@ export default function Attendance() {
     })();
 
     const [attendanceLogs, setAttendanceLogs] = useState([]);
+    const [resignedEmpIds, setResignedEmpIds] = useState(new Set());
     const [regRequests, setRegRequests] = useState([]);
     const [summaries, setSummaries] = useState([]);
     const [dashboardStats, setDashboardStats] = useState(null);
@@ -182,19 +183,30 @@ export default function Attendance() {
         setCurrentPage(1);
     }, [searchTerm]);
 
+
     useEffect(() => {
         adminService.getEmployees().then(res => {
             if (res.Success || res.success) {
                 const all = res.Data || res.data || [];
 
+                // 🆕 Resigned employees ki list bana lo — inki attendance logs/dashboard se hide karni hai
+                const resignedIds = new Set(
+                    all
+                        .filter(emp => String(emp.employmentStatus ?? emp.EmploymentStatus ?? "").toUpperCase() === "RESIGNED")
+                        .map(emp => Number(emp.empId ?? emp.EmpId))
+                );
+                setResignedEmpIds(resignedIds);
+
                 const filtered = all.filter(emp => {
                     const empRole = String(emp.role ?? emp.Role ?? emp.roleName ?? emp.RoleName ?? "").toUpperCase();
-                    return empRole !== "DIRECTOR" && empRole !== "CMD";
+                    const empStatus = String(emp.employmentStatus ?? emp.EmploymentStatus ?? "").toUpperCase();
+                    return empRole !== "DIRECTOR" && empRole !== "CMD" && empStatus !== "RESIGNED";
                 });
                 setEmployees(filtered);
             }
         });
     }, []);
+
 
     useEffect(() => {
         if (!isAdminLevel && activeTab === "summaries") {
@@ -901,10 +913,12 @@ export default function Attendance() {
     };
 
     const filteredLogsBase = attendanceLogs.filter((log) => {
+        if (resignedEmpIds.has(Number(log.empId))) return false; // 🆕 resigned employee hide
         const statusMatch = !statusFilter || log.status === statusFilter;
         const dateMatch = !dateFilter || (log.attDate || "").slice(0, 10) === dateFilter;
         return statusMatch && dateMatch;
     });
+
     const filteredLogs = filterBySearch(scopeToEmployee(filteredLogsBase), ["fullName", "status", "source"])
         .slice()
         .sort((a, b) => {
@@ -938,7 +952,9 @@ export default function Attendance() {
 
     // 🆕🆕 Back Date tab ke liye — sirf past-date, Manual-source entries dikhao (jo HR ne back-add ki)
     const todayStrForBackDate = getTodayDateStr();
-    const backDateLogsBase = attendanceLogs.filter((log) => (log.attDate || "").slice(0, 10) < todayStrForBackDate);
+    const backDateLogsBase = attendanceLogs.filter((log) =>
+        (log.attDate || "").slice(0, 10) < todayStrForBackDate && !resignedEmpIds.has(Number(log.empId)) // 🆕
+    );
     const filteredBackDateLogs = filterBySearch(scopeToEmployee(backDateLogsBase), ["fullName", "status", "source"])
         .slice()
         .sort((a, b) => (b.attDate || "").slice(0, 10).localeCompare((a.attDate || "").slice(0, 10)));
@@ -948,12 +964,16 @@ export default function Attendance() {
 
     const todayStr = new Date().toISOString().split("T")[0];
     const lateArrivalsCount = attendanceLogs.filter(
-        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.checkIn && log.checkIn.slice(0, 5) > LATE_CUTOFF
+        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.checkIn && log.checkIn.slice(0, 5) > LATE_CUTOFF && !resignedEmpIds.has(Number(log.empId))
     ).length;
     const onHolidayCount = attendanceLogs.filter(
-        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Holiday"
+        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Holiday" && !resignedEmpIds.has(Number(log.empId))
     ).length;
 
+    // 🆕 On Leave count
+    const onLeaveCount = attendanceLogs.filter(
+        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Leave"
+    ).length;
 
     const dashboardAbsentEmployees = isDashboardAbsentFilter
         ? scopeToEmployee(
@@ -971,6 +991,7 @@ export default function Attendance() {
     const dashboardFilteredLogs = dashboardFilter && !isDashboardAbsentFilter
         ? scopeToEmployee(
             attendanceLogs.filter((log) => {
+                if (resignedEmpIds.has(Number(log.empId))) return false; // 🆕 resigned employee hide
                 const dateMatch = (log.attDate || "").slice(0, 10) === dashboardFilter.date;
                 if (!dateMatch) return false;
                 // 🆕 Late Arrivals: 09:05 cutoff ke baad checkIn wale, "Late" status pe depend nahi karta
@@ -1254,8 +1275,9 @@ export default function Attendance() {
                     </div>
                 ) : activeTab === "dashboard" && isCMD ? (
                     <div className="p-6">
-                        <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">      <button
+                            <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                         <button
                             type="button"
                             onClick={() => openDashboardFilter("Total Employees", "")}
                             className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
@@ -1295,6 +1317,17 @@ export default function Attendance() {
                                 <p className="text-[11px] text-violet-600 font-bold uppercase tracking-wider mb-1">On Holiday</p>
                                 <p className="text-3xl font-black text-violet-700">{onHolidayCount}</p>
                             </button>
+
+                                {/* 🆕 On Leave card */}
+                                <button
+                                    type="button"
+                                    onClick={() => openDashboardFilter("On Leave", "Leave")}
+                                    className={`p-5 rounded-2xl border bg-sky-50/50 shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "On Leave" ? "border-sky-400 ring-2 ring-sky-200" : "border-sky-100"}`}
+                                >
+                                    <p className="text-[11px] text-sky-600 font-bold uppercase tracking-wider mb-1">On Leave</p>
+                                    <p className="text-3xl font-black text-sky-700">{onLeaveCount}</p>
+                                </button>
+
                         </div>
 
                         {/* 🆕 Card click ka result — same page, neeche inline list */}

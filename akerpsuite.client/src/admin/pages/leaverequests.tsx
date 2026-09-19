@@ -85,7 +85,8 @@ export default function LeaveRequests() {
                 status: statusAction,
                 approvedBy: user?.employeeId || 1,
                 remarks: remarksText,
-                ...(statusAction === "Forwarded" ? { forwardedToRole } : {}),
+                // 🆕 Forwarded ke saath bhi leaveTypeId bhejo — HR ab forward karte time hi type select karta hai
+                ...(statusAction === "Forwarded" ? { forwardedToRole, leaveTypeId } : {}),
                 ...(statusAction === "Approved" ? { leaveTypeId } : {}),
             };
 
@@ -97,7 +98,8 @@ export default function LeaveRequests() {
                             ? {
                                 ...req,
                                 status: statusAction,
-                                ...(statusAction === "Forwarded" ? { forwardedToRole } : {}),
+                                // 🆕 Forwarded ke saath local state me bhi leaveTypeId save karo
+                                ...(statusAction === "Forwarded" ? { forwardedToRole, leaveTypeId } : {}),
                                 ...(statusAction === "Approved" ? { leaveTypeId } : {}),
                                 ...(statusAction === "Approved" || statusAction === "Rejected"
                                     ? { approvedBy: user?.employeeId || 1 }
@@ -284,11 +286,17 @@ export default function LeaveRequests() {
                                                     }`} />
                                                 {req.status}
                                             </span>
+
                                             {req.forwardedToRole && (
-                                                <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                                                <div className={`text-[10px] font-bold mt-1.5 uppercase tracking-wide ${req.status === "Approved" ? "text-emerald-600" :
+                                                    req.status === "Rejected" ? "text-rose-600" :
+                                                        req.status === "Forwarded" ? "text-sky-600" :
+                                                            "text-slate-400"
+                                                    }`}>
                                                     {req.status === "Forwarded" ? `→ ${req.forwardedToRole}` : `${req.status} by ${req.forwardedToRole}`}
                                                 </div>
                                             )}
+
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             {activeTab === "hr" && req.status === "Pending" ? (
@@ -323,61 +331,7 @@ export default function LeaveRequests() {
                                                             </button>
                                                         </div>
                                                     ) : forwardPickerId === req.leaveId ? (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <span className="text-[11px] font-bold text-slate-500 mr-1">Forward to:</span>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "CMD")}
-                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                CMD
-                                                            </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "Director")}
-                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Director
-                                                            </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => setForwardPickerId(null)}
-                                                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => { setApprovePickerId(req.leaveId); setSelectedLeaveTypeId(""); }}
-                                                                className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
-                                                                className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                {actioningId === req.leaveId ? "..." : "Reject"}
-                                                            </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => setForwardPickerId(req.leaveId)}
-                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Forward
-                                                            </button>
-                                                        </div>
-                                                    )
-                                                ) : (
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">HR Only</span>
-                                                )
-                                            ) : activeTab === "manager" && req.status === "Forwarded" ? (
-                                                isManagerRole && req.forwardedToRole === user?.role ? (
-                                                    approvePickerId === req.leaveId ? (
+                                                        // 🆕 Forward se pehle leave type select karna zaroori — CMD/Director ke liye pehle se tay ho jaata hai
                                                         <div className="flex items-center justify-center gap-2">
                                                             <select
                                                                 value={selectedLeaveTypeId}
@@ -391,16 +345,24 @@ export default function LeaveRequests() {
                                                                     </option>
                                                                 ))}
                                                             </select>
+                                                            <span className="text-[11px] font-bold text-slate-500">to:</span>
                                                             <button
                                                                 disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Approved", null, selectedLeaveTypeId)}
-                                                                className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "CMD", selectedLeaveTypeId)}
+                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
                                                             >
-                                                                {actioningId === req.leaveId ? "..." : "Confirm"}
+                                                                CMD
+                                                            </button>
+                                                            <button
+                                                                disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "Director", selectedLeaveTypeId)}
+                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
+                                                            >
+                                                                Director
                                                             </button>
                                                             <button
                                                                 disabled={actioningId === req.leaveId}
-                                                                onClick={() => { setApprovePickerId(null); setSelectedLeaveTypeId(""); }}
+                                                                onClick={() => { setForwardPickerId(null); setSelectedLeaveTypeId(""); }}
                                                                 className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 disabled:opacity-40 transition-colors"
                                                             >
                                                                 Cancel
@@ -422,8 +384,37 @@ export default function LeaveRequests() {
                                                             >
                                                                 {actioningId === req.leaveId ? "..." : "Reject"}
                                                             </button>
+                                                            <button
+                                                                disabled={actioningId === req.leaveId}
+                                                                onClick={() => { setForwardPickerId(req.leaveId); setSelectedLeaveTypeId(""); }}
+                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
+                                                            >
+                                                                Forward
+                                                            </button>
                                                         </div>
                                                     )
+                                                ) : (
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">HR Only</span>
+                                                )
+                                            ) : activeTab === "manager" && req.status === "Forwarded" ? (
+                                                isManagerRole && req.forwardedToRole === user?.role ? (
+                                                    // 🆕 CMD/Director ko sirf Approve/Reject — leave type HR ne forward karte time hi tay kar diya
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            disabled={actioningId === req.leaveId}
+                                                            onClick={() => handleLeaveAction(req.leaveId, "Approved", null, req.leaveTypeId)}
+                                                            className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                                                        >
+                                                            {actioningId === req.leaveId ? "..." : "Approve"}
+                                                        </button>
+                                                        <button
+                                                            disabled={actioningId === req.leaveId}
+                                                            onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
+                                                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition-colors"
+                                                        >
+                                                            {actioningId === req.leaveId ? "..." : "Reject"}
+                                                        </button>
+                                                    </div>
                                                 ) : (
                                                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">
                                                         {isManagerRole ? "Not addressed to you" : "CMD/Director Only"}

@@ -1441,7 +1441,24 @@ export default function Employees() {
                                             ))}
                                         </select>
                                     </div>
-                                    <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Employment Status</label><select value={editForm.employmentStatus} onChange={e => setEditForm({ ...editForm, employmentStatus: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"><option>Active</option><option>Resigned</option><option>Terminated</option><option>Retired</option></select></div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Employment Type</label>
+                                        <select
+                                            value={editForm.employmentType}
+                                            onChange={e => setEditForm({ ...editForm, employmentType: e.target.value })}
+                                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
+                                        >
+                                            <option>Permanent</option><option>Probation</option><option>Contract</option><option>Part-Time</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Employment Status</label><select value={editForm.employmentStatus} onChange={e => setEditForm({ ...editForm, employmentStatus: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer">
+                                            <option>Active</option><option>Resigned</option><option>Terminated</option><option>Retired</option></select>
+                                    </div>
+
+
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Probation End Date{editForm.employmentType === "Probation" ? " *" : ""}</label>
                                         <input type="date" required={editForm.employmentType === "Probation"} value={editForm.probationEndDate} onChange={e => setEditForm({ ...editForm, probationEndDate: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
