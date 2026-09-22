@@ -374,7 +374,7 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
-        #region Contact Query (Admin only VIEWS, mark-read, delete — no create)
+        #region Contact Us Query
 
         [HttpGet("contact-query")]
         [RequirePermission("ContactQuery", "View")]
@@ -407,5 +407,132 @@ namespace AkerpSuite.Server.Controllers
         }
 
         #endregion
+
+        #region Testimonial
+
+        [HttpPost("testimonial")]
+        [RequirePermission("SiteTestimonial", "Create")]
+        public async Task<IActionResult> CreateTestimonial(
+            [FromBody] TestimonialRequestDto request,
+            [FromServices] FileUploadHelper fileHelper)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
+
+            string? imagePath = null;
+            if (!string.IsNullOrWhiteSpace(request.Base64Image))
+                imagePath = await fileHelper.SaveBase64FileAsync(request.Base64Image, request.Extension, "Testimonials");
+
+            var result = await _service.CreateTestimonialAsync(request, imagePath);
+            return Ok(ApiResponseDto<TestimonialResponseDto>.Ok(result, "Testimonial created successfully."));
+        }
+
+        [HttpGet("testimonial")]
+        [RequirePermission("SiteTestimonial", "View")]
+        public async Task<IActionResult> GetAllTestimonials()
+        {
+            var data = await _service.GetAllTestimonialsAsync();
+            return Ok(ApiResponseDto<IEnumerable<TestimonialResponseDto>>.Ok(data));
+        }
+
+        // Public website ke liye — no auth/permission needed
+        [AllowAnonymous]
+        [HttpGet("testimonial/active")]
+        public async Task<IActionResult> GetActiveTestimonials()
+        {
+            var data = await _service.GetActiveTestimonialsAsync();
+            return Ok(ApiResponseDto<IEnumerable<TestimonialResponseDto>>.Ok(data));
+        }
+
+        [HttpPut("testimonial")]
+        [RequirePermission("SiteTestimonial", "Update")]
+        public async Task<IActionResult> UpdateTestimonial(
+            [FromBody] TestimonialRequestDto request,
+            [FromServices] FileUploadHelper fileHelper)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
+
+            string? newImagePath = null;
+            if (!string.IsNullOrWhiteSpace(request.Base64Image))
+                newImagePath = await fileHelper.SaveBase64FileAsync(request.Base64Image, request.Extension, "Testimonials");
+
+            var updated = await _service.UpdateTestimonialAsync(request, newImagePath, fileHelper);
+            if (!updated)
+                return NotFound(ApiResponseDto<object>.Fail("Testimonial not found."));
+
+            return Ok(ApiResponseDto<bool>.Ok(true, "Testimonial updated successfully."));
+        }
+
+        [HttpDelete("testimonial/{id:int}")]
+        [RequirePermission("SiteTestimonial", "Delete")]
+        public async Task<IActionResult> DeleteTestimonial(int id, [FromServices] FileUploadHelper fileHelper)
+        {
+            var deleted = await _service.DeleteTestimonialAsync(id, fileHelper);
+            if (!deleted)
+                return NotFound(ApiResponseDto<object>.Fail("Testimonial not found."));
+
+            return Ok(ApiResponseDto<bool>.Ok(true, "Testimonial deleted successfully."));
+        }
+
+        #endregion
+
+        #region Video
+
+        [HttpPost("video")]
+        [RequirePermission("SiteVideo", "Create")]
+        public async Task<IActionResult> CreateVideo([FromBody] VideoRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
+
+            var result = await _service.CreateVideoAsync(request);
+            return Ok(ApiResponseDto<VideoResponseDto>.Ok(result, "Video created successfully."));
+        }
+
+        [HttpGet("video")]
+        [RequirePermission("SiteVideo", "View")]
+        public async Task<IActionResult> GetAllVideos()
+        {
+            var data = await _service.GetAllVideosAsync();
+            return Ok(ApiResponseDto<IEnumerable<VideoResponseDto>>.Ok(data));
+        }
+
+        // Public website ke liye — no auth/permission needed
+        [AllowAnonymous]
+        [HttpGet("video/active")]
+        public async Task<IActionResult> GetActiveVideos()
+        {
+            var data = await _service.GetActiveVideosAsync();
+            return Ok(ApiResponseDto<IEnumerable<VideoResponseDto>>.Ok(data));
+        }
+
+        [HttpPut("video")]
+        [RequirePermission("SiteVideo", "Update")]
+        public async Task<IActionResult> UpdateVideo([FromBody] VideoRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
+
+            var updated = await _service.UpdateVideoAsync(request);
+            if (!updated)
+                return NotFound(ApiResponseDto<object>.Fail("Video not found."));
+
+            return Ok(ApiResponseDto<bool>.Ok(true, "Video updated successfully."));
+        }
+
+        [HttpDelete("video/{id:int}")]
+        [RequirePermission("SiteVideo", "Delete")]
+        public async Task<IActionResult> DeleteVideo(int id)
+        {
+            var deleted = await _service.DeleteVideoAsync(id);
+            if (!deleted)
+                return NotFound(ApiResponseDto<object>.Fail("Video not found."));
+
+            return Ok(ApiResponseDto<bool>.Ok(true, "Video deleted successfully."));
+        }
+
+        #endregion
+
     }
 }

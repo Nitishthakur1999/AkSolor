@@ -1,18 +1,46 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Reveal from './Reveal'
-import { testimonials } from '../data/siteData'
+
+const BASE = import.meta.env.VITE_API_BASE_URL || ''
+
+interface ApiTestimonial {
+    id: number
+    customerName: string
+    location: string | null
+    reviewText: string
+    rating: number
+    avatarImagePath: string | null
+    displayOrder: number
+}
+
+interface TestimonialCardData {
+    id: number
+    text: string
+    name: string
+    loc: string
+    avatar: string
+    fallback: string
+    rating: number
+}
+
+const FALLBACK_COLORS = ['#b08d57', '#7a8471', '#6b7a8f', '#9c7a5c', '#7d6b8f']
+
+function resolveImageUrl(path?: string | null): string {
+    if (!path) return ''
+    if (path.startsWith('http://') || path.startsWith('https://')) return path
+    return `${BASE}/${path.replace(/^\/+/, '')}`
+}
 
 function clamp(value: number, min: number, max: number) {
     return Math.min(max, Math.max(min, value))
 }
 
-function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: number }) {
+function TestimonialCard({ t, index }: { t: TestimonialCardData; index: number }) {
     const cardRef = useRef<HTMLDivElement>(null)
     const [tilt, setTilt] = useState({ rx: 0, ry: 0 })
     const [glare, setGlare] = useState({ x: 50, y: 50 })
     const [hovered, setHovered] = useState(false)
 
-    // gentle baseline fan-tilt so the deck reads as 3D even before any interaction
     const baseRy = ((index % 3) - 1) * 7
 
     function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
@@ -37,7 +65,6 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
 
     const totalRy = baseRy + (hovered ? tilt.ry : 0)
     const totalRx = hovered ? tilt.rx : 0
-    // shadow drifts opposite the tilt, as if a fixed light source were casting it
     const shadowX = clamp(-totalRy * 1.6, -30, 30)
     const shadowY = clamp(20 - totalRx * 1.6, 8, 46)
 
@@ -56,7 +83,6 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
                 boxShadow: `${shadowX}px ${shadowY}px ${hovered ? 55 : 26}px ${hovered ? -10 : -14}px rgba(0,0,0,${hovered ? 0.5 : 0.28})`,
             }}
         >
-            {/* glossy specular highlight that tracks the cursor, like light glancing off glass */}
             <div
                 className="pointer-events-none absolute inset-0 z-20 transition-opacity duration-300"
                 style={{
@@ -78,7 +104,7 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
                 style={{ transform: 'translateZ(56px)' }}
                 aria-hidden="true"
             >
-                “
+                "
             </span>
 
             <p
@@ -92,14 +118,13 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
                 className="mb-5 tracking-[2px] text-gold-deep"
                 style={{ transform: 'translateZ(34px)' }}
             >
-                ★★★★★
+                {'★'.repeat(t.rating)}{'☆'.repeat(Math.max(0, 5 - t.rating))}
             </div>
 
             <div
                 className="flex items-center gap-3 border-t border-dashed border-line pt-5"
                 style={{ transform: 'translateZ(48px)' }}
             >
-                {/* extruded 3D avatar frame: a dark slab sits well behind the face for real carved depth */}
                 <div className="relative h-[42px] w-[42px] shrink-0" style={{ transformStyle: 'preserve-3d' }}>
                     <span
                         aria-hidden="true"
@@ -113,13 +138,19 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
                         className="relative h-full w-full overflow-hidden border border-line-strong bg-paper"
                         style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
                     >
-                        <img
-                            className="h-full w-full object-cover"
-                            src={t.avatar}
-                            alt={t.name}
-                            loading="lazy"
-                            onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.background = t.fallback; e.currentTarget.remove() }}
-                        />
+                        {t.avatar ? (
+                            <img
+                                className="h-full w-full object-cover"
+                                src={t.avatar}
+                                alt={t.name}
+                                loading="lazy"
+                                onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.background = t.fallback; e.currentTarget.remove() }}
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center font-display text-sm font-bold text-white" style={{ background: t.fallback }}>
+                                {t.name.charAt(0)}
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div>
@@ -132,6 +163,38 @@ function TestimonialCard({ t, index }: { t: typeof testimonials[number]; index: 
 }
 
 export default function Testimonials() {
+    const [testimonials, setTestimonials] = useState<TestimonialCardData[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const res = await fetch(`${BASE}/api/public/testimonial`)
+                const json = await res.json()
+                const data: ApiTestimonial[] = json?.data || []
+                const mapped: TestimonialCardData[] = data
+                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                    .map((item, i) => ({
+                        id: item.id,
+                        text: item.reviewText,
+                        name: item.customerName,
+                        loc: item.location || '',
+                        avatar: resolveImageUrl(item.avatarImagePath),
+                        fallback: FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+                        rating: item.rating,
+                    }))
+                setTestimonials(mapped)
+            } catch {
+                setTestimonials([])
+            } finally {
+                setLoading(false)
+            }
+        }
+        load()
+    }, [])
+
+    if (loading || testimonials.length === 0) return null
+
     const track = [...testimonials, ...testimonials, ...testimonials]
 
     return (
@@ -159,7 +222,6 @@ export default function Testimonials() {
             </Reveal>
 
             <div className="relative overflow-hidden">
-                {/* edge fade so the marquee dissolves into the section rather than cutting off hard */}
                 <div
                     className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-paper to-transparent sm:w-28"
                     aria-hidden="true"
@@ -169,13 +231,12 @@ export default function Testimonials() {
                     aria-hidden="true"
                 ></div>
 
-                {/* deep perspective stage so each card's fan-tilt and hover-pop read with real foreshortening */}
                 <div
                     className="flex w-max animate-slide-testi gap-[30px] px-2 hover:[animation-play-state:paused]"
                     style={{ perspective: '1000px' }}
                 >
                     {track.map((t, i) => (
-                        <TestimonialCard t={t} index={i} key={i} />
+                        <TestimonialCard t={t} index={i} key={`${t.id}-${i}`} />
                     ))}
                 </div>
             </div>

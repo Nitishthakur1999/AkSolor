@@ -26,6 +26,7 @@ export const companyDropdown = [
     { label: 'Why AKS Solar', desc: 'What sets us apart', href: '/#why' },
     { label: 'Our Work', desc: 'Before & after installs', href: '/gallery' },
     { label: 'Photo Gallery', desc: 'Browse our install photos', href: '/gallery#photo-gallery' },
+    { label: 'Videos', desc: 'Watch our project videos', href: '/videos' },
     { label: 'Our Team', desc: 'Meet the people behind the work', href: '/about#team' },
     { label: 'Highlights', desc: 'Watch our highlights reel', href: '/about#highlights' },
     { label: 'Client Reviews', desc: 'Stories from across HP', href: '/#testimonials' },

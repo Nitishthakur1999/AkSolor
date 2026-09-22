@@ -417,10 +417,22 @@ export const adminService = {
     updateCareer: (data?: any) => apiCall(`${SITE_API_BASE}/career`, "PUT", data),
     deleteCareer: (id?: any) => apiCall(`${SITE_API_BASE}/career/${id}`, "DELETE"),
 
-    // Contact Queries (read / mark-read / delete only — no create)
+    // Contact Queries 
     getContactQueries: (isRead?: any) => apiCall(`${SITE_API_BASE}/contact-query${isRead !== undefined && isRead !== null ? `?isRead=${isRead}` : ''}`),
     markQueryRead: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}/mark-read`, "PATCH"),
     deleteContactQuery: (id?: any) => apiCall(`${SITE_API_BASE}/contact-query/${id}`, "DELETE"),
+
+    // Testimonials
+    getTestimonials: () => apiCall(`${SITE_API_BASE}/testimonial`),
+    createTestimonial: (data?: any) => apiCall(`${SITE_API_BASE}/testimonial`, "POST", data),
+    updateTestimonial: (data?: any) => apiCall(`${SITE_API_BASE}/testimonial`, "PUT", data),
+    deleteTestimonial: (id?: any) => apiCall(`${SITE_API_BASE}/testimonial/${id}`, "DELETE"),
+
+    // Videos
+    getVideos: () => apiCall(`${SITE_API_BASE}/video`),
+    createVideo: (data?: any) => apiCall(`${SITE_API_BASE}/video`, "POST", data),
+    updateVideo: (data?: any) => apiCall(`${SITE_API_BASE}/video`, "PUT", data),
+    deleteVideo: (id?: any) => apiCall(`${SITE_API_BASE}/video/${id}`, "DELETE"),
 
     // SUPPLIY
     createSupplier: (data?: any) => apiCall(`${SALES_API_BASE}/suppliers`, "POST", data),

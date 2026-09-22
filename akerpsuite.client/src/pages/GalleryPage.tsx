@@ -1,6 +1,7 @@
 import PageHeader from '../components/PageHeader';
 import Gallery from '../components/Gallery';
 import PhotoGallery from '../components/PhotoGallery';
+import Videos from '../components/Videos';
 import CTA from '../components/CTA';
 
 export default function GalleryPage() {
@@ -14,6 +15,7 @@ export default function GalleryPage() {
             />
             <Gallery />
             <PhotoGallery />
+            <Videos />
             <CTA />
         </>
     );

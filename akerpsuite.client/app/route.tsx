@@ -9,6 +9,7 @@ import HomePage from "@/pages/HomePage";
 import AboutPage from "@/pages/AboutPage";
 import ServicesPage from "@/pages/ServicesPage";
 import GalleryPage from "@/pages/GalleryPage";
+import Videos from "@/components/Videos";
 import ContactPage from "@/pages/ContactPage";
 import TermsPage from "@/pages/TermsPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
@@ -148,6 +149,7 @@ function Router() {
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/services" element={<ServicesPage />} />
                     <Route path="/gallery" element={<GalleryPage />} />
+                    <Route path="/videos" element={<Videos />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/careers" element={<Careers />} />
                     <Route path="/terms-and-conditions" element={<TermsPage />} />

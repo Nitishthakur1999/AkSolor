@@ -506,6 +506,28 @@ namespace AkerpSuite.Server.DTOs.Hr
         Cancelled
     }
 
+    public class TestimonialRequestDto
+    {
+        public int Id { get; set; } 
+        public string CustomerName { get; set; }
+        public string? Location { get; set; }
+        public string ReviewText { get; set; }
+        public int Rating { get; set; } = 5;
+        public int DisplayOrder { get; set; } = 0;
+        public bool IsActive { get; set; } = true;
+        public string? Base64Image { get; set; }
+        public string? Extension { get; set; }
+    }
+    public class VideoRequestDto
+    {
+        public int Id { get; set; } 
+        public string Title { get; set; } = string.Empty;
+        public string YouTubeVideoUrl { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
     // ============================================================
     // SUPPLIER — REQUESTS
     // ============================================================

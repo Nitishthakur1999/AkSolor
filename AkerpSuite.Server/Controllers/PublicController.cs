@@ -123,5 +123,29 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
+        #region Testimonials
+
+        [HttpGet("testimonial")]
+        public async Task<IActionResult> GetActiveTestimonials()
+        {
+            var data = await _service.GetAllTestimonialsAsync();
+            var active = data.Where(t => t.IsActive);
+            return Ok(ApiResponseDto<IEnumerable<TestimonialResponseDto>>.Ok(active));
+        }
+
+        #endregion
+
+        #region Videos
+
+        [HttpGet("video")]
+        public async Task<IActionResult> GetActiveVideos()
+        {
+            var data = await _service.GetAllVideosAsync();
+            var active = data.Where(v => v.IsActive);
+            return Ok(ApiResponseDto<IEnumerable<VideoResponseDto>>.Ok(active));
+        }
+
+        #endregion
+
     }
 }

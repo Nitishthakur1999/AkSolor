@@ -205,6 +205,23 @@ namespace AkerpSuite.Server.Services
         Task<VisitorStatsDto> GetVisitorStatsAsync();
         #endregion
 
+        #region Testimonial
+        Task<TestimonialResponseDto> CreateTestimonialAsync(TestimonialRequestDto request, string? imagePath);
+        Task<IEnumerable<TestimonialResponseDto>> GetAllTestimonialsAsync();
+        Task<IEnumerable<TestimonialResponseDto>> GetActiveTestimonialsAsync();
+        Task<bool> UpdateTestimonialAsync(TestimonialRequestDto request, string? newImagePath, FileUploadHelper fileHelper);
+        Task<bool> DeleteTestimonialAsync(int id, FileUploadHelper fileHelper);
+
+        #endregion
+
+        #region Video
+        Task<VideoResponseDto> CreateVideoAsync(VideoRequestDto request);
+        Task<IEnumerable<VideoResponseDto>> GetAllVideosAsync();
+        Task<IEnumerable<VideoResponseDto>> GetActiveVideosAsync();
+        Task<bool> UpdateVideoAsync(VideoRequestDto request);
+        Task<bool> DeleteVideoAsync(int id);
+        #endregion
+
         #region Suppliers
         Task<int> CreateSupplierAsync(SupplierRequestDto request);
         Task<bool> UpdateSupplierAsync(SupplierUpdateRequestDto request);

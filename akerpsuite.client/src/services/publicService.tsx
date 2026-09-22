@@ -47,8 +47,8 @@ export const publicSiteService = {
     getProjects: () => publicApiCall(`${PUBLIC_API_BASE}/projects`),
     getHighlights: () => publicApiCall(`${PUBLIC_API_BASE}/highlights`),
     getCareers: () => publicApiCall(`${PUBLIC_API_BASE}/career`),
+    getVideos: () => publicApiCall(`${PUBLIC_API_BASE}/video`),
 
-    // Public visitor submits an enquiry — no auth required.
     submitContactQuery: (payload: ContactQueryPayload) =>
         publicApiCall(`${PUBLIC_API_BASE}/contact-query`, "POST", payload),
 };

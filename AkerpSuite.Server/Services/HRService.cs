@@ -844,6 +844,54 @@ namespace AkerpSuite.Server.Services
             => await _repository.GetVisitorStatsAsync();
         #endregion
 
+        #region Testimonial
+        public async Task<TestimonialResponseDto> CreateTestimonialAsync(TestimonialRequestDto request, string? imagePath)
+        {
+            var newId = await _repository.CreateAsync(request, imagePath);
+            var created = await _repository.GetByIdAsync(newId);
+            return created!;
+        }
+
+        public Task<IEnumerable<TestimonialResponseDto>> GetAllTestimonialsAsync() => _repository.GetAllAsync();
+
+        public Task<IEnumerable<TestimonialResponseDto>> GetActiveTestimonialsAsync() => _repository.GetActiveAsync();
+
+        public async Task<bool> UpdateTestimonialAsync(TestimonialRequestDto request, string? newImagePath, FileUploadHelper fileHelper)
+        {
+            var existing = await _repository.GetByIdAsync(request.Id);
+            if (existing == null)
+                return false;
+
+            string? finalImagePath = !string.IsNullOrWhiteSpace(newImagePath) ? newImagePath : existing.AvatarImagePath;
+            return await _repository.UpdateAsync(request, finalImagePath);
+        }
+
+        public async Task<bool> DeleteTestimonialAsync(int id, FileUploadHelper fileHelper)
+        {
+            return await _repository.DeleteAsync(id);
+        }
+
+        #endregion
+
+        #region Video
+
+        public async Task<VideoResponseDto> CreateVideoAsync(VideoRequestDto request)
+            => await _repository.CreateVideoAsync(request);
+
+        public async Task<IEnumerable<VideoResponseDto>> GetAllVideosAsync()
+            => await _repository.GetAllVideosAsync();
+
+        public async Task<IEnumerable<VideoResponseDto>> GetActiveVideosAsync()
+            => await _repository.GetActiveVideosAsync();
+
+        public async Task<bool> UpdateVideoAsync(VideoRequestDto request)
+            => await _repository.UpdateVideoAsync(request);
+
+        public async Task<bool> DeleteVideoAsync(int id)
+            => await _repository.DeleteVideoAsync(id);
+
+        #endregion
+
         #region Private Helper
 
         // Deletes the old image (if present) and returns the new path — keeps update methods short & arrow-friendly

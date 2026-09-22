@@ -530,6 +530,30 @@
         public DateTime SubmittedOn { get; set; }
     }
 
+    public class TestimonialResponseDto
+    {
+        public int Id { get; set; }
+        public string CustomerName { get; set; }
+        public string? Location { get; set; }
+        public string ReviewText { get; set; }
+        public int Rating { get; set; }
+        public string? AvatarImagePath { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    public class VideoResponseDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string YouTubeVideoUrl { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
     public class SupplierResponseDto
     {
         public int SupplierId { get; set; }

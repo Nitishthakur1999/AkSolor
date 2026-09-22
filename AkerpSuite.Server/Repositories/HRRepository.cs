@@ -4,6 +4,7 @@ using Dapper;
 using Microsoft.AspNetCore.Connections;
 using MySqlConnector;
 using System.Data;
+using static AkerpSuite.Server.Repositories.HRRepository;
 
 namespace AkerpSuite.Server.Repositories
 {
@@ -1757,6 +1758,139 @@ namespace AkerpSuite.Server.Repositories
                 "sp_get_visitor_stats",
                 commandType: System.Data.CommandType.StoredProcedure);
         }
+        #endregion
+
+        #region Testimonial
+
+        public async Task<int> CreateAsync(TestimonialRequestDto dto, string? imagePath)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_CustomerName", dto.CustomerName?.Trim());
+            parameters.Add("p_Location", dto.Location?.Trim());
+            parameters.Add("p_ReviewText", dto.ReviewText?.Trim());
+            parameters.Add("p_Rating", dto.Rating);
+            parameters.Add("p_AvatarImagePath", imagePath);
+            parameters.Add("p_DisplayOrder", dto.DisplayOrder);
+            parameters.Add("p_IsActive", dto.IsActive);
+            return await connection.ExecuteScalarAsync<int>("sp_Testimonial_Create", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<TestimonialResponseDto>> GetAllAsync()
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<TestimonialResponseDto>("sp_Testimonial_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<TestimonialResponseDto>> GetActiveAsync()
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<TestimonialResponseDto>("sp_Testimonial_GetActive", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<TestimonialResponseDto?> GetByIdAsync(int id)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_Id", id);
+            return await connection.QueryFirstOrDefaultAsync<TestimonialResponseDto>("sp_Testimonial_GetById", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateAsync(TestimonialRequestDto dto, string? imagePath)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_Id", dto.Id);
+            parameters.Add("p_CustomerName", dto.CustomerName?.Trim());
+            parameters.Add("p_Location", dto.Location?.Trim());
+            parameters.Add("p_ReviewText", dto.ReviewText?.Trim());
+            parameters.Add("p_Rating", dto.Rating);
+            parameters.Add("p_AvatarImagePath", imagePath);
+            parameters.Add("p_DisplayOrder", dto.DisplayOrder);
+            parameters.Add("p_IsActive", dto.IsActive);
+            var rows = await connection.ExecuteScalarAsync<int>("sp_Testimonial_Update", parameters, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_Id", id);
+            var rows = await connection.ExecuteScalarAsync<int>("sp_Testimonial_Delete", parameters, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
+        #endregion
+
+        #region Video
+
+        public async Task<VideoResponseDto> CreateVideoAsync(VideoRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var newId = await conn.QuerySingleAsync<int>(
+                "sp_Video_Create",
+                new
+                {
+                    p_Title = request.Title,
+                    p_YouTubeVideoUrl = request.YouTubeVideoUrl,
+                    p_Description = request.Description,
+                    p_DisplayOrder = request.DisplayOrder,
+                    p_IsActive = request.IsActive
+                },
+                commandType: CommandType.StoredProcedure);
+
+            return await GetVideoByIdAsync(newId) ?? throw new InvalidOperationException("Video creation failed.");
+        }
+
+        public async Task<VideoResponseDto?> GetVideoByIdAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<VideoResponseDto>(
+                "sp_Video_GetById", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<VideoResponseDto>> GetAllVideosAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<VideoResponseDto>(
+                "sp_Video_GetAll", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<VideoResponseDto>> GetActiveVideosAsync()
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<VideoResponseDto>(
+                "sp_Video_GetActive", commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> UpdateVideoAsync(VideoRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Video_Update",
+                new
+                {
+                    p_Id = request.Id,
+                    p_Title = request.Title,
+                    p_YouTubeVideoUrl = request.YouTubeVideoUrl,
+                    p_Description = request.Description,
+                    p_DisplayOrder = request.DisplayOrder,
+                    p_IsActive = request.IsActive
+                },
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteVideoAsync(int id)
+        {
+            using var conn = _context.CreateConnection();
+            var rows = await conn.QuerySingleAsync<int>(
+                "sp_Video_Delete", new { p_Id = id }, commandType: CommandType.StoredProcedure);
+            return rows > 0;
+        }
+
         #endregion
 
         #region Suppliers
