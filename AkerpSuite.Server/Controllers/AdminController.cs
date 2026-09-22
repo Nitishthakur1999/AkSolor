@@ -796,6 +796,25 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
+        // POST api/admin/leave/accrual/daily/run?date=2026-09-21
+        [HttpPost("leave/accrual/daily/run")]
+        [RequirePermission("Leave", "Manage")]
+        public async Task<IActionResult> RunDailyLeaveAccrual([FromQuery] DateTime? date)
+        {
+            var processDate = date ?? DateTime.Today;
+            await _service.ProcessDailyLeaveAccrualAsync(processDate);
+            return Ok(new { Success = true, Message = $"Daily leave accrual processed for {processDate:yyyy-MM-dd}" });
+        }
+
+        // POST api/admin/leave/accrual/monthly-el/run?month=8&year=2026
+        [HttpPost("leave/accrual/monthly-el/run")]
+        [RequirePermission("Leave", "Manage")]
+        public async Task<IActionResult> RunMonthlyELAccrual([FromQuery] int month, [FromQuery] int year)
+        {
+            await _service.ProcessMonthlyELAccrualAsync(month, year);
+            return Ok(new { Success = true, Message = $"Monthly EL accrual processed for {month}/{year}" });
+        }
+
         // PUT api/leave/balance/5
         [HttpPut("balance/{balanceId}")]
         [RequirePermission("Leave", "Update")]

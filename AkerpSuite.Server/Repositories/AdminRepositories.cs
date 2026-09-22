@@ -1172,9 +1172,33 @@ namespace AkerpSuite.Server.Repositories
                 "sp_leave_balance_get_by_id", parameters,
                 commandType: CommandType.StoredProcedure);
         }
+        public async Task ProcessDailyLeaveAccrualAsync(DateTime processDate)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_ProcessDate", processDate.Date);
+
+            await connection.ExecuteAsync(
+                "sp_ProcessDailyLeaveAccrual",
+                parameters,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: 120);
+        }
+
+        public async Task ProcessMonthlyELAccrualAsync(int month, int year)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_Month", month);
+            parameters.Add("p_Year", year);
+
+            await connection.ExecuteAsync(
+                "sp_ProcessMonthlyELAccrual",
+                parameters,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: 120);
+        }
         #endregion
-
-
 
         #region Salary Structure 
         public async Task<int> SetEmployeeSalaryAsync(EmployeeSalaryRequestDto request)

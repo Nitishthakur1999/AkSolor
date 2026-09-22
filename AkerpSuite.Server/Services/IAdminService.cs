@@ -111,6 +111,8 @@ namespace AkerpSuite.Server.Services
         Task<bool> UpdateLeaveBalanceAsync(int balanceId, LeaveBalanceUpdateRequestDto request);
         Task<bool> DeleteLeaveBalanceAsync(int balanceId);
         Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId);
+        Task ProcessDailyLeaveAccrualAsync(DateTime processDate);
+        Task ProcessMonthlyELAccrualAsync(int month, int year);
 
         #endregion
 

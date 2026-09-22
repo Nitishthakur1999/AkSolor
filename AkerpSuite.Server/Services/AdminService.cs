@@ -1091,8 +1091,19 @@ namespace AkerpSuite.Server.Services
         public async Task<bool> DeleteLeaveBalanceAsync(int balanceId) 
             => await _repository.DeleteLeaveBalanceAsync(balanceId);
 
-        public async Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId) 
+        public async Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId)
             => await _repository.GetLeaveBalanceByIdAsync(balanceId);
+
+        public async Task ProcessDailyLeaveAccrualAsync(DateTime processDate)
+            => await _repository.ProcessDailyLeaveAccrualAsync(processDate);
+
+        public async Task ProcessMonthlyELAccrualAsync(int month, int year)
+        {
+            if (month < 1 || month > 12)
+                throw new InvalidOperationException("Invalid month.");
+
+            await _repository.ProcessMonthlyELAccrualAsync(month, year);
+        }
 
         #endregion
 
