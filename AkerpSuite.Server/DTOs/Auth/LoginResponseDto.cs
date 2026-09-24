@@ -11,6 +11,8 @@ namespace AkerpSuite.Server.Dtos.Auth
         public int? EmployeeId { get; set; }
         public DateTime ExpiresAt { get; set; }
         public List<PageMasterResponseDto> Pages { get; set; } = new();
+        public string RefreshToken { get; set; } = string.Empty;
+        public DateTime RefreshTokenExpiresAt { get; set; }
 
     }
 }

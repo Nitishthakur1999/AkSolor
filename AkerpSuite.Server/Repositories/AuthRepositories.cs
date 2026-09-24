@@ -125,5 +125,60 @@ namespace AkerpSuite.Server.Repositories
                 parameters,
                 commandType: CommandType.StoredProcedure);
         }
+        public async Task<UserDto?> GetUserByIdAsync(int userId)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_UserId", userId);
+            return await connection.QueryFirstOrDefaultAsync<UserDto>(
+                "sp_GetUserById", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task SaveRefreshTokenAsync(int userId, string tokenHash, DateTime expiresAt, string? ipAddress)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_UserId", userId);
+            parameters.Add("p_TokenHash", tokenHash);
+            parameters.Add("p_ExpiresAt", expiresAt);
+            parameters.Add("p_IpAddress", ipAddress);
+            await connection.ExecuteAsync(
+                "sp_SaveRefreshToken", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<RefreshTokenDto?> GetRefreshTokenAsync(string tokenHash)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_TokenHash", tokenHash);
+            return await connection.QueryFirstOrDefaultAsync<RefreshTokenDto>(
+                "sp_GetRefreshToken", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task RevokeRefreshTokenAsync(string tokenHash, string? replacedBy = null)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_TokenHash", tokenHash);
+            parameters.Add("p_ReplacedBy", replacedBy);
+            await connection.ExecuteAsync(
+                "sp_RevokeRefreshToken", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task RevokeAllUserRefreshTokensAsync(int userId)
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_UserId", userId);
+            await connection.ExecuteAsync(
+                "sp_RevokeAllUserRefreshTokens", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task DeleteExpiredRefreshTokensAsync()
+        {
+            using var connection = _context.CreateConnection();
+            await connection.ExecuteAsync(
+                "sp_DeleteExpiredRefreshTokens", commandType: CommandType.StoredProcedure);
+        }
     }
 }

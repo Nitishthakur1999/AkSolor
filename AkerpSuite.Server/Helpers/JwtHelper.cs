@@ -34,8 +34,8 @@ namespace AkerpSuite.Server.Helpers
                 key,
                 SecurityAlgorithms.HmacSha256);
 
-            var expiresAt = DateTime.UtcNow.AddHours(
-                Convert.ToDouble(jwtSettings["ExpiryHours"] ?? "8"));
+            var expiresAt = DateTime.UtcNow.AddMinutes(
+                Convert.ToDouble(jwtSettings["AccessTokenMinutes"] ?? "15"));
 
             var claims = new List<Claim>
             {

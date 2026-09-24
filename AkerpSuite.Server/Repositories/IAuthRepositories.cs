@@ -14,5 +14,13 @@ namespace AkerpSuite.Server.Repositories
         Task<PasswordResetTokenDto?> GetValidPasswordResetTokenAsync(string token);
         Task UpdateUserPasswordAsync(int userId, string passwordHash);
         Task MarkResetTokenUsedAsync(int tokenId);
+
+        // Refresh token
+        Task<UserDto?> GetUserByIdAsync(int userId);
+        Task SaveRefreshTokenAsync(int userId, string tokenHash, DateTime expiresAt, string? ipAddress);
+        Task<RefreshTokenDto?> GetRefreshTokenAsync(string tokenHash);
+        Task RevokeRefreshTokenAsync(string tokenHash, string? replacedBy = null);
+        Task RevokeAllUserRefreshTokensAsync(int userId);
+        Task DeleteExpiredRefreshTokensAsync();
     }
 }

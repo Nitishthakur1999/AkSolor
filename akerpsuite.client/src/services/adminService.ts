@@ -1,8 +1,11 @@
+import { tokenService, refreshSession, SessionExpiredError } from "./tokenService";
+
 const BASE = import.meta.env.VITE_API_BASE_URL || "";
 const API_BASE = `${BASE}/api/admin`;
 const ATTENDANCE_API_BASE = `${BASE}/api/admin`;
 const SALES_API_BASE = `${BASE}/api/hr`;
 const SITE_API_BASE = `${BASE}/api/admin/site`;
+
 
 const getHeaders = (): Record<string, string> => ({
     "Content-Type": "application/json",
@@ -10,23 +13,36 @@ const getHeaders = (): Record<string, string> => ({
 });
 
 const handleUnauthorized = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    tokenService.clear();   
     alert("Session expired, please login again.");
-    window.location.href = "/login"; 
+    window.location.href = "/login";
 };
 
 const apiCall = async (url: string, method: string = "GET", body: any = null, skipAuthRedirect: boolean = false): Promise<any> => {
-    const options: RequestInit = { method, headers: getHeaders() };
-    if (body) options.body = JSON.stringify(body);
+    const doFetch = () => {
+        const options: RequestInit = { method, headers: getHeaders() };
+        if (body) options.body = JSON.stringify(body);
+        return fetch(url, options);
+    };
 
-    const res = await fetch(url, options);
+    let res = await doFetch();
 
     if (res.status === 401) {
-        if (!skipAuthRedirect) {
-            handleUnauthorized();
+        try {
+            await refreshSession();   
+            res = await doFetch();    
+        } catch (e) {
+            if (e instanceof SessionExpiredError) {
+                if (!skipAuthRedirect) handleUnauthorized();
+                throw new Error("Session expired, please login again.");
+            }
+            throw e;   
         }
-        throw new Error("Session expired, please login again.");
+
+        if (res.status === 401) {
+            if (!skipAuthRedirect) handleUnauthorized();
+            throw new Error("Session expired, please login again.");
+        }
     }
 
     const text = await res.text();
@@ -47,7 +63,6 @@ export const getDocumentUrl = (path?: string): string => {
     return `${root}/${path.replace(/^\//, "")}`;
 };
 
-// Helper for generating query strings
 const buildQuery = (filters: Record<string, any> = {}): string => {
     const params = new URLSearchParams(
         Object.fromEntries(Object.entries(filters).filter(([_, v]) => v != null && v !== ''))
@@ -57,11 +72,20 @@ const buildQuery = (filters: Record<string, any> = {}): string => {
 };
 
 const downloadFile = async (url: string, filename: string): Promise<void> => {
-    const res = await fetch(url, { headers: getHeaders() });
+    let res = await fetch(url, { headers: getHeaders() });
 
     if (res.status === 401) {
-        handleUnauthorized();
-        throw new Error("Session expired, please login again.");
+        try {
+            await refreshSession();
+            res = await fetch(url, { headers: getHeaders() });
+        } catch (e) {
+            if (e instanceof SessionExpiredError) handleUnauthorized();
+            throw e;
+        }
+        if (res.status === 401) {
+            handleUnauthorized();
+            throw new Error("Session expired, please login again.");
+        }
     }
 
     if (!res.ok) {

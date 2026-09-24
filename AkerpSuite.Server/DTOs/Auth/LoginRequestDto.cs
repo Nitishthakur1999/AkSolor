@@ -27,4 +27,18 @@ namespace AkerpSuite.Server.Dtos.Auth
         public int TokenId { get; set; }
         public int UserId { get; set; }
     }
+
+    public class RefreshTokenRequestDto
+    {
+        [Required]
+        public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    public class RefreshTokenDto
+    {
+        public long TokenId { get; set; }
+        public int UserId { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public DateTime? RevokedAt { get; set; }
+    }
 }

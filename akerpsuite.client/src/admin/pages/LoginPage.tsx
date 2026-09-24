@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import logo from "@/assets/logo.png";
+import { tokenService } from "@/services/tokenService";
 
 const API_BASE = "/api";
 const SUN = { x: 220, y: 320 };
@@ -65,7 +66,8 @@ export default function LoginPage() {
 
             const userData = data?.data;
 
-            localStorage.setItem("token", userData?.token);
+            // localStorage.setItem("token", userData?.token);
+            tokenService.save(userData);   
             localStorage.setItem("role", userData?.role);
             localStorage.setItem("username", userData?.username);
             localStorage.setItem("userId", userData?.userId);

@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from '../app/route'
 import { ThemeProvider } from './context/ThemeContext'
+import { startAutoRefresh } from "./services/tokenService";
+
+startAutoRefresh();
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>

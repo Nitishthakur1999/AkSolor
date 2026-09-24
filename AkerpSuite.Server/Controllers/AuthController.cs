@@ -71,5 +71,33 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
+        #region Refresh / Logout
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto request)
+        
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request"));
+
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await _authService.RefreshTokenAsync(request.RefreshToken, ipAddress);
+
+            if (result == null)
+                return Unauthorized(ApiResponseDto<object>.Fail("Invalid or expired refresh token"));
+
+            return Ok(ApiResponseDto<LoginResponseDto>.Ok(result, "Token refreshed"));
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequestDto request)
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _authService.LogoutAsync(request.RefreshToken, ipAddress);
+            return Ok(ApiResponseDto<object>.Ok(null, "Logged out"));
+        }
+
+        #endregion
+
     }
 }

@@ -62,7 +62,6 @@ builder.Services.AddSwaggerGen(c =>
 
 // Dapper
 builder.Services.AddScoped<DapperContext>();
-builder.Services.AddScoped<FileUploadHelper>();
 builder.Services.AddScoped<IAuthRepository, AuthRepositories>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminRepositories, AdminRepositories>();
@@ -95,6 +94,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.Zero,
 
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
@@ -178,11 +178,16 @@ app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
 
-
 RecurringJob.AddOrUpdate<IHRService>(
     "probation-completion-reminder",
     service => service.SendProbationCompletionRemindersAsync(),
     Cron.Daily(9, 0));
+
+RecurringJob.AddOrUpdate<IAuthService>(
+    "cleanup-refresh-tokens",
+    s => s.CleanupExpiredRefreshTokensAsync(),
+    Cron.Daily(3, 0));
+
 app.MapFallbackToFile("index.html");
 
 app.Run();
