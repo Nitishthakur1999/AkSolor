@@ -250,6 +250,15 @@ namespace AkerpSuite.Server.Repositories
         Task RecalculateLedgerAsync(int empId, int month, int year);
         #endregion
 
+        #region Announcements
+        Task<int> CreateAnnouncementAsync(string title, string message, string priority, int createdBy, string createdByName);
+        Task<IEnumerable<AnnouncementResponseDto>> GetActiveAnnouncementsAsync(int employeeId);
+        Task MarkAnnouncementReadAsync(int announcementId, int employeeId);
+        Task<IEnumerable<AnnouncementManageDto>> GetAllAnnouncementsAsync(int createdBy);
+        Task<bool> DeleteAnnouncementAsync(int announcementId);
+
+        #endregion
+
     }
 }
 

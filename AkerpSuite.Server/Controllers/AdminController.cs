@@ -1486,5 +1486,71 @@ namespace AkerpSuite.Server.Controllers
 
         #endregion
 
+        #region Announcements
+
+        // POST api/admin/announcements
+        [HttpPost("announcements")]
+        [RequirePermission("Announcement", "Create")]
+        public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementCreateDto request)
+        {
+            if (!User.TryGetEmpId(out int createdBy))
+                return Unauthorized(new { Success = false, Message = "Invalid token — emp_id missing" });
+
+            var createdByName = User.Identity?.Name ?? User.FindFirst(ClaimTypes.Name)?.Value ?? "Admin";
+
+            var id = await _service.CreateAnnouncementAsync(request, createdBy, createdByName);
+            return Ok(new { Success = true, Message = "Announcement published successfully", Data = new { AnnouncementId = id } });
+        }
+
+        // GET api/admin/announcements/active  (employee dashboard feed)
+        [HttpGet("announcements/active")]
+        [Authorize]
+        public async Task<IActionResult> GetActiveAnnouncements()
+        {
+            if (!User.TryGetEmpId(out int empId))
+                return Unauthorized(new { Success = false, Message = "Invalid token — emp_id missing" });
+
+            var data = await _service.GetActiveAnnouncementsAsync(empId);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // PUT api/admin/announcements/{id}/read
+        [HttpPut("announcements/{id}/read")]
+        [Authorize]
+        public async Task<IActionResult> MarkAnnouncementRead(int id)
+        {
+            if (!User.TryGetEmpId(out int empId))
+                return Unauthorized(new { Success = false, Message = "Invalid token — emp_id missing" });
+
+            await _service.MarkAnnouncementReadAsync(id, empId);
+            return Ok(new { Success = true, Message = "Marked as read" });
+        }
+
+        // GET api/admin/announcements  (CMD manage view — active + deleted history)
+        [HttpGet("announcements")]
+        [RequirePermission("Announcement", "ViewAll")]
+        public async Task<IActionResult> GetAllAnnouncements()
+        {
+            if (!User.TryGetEmpId(out int createdBy))
+                return Unauthorized(new { Success = false, Message = "Invalid token — emp_id missing" });
+
+            var data = await _service.GetAllAnnouncementsAsync(createdBy);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // DELETE api/admin/announcements/{id}
+        [HttpDelete("announcements/{id}")]
+        [RequirePermission("Announcement", "Delete")]
+        public async Task<IActionResult> DeleteAnnouncement(int id)
+        {
+            var deleted = await _service.DeleteAnnouncementAsync(id);
+            if (!deleted)
+                return NotFound(new { Success = false, Message = "Announcement not found" });
+
+            return Ok(new { Success = true, Message = "Announcement deleted successfully" });
+        }
+
+        #endregion
+
     }
 }

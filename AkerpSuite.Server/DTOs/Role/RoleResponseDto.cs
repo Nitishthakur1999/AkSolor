@@ -14,7 +14,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public int SortOrder { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public string? FullName { get; set; }   
+        public string? FullName { get; set; }
     }
 
     public class RevealCredentialsRequestDto
@@ -138,8 +138,8 @@ namespace AkerpSuite.Server.DTOs.Role
         public DateTime RequestDate { get; set; }
         public string? Reason { get; set; }
         public string? Status { get; set; }
-        public string? RequestType { get; set; }   
-        public int? AttId { get; set; }            
+        public string? RequestType { get; set; }
+        public int? AttId { get; set; }
         public int? ApprovedBy { get; set; }
         public DateTime? ApprovedAt { get; set; }
         public DateTime? CreatedAt { get; set; }
@@ -302,10 +302,10 @@ namespace AkerpSuite.Server.DTOs.Role
         public string EmpCode { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string? FatherHusbandName { get; set; }   
-        public string? Category { get; set; }              
-        public string? EsicNo { get; set; }                 
-        public string? UanNo { get; set; }                 
+        public string? FatherHusbandName { get; set; }
+        public string? Category { get; set; }
+        public string? EsicNo { get; set; }
+        public string? UanNo { get; set; }
         public string? DeptName { get; set; }
         public string? DesigName { get; set; }
         public int Month { get; set; }
@@ -545,68 +545,86 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Remarks { get; set; }
     }
 
-        public class SundayCellDto
-        {
-            public DateTime Date { get; set; }
-            public string Status { get; set; } = "OFF"; 
-        }
+    public class SundayCellDto
+    {
+        public DateTime Date { get; set; }
+        public string Status { get; set; } = "OFF";
+    }
 
-        public class SundayHolidayStatusRowDto
-        {
-            public int SrNo { get; set; }
-            public int EmpId { get; set; }
-            public string EmployeeName { get; set; } = string.Empty;
+    public class SundayHolidayStatusRowDto
+    {
+        public int SrNo { get; set; }
+        public int EmpId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
 
-            public List<SundayCellDto> Cells { get; set; } = new();
+        public List<SundayCellDto> Cells { get; set; } = new();
 
-            public decimal MonthDutyCount { get; set; }
-            public decimal MonthCompOff { get; set; }
-            public decimal PreviousBalance { get; set; }
-            public decimal FinalDues { get; set; }
-        }
+        public decimal MonthDutyCount { get; set; }
+        public decimal MonthCompOff { get; set; }
+        public decimal PreviousBalance { get; set; }
+        public decimal FinalDues { get; set; }
+    }
 
-        public class SundayHolidayStatusReportDto
-        {
-            public string CompanyName { get; set; } = "AKS SOLAR SYSTEMS PRIVATE LIMITED";
-            public int Month { get; set; }
-            public int Year { get; set; }
-            public string MonthName { get; set; } = string.Empty;
+    public class SundayHolidayStatusReportDto
+    {
+        public string CompanyName { get; set; } = "AKS SOLAR SYSTEMS PRIVATE LIMITED";
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public string MonthName { get; set; } = string.Empty;
 
-            public List<DateTime> SundayDates { get; set; } = new();
-            public List<SundayHolidayStatusRowDto> Rows { get; set; } = new();
+        public List<DateTime> SundayDates { get; set; } = new();
+        public List<SundayHolidayStatusRowDto> Rows { get; set; } = new();
 
-            public string PreparedByName { get; set; } = "Asha Thakur";
-            public string PreparedByDesignation { get; set; } = "Sr. Manager (HR & Social Media)";
+        public string PreparedByName { get; set; } = "Asha Thakur";
+        public string PreparedByDesignation { get; set; } = "Sr. Manager (HR & Social Media)";
 
-            public string VerifiedByName { get; set; } = "Vivek Grover";
-            public string VerifiedByDesignation { get; set; } = "Director-Operations, Sales & Marketing";
+        public string VerifiedByName { get; set; } = "Vivek Grover";
+        public string VerifiedByDesignation { get; set; } = "Director-Operations, Sales & Marketing";
 
-            public string FinalVerifiedByName { get; set; } = "Kapil Sharma";
-            public string FinalVerifiedByDesignation { get; set; } = "Chairman Cum Managing Director";
-        }
+        public string FinalVerifiedByName { get; set; } = "Kapil Sharma";
+        public string FinalVerifiedByDesignation { get; set; } = "Chairman Cum Managing Director";
+    }
 
-        public class SundayDutyRecord
-       {
+    public class SundayDutyRecord
+    {
         public int EmpId { get; set; }
         [JsonPropertyName("attDate")]
         public DateTime DutyDate { get; set; }
         public string Status { get; set; } = "OFF";
         public string? Location { get; set; }
-        }
+    }
 
-        public class SundayLedgerRecord
-        {
-            public int EmpId { get; set; }
-            public decimal OpeningBalance { get; set; }
-            public decimal DutyCount { get; set; }
-            public decimal CompOffUsed { get; set; }
-        }
+    public class SundayLedgerRecord
+    {
+        public int EmpId { get; set; }
+        public decimal OpeningBalance { get; set; }
+        public decimal DutyCount { get; set; }
+        public decimal CompOffUsed { get; set; }
+    }
 
-        public class EmployeeBasicDto
-        {
-            public int EmpId { get; set; }
-            public string FullName { get; set; } = string.Empty;
-            public DateTime? JoiningDate { get; set; }
-        }
-    
+    public class EmployeeBasicDto
+    {
+        public int EmpId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public DateTime? JoiningDate { get; set; }
+    }
+
+    public class AnnouncementResponseDto
+    {
+        public int AnnouncementId { get; set; }
+        public string Title { get; set; }
+        public string Message { get; set; }
+        public string Priority { get; set; }
+        public int CreatedBy { get; set; }
+        public string CreatedByName { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsRead { get; set; }
+    }
+
+    public class AnnouncementManageDto : AnnouncementResponseDto
+    {
+        public bool IsActive { get; set; }
+        public DateTime? DeletedAt { get; set; }
+    }
+
 }

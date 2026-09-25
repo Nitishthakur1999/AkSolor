@@ -241,5 +241,14 @@ namespace AkerpSuite.Server.Services
         Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
         #endregion
 
+        #region Announcements
+        Task<int> CreateAnnouncementAsync(AnnouncementCreateDto request, int createdBy, string createdByName);
+        Task<IEnumerable<AnnouncementResponseDto>> GetActiveAnnouncementsAsync(int employeeId);
+        Task MarkAnnouncementReadAsync(int announcementId, int employeeId);
+        Task<IEnumerable<AnnouncementManageDto>> GetAllAnnouncementsAsync(int createdBy);
+        Task<bool> DeleteAnnouncementAsync(int announcementId);
+
+        #endregion
+
     }
 }

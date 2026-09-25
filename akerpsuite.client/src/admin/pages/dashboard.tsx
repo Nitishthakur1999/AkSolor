@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
+const ANNOUNCEMENT_WRITE_ROLES = ["CMD", "Director", "Sr. Manager (HR & Social Media)"];
+
 export default function Dashboard() {
     const navigate = useNavigate();
     const [cards, setCards] = useState([]);
@@ -21,8 +23,15 @@ export default function Dashboard() {
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
     const notifRef = useRef(null);
 
+    // announcement state (widget, all users)
+    const [announcements, setAnnouncements] = useState([]);
+
+    // ── NEW: dashboard tab state ──
+    const [activeTab, setActiveTab] = useState("overview"); // "overview" | "announcements"
+
     const role = localStorage.getItem("role") ?? "User";
     const username = localStorage.getItem("username") ?? "";
+    const canManageAnnouncements = ANNOUNCEMENT_WRITE_ROLES.includes(role);
 
     const greeting = (() => {
         const h = new Date().getHours();
@@ -83,12 +92,28 @@ export default function Dashboard() {
         };
     }, []);
 
+    // announcement load + 15s poll
+    useEffect(() => {
+        loadAnnouncements();
+        const interval = setInterval(loadAnnouncements, 15000);
+        return () => clearInterval(interval);
+    }, []);
+
     const loadNotifications = async () => {
         try {
             const res = await adminService.getUnreadNotifications();
             if (res.Success || res.success) setNotifications(res.Data || res.data || []);
         } catch (err) {
             console.error("Failed to load notifications:", err);
+        }
+    };
+
+    const loadAnnouncements = async () => {
+        try {
+            const res = await adminService.getActiveAnnouncements();
+            if (res.Success || res.success) setAnnouncements(res.Data || res.data || []);
+        } catch (err) {
+            console.error("Failed to load announcements:", err);
         }
     };
 
@@ -105,6 +130,26 @@ export default function Dashboard() {
 
         const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(role);
         navigate(isHrRole ? "/hr/leave/requests?tab=hr" : "/hr/leave/requests?tab=manager");
+    };
+
+    const handleAnnouncementClick = async (ann) => {
+        const id = ann.AnnouncementId ?? ann.announcementId;
+        const isRead = ann.IsRead ?? ann.isRead;
+
+        if (!isRead) {
+            try {
+                await adminService.markAnnouncementRead(id);
+            } catch (err) {
+                console.error("Failed to mark announcement read:", err);
+            }
+            setAnnouncements((prev) =>
+                prev.map((a) =>
+                    (a.AnnouncementId ?? a.announcementId) === id
+                        ? { ...a, IsRead: true, isRead: true }
+                        : a
+                )
+            );
+        }
     };
 
     // ── NEW: cards that should navigate to a real page instead of opening the inline detail table ──
@@ -254,37 +299,289 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Cards Grid */}
-            {cards.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[160px] gap-2 bg-white border border-slate-200 rounded-2xl">
-                    <i className="fa-solid fa-table-columns text-3xl text-slate-300" />
-                    <p className="text-slate-400 text-sm font-sans">No dashboard cards configured for your role.</p>
+            {/* ── NEW: Tab switcher (only shown if user can manage announcements) ── */}
+            {canManageAnnouncements && (
+                <div className="flex gap-2 border-b border-slate-200">
+                    <button
+                        onClick={() => setActiveTab("overview")}
+                        className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === "overview"
+                            ? "border-amber-400 text-slate-800"
+                            : "border-transparent text-slate-400 hover:text-slate-600"
+                            }`}
+                    >
+                        Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("announcements")}
+                        className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === "announcements"
+                            ? "border-amber-400 text-slate-800"
+                            : "border-transparent text-slate-400 hover:text-slate-600"
+                            }`}
+                    >
+                        Announcements
+                    </button>
                 </div>
+            )}
+
+            {/* ── NEW: Announcements management tab (CMD/Director/HR only) ── */}
+            {canManageAnnouncements && activeTab === "announcements" ? (
+                <AnnouncementsManageTab onChanged={loadAnnouncements} />
             ) : (
                 <>
-                    <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                        {cards.map((card) => (
-                            <DashboardCard
-                                key={card.cardKey}
-                                card={card}
-                                onClick={handleCardClick}
-                                isActive={selectedCard?.cardKey === card.cardKey}
-                            />
-                        ))}
-                    </div>
+                    {/* ── Announcements widget (everyone) ── */}
+                    {announcements.length > 0 && (
+                        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-5 space-y-2">
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Announcements</p>
+                            {announcements.slice(0, 3).map((a) => {
+                                const isRead = a.IsRead ?? a.isRead;
+                                return (
+                                    <button
+                                        key={a.AnnouncementId ?? a.announcementId}
+                                        onClick={() => handleAnnouncementClick(a)}
+                                        className={`w-full text-left px-3 py-2 rounded-lg flex items-start gap-2.5 transition-colors ${isRead ? "bg-slate-50" : "bg-amber-50 border border-amber-200"
+                                            }`}
+                                    >
+                                        {!isRead && <span className="shrink-0 w-2 h-2 rounded-full bg-rose-500 mt-1.5" />}
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-700">{a.Title ?? a.title}</p>
+                                            <p className="text-xs text-slate-500">{a.Message ?? a.message}</p>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">
+                                                {a.CreatedByName ?? a.createdByName} ·{" "}
+                                                {new Date(a.CreatedAt ?? a.createdAt).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
 
-                    {selectedCard && (
-                        <DetailTable
-                            card={selectedCard}
-                            rows={detailRows}
-                            loading={detailLoading}
-                            error={detailError}
-                            onClose={handleCloseDetail}
-                        />
+                    {/* Cards Grid */}
+                    {cards.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center min-h-[160px] gap-2 bg-white border border-slate-200 rounded-2xl">
+                            <i className="fa-solid fa-table-columns text-3xl text-slate-300" />
+                            <p className="text-slate-400 text-sm font-sans">No dashboard cards configured for your role.</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                                {cards.map((card) => (
+                                    <DashboardCard
+                                        key={card.cardKey}
+                                        card={card}
+                                        onClick={handleCardClick}
+                                        isActive={selectedCard?.cardKey === card.cardKey}
+                                    />
+                                ))}
+                            </div>
+
+                            {selectedCard && (
+                                <DetailTable
+                                    card={selectedCard}
+                                    rows={detailRows}
+                                    loading={detailLoading}
+                                    error={detailError}
+                                    onClose={handleCloseDetail}
+                                />
+                            )}
+                        </>
                     )}
                 </>
             )}
 
+        </div>
+    );
+}
+
+// ─── NEW: Announcements Manage Tab (CMD/Director/HR) ─────────────────────────
+function AnnouncementsManageTab({ onChanged }) {
+    const [list, setList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [title, setTitle] = useState("");
+    const [message, setMessage] = useState("");
+    const [priority, setPriority] = useState("Normal");
+    const [submitting, setSubmitting] = useState(false);
+
+    const load = async () => {
+        setLoading(true);
+        try {
+            const res = await adminService.getAllAnnouncements();
+            setList(res.Data || res.data || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!title.trim() || !message.trim()) return;
+        setSubmitting(true);
+        try {
+            await adminService.createAnnouncement({ title, message, priority });
+            setTitle(""); setMessage(""); setPriority("Normal");
+            load();
+            onChanged?.();
+        } catch (err) {
+            alert(err.message || "Failed to publish");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm("Delete this announcement?")) return;
+        try {
+            await adminService.deleteAnnouncement(id);
+            load();
+            onChanged?.();
+        } catch (err) {
+            alert(err.message || "Failed to delete");
+        }
+    };
+
+    const PRIORITY_STYLES = {
+        Normal: "bg-slate-100 text-slate-600",
+        Important: "bg-amber-100 text-amber-700",
+        Urgent: "bg-rose-100 text-rose-700",
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            {/* Create form */}
+            <div className="lg:col-span-2">
+                <form
+                    onSubmit={handleSubmit}
+                    className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4 lg:sticky lg:top-5"
+                >
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+                            <i className="fa-solid fa-bullhorn text-amber-500 text-sm" />
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-slate-800 text-sm">New Announcement</h2>
+                            <p className="text-[11px] text-slate-400">Visible to all employees instantly</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">Title</label>
+                        <input
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="e.g. Diwali Holiday Notice"
+                            maxLength={200}
+                            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300/50 focus:border-amber-300 transition"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">Message</label>
+                        <textarea
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="Write the full announcement here..."
+                            rows={5}
+                            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-300/50 focus:border-amber-300 transition"
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                        <div className="flex-1">
+                            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1 block">Priority</label>
+                            <select
+                                value={priority}
+                                onChange={(e) => setPriority(e.target.value)}
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300/50"
+                            >
+                                <option>Normal</option>
+                                <option>Important</option>
+                                <option>Urgent</option>
+                            </select>
+                        </div>
+                        <button
+                            disabled={submitting || !title.trim() || !message.trim()}
+                            className="self-end px-5 py-2.5 bg-[#0b2836] text-white text-sm font-semibold rounded-lg hover:bg-[#0f3345] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                        >
+                            {submitting ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-paper-plane" />}
+                            {submitting ? "Publishing..." : "Publish"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* Sent list */}
+            <div className="lg:col-span-3">
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                        <div>
+                            <h2 className="font-bold text-slate-800 text-sm">Sent Announcements</h2>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{list.length} total</p>
+                        </div>
+                        <button onClick={load} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors" title="Refresh">
+                            <i className={`fa-solid fa-arrows-rotate text-slate-400 text-xs ${loading ? "animate-spin" : ""}`} />
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-2">
+                            <i className="fa-solid fa-spinner text-2xl text-amber-500 animate-spin" />
+                            <p className="text-slate-400 text-sm">Loading...</p>
+                        </div>
+                    ) : list.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-2">
+                            <i className="fa-solid fa-bullhorn text-3xl text-slate-200" />
+                            <p className="text-slate-400 text-sm">No announcements yet.</p>
+                            <p className="text-slate-300 text-xs">Publish one using the form.</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100 max-h-[560px] overflow-y-auto">
+                            {list.map((a) => {
+                                const id = a.AnnouncementId ?? a.announcementId;
+                                const active = a.IsActive ?? a.isActive;
+                                const priorityVal = a.Priority ?? a.priority ?? "Normal";
+                                const PRIORITY_STYLES = {
+                                    Normal: "bg-slate-100 text-slate-600 ring-slate-500/20",
+                                    Important: "bg-amber-50 text-amber-700 ring-amber-600/20",
+                                    Urgent: "bg-rose-50 text-rose-700 ring-rose-600/20",
+                                };
+                                const PRIORITY_DOT = { Normal: "bg-slate-400", Important: "bg-amber-500", Urgent: "bg-rose-500" };
+                                return (
+                                    <div key={id} className={`px-5 sm:px-6 py-4 flex items-start gap-3 transition-colors ${!active ? "opacity-50" : "hover:bg-slate-50/60"}`}>
+                                        <span className={`shrink-0 w-2 h-2 rounded-full mt-2 ${PRIORITY_DOT[priorityVal]}`} />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="text-sm font-semibold text-slate-800 truncate">{a.Title ?? a.title}</p>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ring-1 ring-inset shrink-0 ${PRIORITY_STYLES[priorityVal]}`}>
+                                                    {priorityVal}
+                                                </span>
+                                                {!active && (
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 shrink-0">Deleted</span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.Message ?? a.message}</p>
+                                            <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-400">
+                                                <i className="fa-solid fa-user-tie text-[10px]" />
+                                                <span>{a.CreatedByName ?? a.createdByName}</span>
+                                                <span>·</span>
+                                                <span>{new Date(a.CreatedAt ?? a.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                                            </div>
+                                        </div>
+                                        {active && (
+                                            <button onClick={() => handleDelete(id)} className="shrink-0 w-8 h-8 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-600 flex items-center justify-center transition-colors" title="Delete">
+                                                <i className="fa-solid fa-trash text-xs" />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

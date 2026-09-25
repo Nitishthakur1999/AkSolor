@@ -1107,7 +1107,7 @@ namespace AkerpSuite.Server.Repositories
             using var conn = _context.CreateConnection();
             await conn.ExecuteAsync(
                 "sp_notification_mark_read",
-                new { p_notification_id = notificationId, p_emp_id = userId },   
+                new { p_notification_id = notificationId, p_emp_id = userId },
                 commandType: System.Data.CommandType.StoredProcedure);
         }
 
@@ -2030,7 +2030,7 @@ namespace AkerpSuite.Server.Repositories
             return result.ToList();
         }
 
-      
+
         public async Task UpsertSundayDutyAsync(SundayDutyRequestDto request, int createdBy)
         {
             using var conn = _context.CreateConnection();
@@ -2060,6 +2060,53 @@ namespace AkerpSuite.Server.Repositories
 
         #endregion
 
+        #region Announcements
+        public async Task<int> CreateAnnouncementAsync(string title, string message, string priority, int createdBy, string createdByName)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.ExecuteScalarAsync<int>(
+                "sp_Announcement_Create",
+                new { p_Title = title, p_Message = message, p_Priority = priority, p_CreatedBy = createdBy, p_CreatedByName = createdByName },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<AnnouncementResponseDto>> GetActiveAnnouncementsAsync(int employeeId)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<AnnouncementResponseDto>(
+                "sp_Announcement_GetActive",
+                new { p_EmployeeId = employeeId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task MarkAnnouncementReadAsync(int announcementId, int employeeId)
+        {
+            using var conn = _context.CreateConnection();
+            await conn.ExecuteAsync(
+                "sp_Announcement_MarkRead",
+                new { p_AnnouncementId = announcementId, p_EmployeeId = employeeId },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<IEnumerable<AnnouncementManageDto>> GetAllAnnouncementsAsync(int createdBy)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<AnnouncementManageDto>(
+                "sp_Announcement_GetAll",
+                new { p_CreatedBy = createdBy },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> DeleteAnnouncementAsync(int announcementId)
+        {
+            using var conn = _context.CreateConnection();
+            var updated = await conn.ExecuteScalarAsync<int>(
+                "sp_Announcement_Delete",
+                new { p_AnnouncementId = announcementId },
+                commandType: CommandType.StoredProcedure);
+            return updated > 0;
+        }
+        #endregion
 
     }
 }

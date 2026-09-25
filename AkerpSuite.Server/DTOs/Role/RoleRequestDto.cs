@@ -155,7 +155,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Source { get; set; } = "Manual";
         public string? Remarks { get; set; }
         public int? CreatedBy { get; set; }
-        public decimal? Latitude { get; set; }      
+        public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string? LocationAddress { get; set; }
         public decimal? CheckOutLatitude { get; set; }
@@ -457,7 +457,7 @@ namespace AkerpSuite.Server.DTOs.Role
     {
         public int CandidateId { get; set; }
         public DateTime ScheduledDate { get; set; }
-        public string Mode { get; set; } = string.Empty; 
+        public string Mode { get; set; } = string.Empty;
         public string? Location { get; set; }
         public string? Interviewers { get; set; }
         public int RoundNo { get; set; } = 1;
@@ -493,5 +493,12 @@ namespace AkerpSuite.Server.DTOs.Role
         public string Status { get; set; } = "OFF";
         public string? Location { get; set; }
         public bool CountsAsDuty { get; set; } = true;
+    }
+
+    public class AnnouncementCreateDto
+    {
+        public string Title { get; set; }
+        public string Message { get; set; }
+        public string Priority { get; set; } = "Normal"; 
     }
 }

@@ -112,6 +112,13 @@ export const adminService = {
     getUnreadNotifications: () => apiCall(`${API_BASE}/notifications/unread`, "GET", null, true),
     markNotificationRead: (id?: any) => apiCall(`${API_BASE}/notifications/${id}/read`, "PUT", null, true),
 
+    // 1c. Announcements — NEW
+    getActiveAnnouncements: () => apiCall(`${API_BASE}/announcements/active`),
+    markAnnouncementRead: (id?: any) => apiCall(`${API_BASE}/announcements/${id}/read`, "PUT"),
+    createAnnouncement: (data?: any) => apiCall(`${API_BASE}/announcements`, "POST", data),
+    getAllAnnouncements: () => apiCall(`${API_BASE}/announcements`),
+    deleteAnnouncement: (id?: any) => apiCall(`${API_BASE}/announcements/${id}`, "DELETE"),
+
     // 2. Roles
     getRoles: () => apiCall(`${API_BASE}/getallroles`),
     createRole: (data?: any) => apiCall(`${API_BASE}/creteroles`, "POST", data),

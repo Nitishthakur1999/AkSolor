@@ -1084,11 +1084,11 @@ namespace AkerpSuite.Server.Services
         //Bank entey detail
         public async Task<int> CreateLeaveBalanceAsync(LeaveBalanceCreateRequestDto request)
             => await _repository.CreateLeaveBalanceAsync(request);
-        
-        public async Task<bool> UpdateLeaveBalanceAsync(int balanceId, LeaveBalanceUpdateRequestDto request) 
+
+        public async Task<bool> UpdateLeaveBalanceAsync(int balanceId, LeaveBalanceUpdateRequestDto request)
             => await _repository.UpdateLeaveBalanceAsync(balanceId, request);
-        
-        public async Task<bool> DeleteLeaveBalanceAsync(int balanceId) 
+
+        public async Task<bool> DeleteLeaveBalanceAsync(int balanceId)
             => await _repository.DeleteLeaveBalanceAsync(balanceId);
 
         public async Task<LeaveBalanceResponseDto?> GetLeaveBalanceByIdAsync(int balanceId)
@@ -1782,7 +1782,7 @@ namespace AkerpSuite.Server.Services
         {
             var emp = await _repository.GetEmployeeLetterDataByCandidateAsync(candidateId);
             if (emp == null) return null;
-            if (emp.LastWorkingDate == null) return null;  
+            if (emp.LastWorkingDate == null) return null;
 
             var fields = new Dictionary<string, string>
             {
@@ -1898,6 +1898,33 @@ namespace AkerpSuite.Server.Services
             return result;
         }
 
+        #endregion
+
+        #region Announcements
+        public async Task<int> CreateAnnouncementAsync(AnnouncementCreateDto request, int createdBy, string createdByName)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Message))
+                throw new ArgumentException("Title and message are required.");
+
+            var validPriorities = new[] { "Normal", "Important", "Urgent" };
+            if (!validPriorities.Contains(request.Priority))
+                request.Priority = "Normal";
+
+            return await _repository.CreateAnnouncementAsync(
+                request.Title.Trim(), request.Message.Trim(), request.Priority, createdBy, createdByName);
+        }
+
+        public Task<IEnumerable<AnnouncementResponseDto>> GetActiveAnnouncementsAsync(int employeeId)
+            => _repository.GetActiveAnnouncementsAsync(employeeId);
+
+        public Task MarkAnnouncementReadAsync(int announcementId, int employeeId)
+            => _repository.MarkAnnouncementReadAsync(announcementId, employeeId);
+
+        public Task<IEnumerable<AnnouncementManageDto>> GetAllAnnouncementsAsync(int createdBy)
+            => _repository.GetAllAnnouncementsAsync(createdBy);
+
+        public Task<bool> DeleteAnnouncementAsync(int announcementId)
+            => _repository.DeleteAnnouncementAsync(announcementId);
         #endregion
 
     }
