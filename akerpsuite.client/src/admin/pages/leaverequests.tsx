@@ -131,6 +131,17 @@ export default function LeaveRequests() {
         }
     };
 
+    // applied date + time formatter (createdAt from backend)
+    const formatDateTime = (value) => {
+        if (!value) return null;
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return null;
+        return {
+            date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+            time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
+        };
+    };
+
     const tabFilteredBase = leaveRequests.filter(item => {
         if (activeTab === "hr") return true;
 
@@ -241,10 +252,11 @@ export default function LeaveRequests() {
                             </p>
                         </div>
                     ) : (
-                        <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
+                        <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1050px]">
                             <thead>
                                 <tr className="bg-slate-50/80 border-b border-slate-200">
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Employee</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Applied On</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Leave Type</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Duration</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Reason</th>
@@ -257,6 +269,19 @@ export default function LeaveRequests() {
                                     <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-slate-900">{req.fullName || `EMP-${req.empId}`}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {(() => {
+                                                const applied = formatDateTime(req.createdAt);
+                                                return applied ? (
+                                                    <>
+                                                        <div className="font-bold text-slate-800">{applied.date}</div>
+                                                        <div className="text-[11px] font-medium text-slate-500 mt-0.5">{applied.time}</div>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">

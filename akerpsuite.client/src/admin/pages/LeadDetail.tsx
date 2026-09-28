@@ -67,6 +67,15 @@ export default function LeadDetail() {
     const [actionLoading, setActionLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // 🆕 Booking tab — per-row "Book Qty" input + loading state
+    const [bookQty, setBookQty] = useState<Record<string, string>>({});
+    const [bookingBomId, setBookingBomId] = useState<number | null>(null);
+
+    // 🆕 BOM tab — inline edit of Required Qty
+    const [editingBomId, setEditingBomId] = useState<number | null>(null);
+    const [editQty, setEditQty] = useState("");
+    const [savingBomId, setSavingBomId] = useState<number | null>(null);
+
     const [systemSizeKw, setSystemSizeKw] = useState("");
     const [totalAmount, setTotalAmount] = useState("");
     const [subsidyAmount, setSubsidyAmount] = useState("");
@@ -421,6 +430,89 @@ export default function LeadDetail() {
 
         setMaterialError({});
         handleAddMaterial();
+    };
+
+    // 🆕 Booking tab — book additional qty against a BOM row's shortage
+    const handleUpdateBooking = async (item: any) => {
+        const qty = Number(bookQty[item.bomId]);
+        const shortage = Number(item.shortageQty);
+
+        if (!qty || qty <= 0) {
+            setErrorMsg("Enter valid booking quantity greater than 0.");
+            return;
+        }
+        if (qty > shortage) {
+            setErrorMsg(`Cannot book more than shortage (${shortage}).`);
+            return;
+        }
+
+        setBookingBomId(item.bomId);
+        setErrorMsg("");
+        try {
+            const res = await adminService.updateBomBooking({
+                bomId: item.bomId,
+                additionalBookedQty: qty,
+            });
+            if (res?.success) {
+                setSuccessMsg("Booking updated successfully.");
+                setBookQty(prev => ({ ...prev, [item.bomId]: "" }));
+                const refreshed = await adminService.getBomByLead(leadId);
+                if (refreshed?.success) setBom(refreshed.data || []);
+            } else {
+                setErrorMsg(res?.message || "Could not update booking.");
+            }
+        } catch (err: any) {
+            console.error(err);
+            setErrorMsg(err?.message || "Something went wrong while updating booking.");
+        } finally {
+            setBookingBomId(null);
+        }
+    };
+
+    // 🆕 BOM tab — edit Required Qty of an existing BOM row
+    const startEditBom = (item: any) => {
+        setEditingBomId(item.bomId);
+        setEditQty(String(item.requiredQty ?? ""));
+        setErrorMsg("");
+    };
+
+    const cancelEditBom = () => {
+        setEditingBomId(null);
+        setEditQty("");
+    };
+
+    const handleSaveBomQty = async (item: any) => {
+        const qty = Number(editQty);
+        if (!editQty || isNaN(qty) || qty <= 0) {
+            setErrorMsg("Enter a valid quantity greater than 0.");
+            return;
+        }
+        if (qty === Number(item.requiredQty)) {
+            cancelEditBom();
+            return;
+        }
+
+        setSavingBomId(item.bomId);
+        setErrorMsg("");
+        try {
+            const res = await (adminService as any).updateBomQty({
+                bomId: item.bomId,
+                requiredQty: qty,
+            });
+            if (res?.success) {
+                setSuccessMsg("BOM quantity updated successfully.");
+                cancelEditBom();
+                const refreshed = await adminService.getBomByLead(leadId);
+                if (refreshed?.success) setBom(refreshed.data || []);
+            } else {
+                setErrorMsg(res?.message || "Could not update BOM quantity.");
+            }
+        } catch (err: any) {
+            console.error(err);
+            setErrorMsg(err?.message || "Something went wrong while updating BOM quantity.");
+        } finally {
+            setSavingBomId(null);
+        }
     };
 
     const handleAddItem = async () => {
@@ -1091,8 +1183,9 @@ export default function LeadDetail() {
                                                 <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
                                                     <tr>
                                                         <th className="px-6 py-4">Item Name</th>
-                                                            <th className="px-6 py-4 text-center">Req. Qty</th>
-                                                            <th className="px-6 py-4 text-right">Availability Status</th>
+                                                        <th className="px-6 py-4 text-center">Req. Qty</th>
+                                                        <th className="px-6 py-4 text-right">Availability Status</th>
+                                                        <th className="px-6 py-4 text-center">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
@@ -1108,7 +1201,19 @@ export default function LeadDetail() {
                                                     ) : bom.map((item: any, idx: number) => (
                                                         <tr key={item.bomId || idx} className="hover:bg-slate-50/60 transition-colors">
                                                             <td className="px-6 py-4 font-bold text-slate-900">{item.itemName || "-"}</td>
-                                                            <td className="px-6 py-4 text-center font-mono font-bold text-slate-700 bg-slate-50/50">{item.requiredQty ?? "-"}</td>
+                                                            <td className="px-6 py-4 text-center font-mono font-bold text-slate-700 bg-slate-50/50">
+                                                                {editingBomId === item.bomId ? (
+                                                                    <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        step="1"
+                                                                        autoFocus
+                                                                        value={editQty}
+                                                                        onChange={e => setEditQty(e.target.value)}
+                                                                        className={`${inputClass} !w-24 !py-1.5 text-center`}
+                                                                    />
+                                                                ) : (item.requiredQty ?? "-")}
+                                                            </td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${item.shortageQty > 0
                                                                     ? "bg-rose-50 text-rose-700 border-rose-200/50"
@@ -1120,6 +1225,39 @@ export default function LeadDetail() {
                                                                         <><i className="fa-solid fa-circle-check" /> In Stock</>
                                                                     )}
                                                                 </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                {editingBomId === item.bomId ? (
+                                                                    <div className="flex items-center gap-2 justify-center">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleSaveBomQty(item)}
+                                                                            disabled={savingBomId === item.bomId}
+                                                                            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-bold rounded-lg text-[10px] uppercase tracking-wider hover:bg-emerald-100 disabled:opacity-60 flex items-center gap-1.5"
+                                                                        >
+                                                                            {savingBomId === item.bomId
+                                                                                ? <i className="fa-solid fa-spinner animate-spin" />
+                                                                                : <i className="fa-solid fa-check" />}
+                                                                            Save
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={cancelEditBom}
+                                                                            disabled={savingBomId === item.bomId}
+                                                                            className="px-3 py-1.5 bg-slate-50 text-slate-600 border border-slate-200 font-bold rounded-lg text-[10px] uppercase tracking-wider hover:bg-slate-100 disabled:opacity-60"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => startEditBom(item)}
+                                                                        className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200/60 font-bold rounded-lg text-[10px] uppercase tracking-wider hover:bg-amber-100 flex items-center gap-1.5 mx-auto"
+                                                                    >
+                                                                        <i className="fa-solid fa-pen" /> Edit
+                                                                    </button>
+                                                                )}
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -1257,51 +1395,52 @@ export default function LeadDetail() {
                             )}
 
                             {/* TAB 6: BOOKING — 🆕 alag tab, BOM se split kiya gaya. Data wahi `bom` state se aa raha hai, sirf shortage waale items dikhaye ja rahe hain */}
-                                {activeTab === "booking" && (
-                                    <div className="space-y-6">
-                                        {/* Summary stat cards — visually differentiate Booking tab from BOM tab */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div className="bg-rose-50 border border-rose-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-                                                <div className="w-11 h-11 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shrink-0">
-                                                    <i className="fa-solid fa-triangle-exclamation" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Items Pending</p>
-                                                    <p className="text-2xl font-black text-rose-700">{bookingRows.length}</p>
-                                                </div>
+                            {activeTab === "booking" && (
+                                <div className="space-y-6">
+                                    {/* Summary stat cards — visually differentiate Booking tab from BOM tab */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="bg-rose-50 border border-rose-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+                                            <div className="w-11 h-11 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg shrink-0">
+                                                <i className="fa-solid fa-triangle-exclamation" />
                                             </div>
-                                            <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
-                                                <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
-                                                    <i className="fa-solid fa-boxes-packing" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Total Shortage Qty</p>
-                                                    <p className="text-2xl font-black text-amber-700">
-                                                        {bookingRows.reduce((sum: number, item: any) => sum + Number(item.shortageQty || 0), 0)}
-                                                    </p>
-                                                </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Items Pending</p>
+                                                <p className="text-2xl font-black text-rose-700">{bookingRows.length}</p>
                                             </div>
                                         </div>
-
-                                        <div className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm">
-                                            <div className="flex items-center gap-2 border-b border-rose-100 pb-3 mb-5">
-                                                <i className="fa-solid fa-clipboard-check text-rose-500" />
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Items Pending Booking</h3>
+                                        <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
+                                            <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                                                <i className="fa-solid fa-boxes-packing" />
                                             </div>
-                                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-5 leading-relaxed">
-                                                These are BOM items that currently don't have enough stock and need to be booked/procured.
-                                            </p>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Total Shortage Qty</p>
+                                                <p className="text-2xl font-black text-amber-700">
+                                                    {bookingRows.reduce((sum: number, item: any) => sum + Number(item.shortageQty || 0), 0)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                            <div className="overflow-x-auto border border-rose-200/60 rounded-2xl">
-                                                <table className="w-full text-left border-collapse min-w-[700px]">
-                                                    <thead className="bg-rose-50/60 border-b border-rose-200/60 text-rose-600 text-[10px] font-bold uppercase tracking-widest">
-                                                        <tr>
-                                                            <th className="px-6 py-4">Item Name</th>
-                                                            <th className="px-6 py-4 text-center">Req. Qty</th>
-                                                            <th className="px-6 py-4 text-center">Shortage Qty</th>
-                                                            <th className="px-20 py-4 text-right">Status</th>
-                                                        </tr>
-                                                    </thead>
+                                    <div className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm">
+                                        <div className="flex items-center gap-2 border-b border-rose-100 pb-3 mb-5">
+                                            <i className="fa-solid fa-clipboard-check text-rose-500" />
+                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Items Pending Booking</h3>
+                                        </div>
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-5 leading-relaxed">
+                                            These are BOM items that currently don't have enough stock and need to be booked/procured.
+                                        </p>
+
+                                        <div className="overflow-x-auto border border-rose-200/60 rounded-2xl">
+                                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                                <thead className="bg-rose-50/60 border-b border-rose-200/60 text-rose-600 text-[10px] font-bold uppercase tracking-widest">
+                                                    <tr>
+                                                        <th className="px-6 py-4">Item Name</th>
+                                                        <th className="px-6 py-4 text-center">Req. Qty</th>
+                                                        <th className="px-6 py-4 text-center">Shortage Qty</th>
+                                                        <th className="px-6 py-4 text-center">Book Qty</th>
+                                                        <th className="px-6 py-4 text-right">Status</th>
+                                                    </tr>
+                                                </thead>
                                                 <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                                     {bookingRows.length === 0 ? (
                                                         <tr>
@@ -1317,7 +1456,31 @@ export default function LeadDetail() {
                                                             <td className="px-6 py-4 font-bold text-slate-900">{item.itemName || "-"}</td>
                                                             <td className="px-6 py-4 text-center font-mono font-bold text-slate-700 bg-slate-50/50">{item.requiredQty ?? "-"}</td>
                                                             <td className="px-6 py-4 text-center font-mono font-bold text-rose-600">{item.shortageQty ?? "-"}</td>
-                                                             <td className="px-6 py-4 text-right">
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-2 justify-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        max={item.shortageQty}
+                                                                        placeholder="Qty"
+                                                                        value={bookQty[item.bomId] ?? ""}
+                                                                        onChange={e => setBookQty({ ...bookQty, [item.bomId]: e.target.value })}
+                                                                        className={`${inputClass} !w-24 !py-1.5`}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleUpdateBooking(item)}
+                                                                        disabled={bookingBomId === item.bomId}
+                                                                        className="px-3 py-1.5 bg-[#0b2836] text-white font-bold rounded-lg text-[10px] uppercase tracking-wider hover:bg-[#0f3345] disabled:opacity-60 flex items-center gap-1.5"
+                                                                    >
+                                                                        {bookingBomId === item.bomId
+                                                                            ? <i className="fa-solid fa-spinner animate-spin" />
+                                                                            : <i className="fa-solid fa-check" />}
+                                                                        Book
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
                                                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-rose-50 text-rose-700 border-rose-200/50">
                                                                     <i className="fa-solid fa-circle-exclamation" /> Needs Booking
                                                                 </span>
@@ -1491,48 +1654,48 @@ export default function LeadDetail() {
                                                     <p className="text-sm font-bold text-slate-500">No documents uploaded yet.</p>
                                                     <p className="text-xs text-slate-400 mt-1 font-medium">Upload agreements, ID proofs, or site photos.</p>
                                                 </div>
-                                                ) : documents.map((doc: any, idx: number) => (
+                                            ) : documents.map((doc: any, idx: number) => (
+                                                <div
+                                                    key={doc.docId ?? idx}
+                                                    className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 hover:border-amber-300 transition-all flex items-center justify-between gap-4 shadow-sm group"
+                                                >
                                                     <div
-                                                        key={doc.docId ?? idx}
-                                                        className="p-4 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 hover:border-amber-300 transition-all flex items-center justify-between gap-4 shadow-sm group"
+                                                        onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
+                                                        className="flex items-center gap-3 overflow-hidden cursor-pointer flex-1"
                                                     >
-                                                        <div
-                                                            onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
-                                                            className="flex items-center gap-3 overflow-hidden cursor-pointer flex-1"
-                                                        >
-                                                            <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-                                                                <i className="fa-regular fa-file-lines text-lg" />
-                                                            </div>
-                                                            <div className="truncate">
-                                                                <p className="text-sm font-bold text-slate-800 truncate group-hover:text-amber-700 transition-colors">
-                                                                    {doc.docName || "Untitled Document"}
-                                                                </p>
-                                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
-                                                                    Tap to view/download
-                                                                </p>
-                                                            </div>
+                                                        <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                                                            <i className="fa-regular fa-file-lines text-lg" />
                                                         </div>
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <div
-                                                                onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
-                                                                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600 flex items-center justify-center cursor-pointer transition-colors"
-                                                            >
-                                                                <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteDocument(doc.docId)}
-                                                                disabled={deletingDocId === doc.docId}
-                                                                className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors disabled:opacity-50"
-                                                                title="Delete document"
-                                                            >
-                                                                {deletingDocId === doc.docId
-                                                                    ? <i className="fa-solid fa-spinner animate-spin text-xs" />
-                                                                    : <i className="fa-solid fa-trash text-xs" />}
-                                                            </button>
+                                                        <div className="truncate">
+                                                            <p className="text-sm font-bold text-slate-800 truncate group-hover:text-amber-700 transition-colors">
+                                                                {doc.docName || "Untitled Document"}
+                                                            </p>
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                                                                Tap to view/download
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <div
+                                                            onClick={() => window.open(getDocumentUrl(doc.filePath || doc.docPath || doc.path), "_blank")}
+                                                            className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600 flex items-center justify-center cursor-pointer transition-colors"
+                                                        >
+                                                            <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteDocument(doc.docId)}
+                                                            disabled={deletingDocId === doc.docId}
+                                                            className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors disabled:opacity-50"
+                                                            title="Delete document"
+                                                        >
+                                                            {deletingDocId === doc.docId
+                                                                ? <i className="fa-solid fa-spinner animate-spin text-xs" />
+                                                                : <i className="fa-solid fa-trash text-xs" />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>

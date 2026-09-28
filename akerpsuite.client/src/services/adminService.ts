@@ -327,6 +327,7 @@ export const adminService = {
     // BOM (Material Booking)
     getBomByLead: (leadId?: any) => apiCall(`${SALES_API_BASE}/bom/lead/${leadId}`),
     createBom: (data?: any) => apiCall(`${SALES_API_BASE}/bom`, "POST", data),
+    updateBomQty: (data?: any) => apiCall(`${SALES_API_BASE}/bom/qty`, "PATCH", data),
 
     // FIXED: Changed to PATCH as per C# [HttpPatch("bom/booking")]
     updateBomBooking: (data?: any) => apiCall(`${SALES_API_BASE}/bom/booking`, "PATCH", data),

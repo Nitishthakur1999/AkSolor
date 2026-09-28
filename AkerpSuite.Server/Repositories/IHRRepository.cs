@@ -78,6 +78,7 @@ namespace AkerpSuite.Server.Repositories
 
         // BOM / Material Booking
         Task<SalesBomCreateResultDto> CreateBomAsync(SalesBomRequestDto request);
+        Task<bool> UpdateBomQtyAsync(SalesBomQtyUpdateDto request);
         Task<bool> UpdateBomBookingAsync(SalesBomBookingUpdateDto request);
         Task<IEnumerable<SalesBomResponseDto>> GetBomByLeadAsync(int leadId);
 

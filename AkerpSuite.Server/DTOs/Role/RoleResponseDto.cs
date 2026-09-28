@@ -242,7 +242,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? ApprovedByName { get; set; }
         public DateTime? ApprovedAt { get; set; }
         public string? Remarks { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
         public string? ErrorMessage { get; set; }
         public int? ForwardedTo { get; set; }
         public string? ForwardedToRole { get; set; }

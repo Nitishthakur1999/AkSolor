@@ -229,6 +229,12 @@ namespace AkerpSuite.Server.DTOs.Hr
         public decimal RequiredQty { get; set; }
     }
 
+    public class SalesBomQtyUpdateDto
+    {
+        public int BomId { get; set; }
+        public decimal RequiredQty { get; set; }
+    }
+
     public class SalesBomBookingUpdateDto
     {
         public int BomId { get; set; }

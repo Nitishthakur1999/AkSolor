@@ -438,6 +438,8 @@ namespace AkerpSuite.Server.Services
 
         public Task<SalesBomCreateResultDto> CreateBomAsync(SalesBomRequestDto request) =>
             _repository.CreateBomAsync(request);
+        public Task<bool> UpdateBomQtyAsync(SalesBomQtyUpdateDto request) =>
+             _repository.UpdateBomQtyAsync(request);
 
         public Task<bool> UpdateBomBookingAsync(SalesBomBookingUpdateDto request) =>
             _repository.UpdateBomBookingAsync(request);

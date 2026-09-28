@@ -739,6 +739,18 @@ namespace AkerpSuite.Server.Repositories
             return result;
         }
 
+        public async Task<bool> UpdateBomQtyAsync(SalesBomQtyUpdateDto request)
+        {
+            using var conn = _context.CreateConnection();
+            var p = new DynamicParameters();
+            p.Add("p_BomId", request.BomId);
+            p.Add("p_RequiredQty", request.RequiredQty);
+
+            var found = await conn.QueryFirstAsync<int>(
+                "sp_UpdateSalesBomQty", p, commandType: CommandType.StoredProcedure);
+            return found > 0;
+        }
+
         public async Task<bool> UpdateBomBookingAsync(SalesBomBookingUpdateDto request)
         {
             using var conn = _context.CreateConnection();

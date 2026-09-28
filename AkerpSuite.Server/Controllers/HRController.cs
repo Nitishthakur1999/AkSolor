@@ -584,6 +584,20 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Message = message, Data = result });
         }
 
+        [HttpPatch("bom/qty")]
+        [RequirePermission("SalesBom", "EditQty")]
+        public async Task<IActionResult> UpdateBomQty([FromBody] SalesBomQtyUpdateDto request)
+        {
+            if (request.BomId <= 0 || request.RequiredQty <= 0)
+                return BadRequest(new { Success = false, Message = "Invalid BOM id or quantity" });
+
+            var updated = await _service.UpdateBomQtyAsync(request);
+            if (!updated)
+                return NotFound(new { Success = false, Message = "BOM entry not found" });
+
+            return Ok(new { Success = true, Message = "BOM quantity updated successfully" });
+        }
+
         [HttpPatch("bom/booking")]
         [RequirePermission("SalesBom", "Update")]
         public async Task<IActionResult> UpdateBomBooking([FromBody] SalesBomBookingUpdateDto request)
