@@ -746,7 +746,7 @@ namespace AkerpSuite.Server.Repositories
             p.Add("p_BomId", request.BomId);
             p.Add("p_RequiredQty", request.RequiredQty);
 
-            var found = await conn.QueryFirstAsync<int>(
+            var found = await conn.ExecuteScalarAsync<int>(
                 "sp_UpdateSalesBomQty", p, commandType: CommandType.StoredProcedure);
             return found > 0;
         }
