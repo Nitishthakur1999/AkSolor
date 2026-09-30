@@ -1,32 +1,43 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="AKS Solar Systems Private Limited — solar power plants, rooftop & off-grid systems, solar geysers, and street lights across Himachal Pradesh and North India." />
+
+    <!-- SEO defaults (Home page ke hisaab se) -->
+    <title>AKS Solar Systems | Solar Power Solutions in Himachal Pradesh</title>
+    <meta name="description" content="AKS Solar Systems provides rooftop, off-grid & solar power plants, solar geysers, and solar street lights across Himachal Pradesh and North India. Get a free quote." />
+
+    <!-- Social preview (WhatsApp / Facebook) -->
+    <meta property="og:site_name" content="AKS Solar Systems" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AKS Solar Systems | Solar Power Solutions in Himachal Pradesh" />
+    <meta property="og:description" content="AKS Solar Systems provides rooftop, off-grid & solar power plants, solar geysers, and solar street lights across Himachal Pradesh and North India. Get a free quote." />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
-    <title>AKS Solar Systems Private Limited | Solar Power, Rooftop &amp; Off-Grid Solutions</title>
+
     <script>
-      (function () {
-        try {
-          var saved = localStorage.getItem('aks-theme');
-          if (saved === 'dark') {
-            document.documentElement.classList.add('dark');
-            document.documentElement.style.colorScheme = 'dark';
-          } else {
-            document.documentElement.style.colorScheme = 'light';
-          }
-        } catch (e) {}
-      })();
+        (function () {
+            try {
+                var saved = localStorage.getItem('aks-theme');
+                if (saved === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                } else {
+                    document.documentElement.style.colorScheme = 'light';
+                }
+            } catch (e) { }
+        })();
     </script>
-  </head>
-  <body>
+</head>
+<body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+</body>
 </html>

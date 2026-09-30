@@ -1,8 +1,13 @@
+import SEO from '../components/SEO';
 import PageHeader from '../components/PageHeader';
 
 export default function PrivacyPolicyPage() {
     return (
         <>
+            <SEO
+                title="Privacy Policy | AKS Solar Systems"
+                description="Read how AKS Solar Systems collects, uses and protects your personal information."
+            />
             <PageHeader
                 eyebrow="Legal"
                 title="Privacy"

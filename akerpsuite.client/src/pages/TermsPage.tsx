@@ -1,8 +1,13 @@
+import SEO from '../components/SEO';
 import PageHeader from '../components/PageHeader';
 
 export default function TermsPage() {
     return (
         <>
+            <SEO
+                title="Terms & Conditions | AKS Solar Systems"
+                description="Terms and conditions for using the AKS Solar Systems website and services."
+            />
             <PageHeader
                 eyebrow="Legal"
                 title="Terms and"
@@ -13,7 +18,7 @@ export default function TermsPage() {
             <section className="border-t border-line bg-paper py-14 sm:py-20">
                 <div className="container mx-auto max-w-[900px] px-5 sm:px-7">
                     <div className="prose max-w-none space-y-8 text-[0.96rem] leading-[1.8] text-charcoal">
-                         <div>
+                        <div>
                             <h2 className="mb-3 text-xl font-bold text-charcoal">1. Acceptance of Terms</h2>
                             <p>
                                 This Terms and Conditions agreement ("Agreement") governs your access to and use of the

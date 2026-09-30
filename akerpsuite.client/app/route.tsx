@@ -13,6 +13,7 @@ import Videos from "@/components/Videos";
 import ContactPage from "@/pages/ContactPage";
 import TermsPage from "@/pages/TermsPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 import CmdLayout from "@/layout/cmdlayout";
 import Login from "@/admin/pages/LoginPage";
 import Dashboard from "@/admin/pages/dashboard";
@@ -198,7 +199,10 @@ function Router() {
                     })}
                 </Route>
 
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* ── 404 Page (Navbar/Footer ke saath) ── */}
+                <Route element={<HomeLayout />}>
+                    <Route path="*" element={<NotFoundPage />} />
+                </Route>
             </Routes>
         </BrowserRouter>
     );

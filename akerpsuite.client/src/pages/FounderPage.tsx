@@ -1,3 +1,4 @@
+import SEO from '../components/SEO'
 import PageHeader from '../components/PageHeader'
 import LeadershipMessage from '../components/LeadershipMessage'
 import founderPhoto from '../assets/founder.png'
@@ -5,6 +6,10 @@ import founderPhoto from '../assets/founder.png'
 export default function FounderMessage() {
     return (
         <>
+            <SEO
+                title="Founder's Message | AKS Solar Systems"
+                description="Read the message from Asha Sharma, Founder of AKS Solar Systems, on bringing reliable solar power to homes across Himachal Pradesh and North India."
+            />
             <PageHeader
                 compact
                 eyebrow="Founder's Message"

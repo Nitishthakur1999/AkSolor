@@ -1,3 +1,4 @@
+import SEO from '../components/SEO'
 import PageHeader from '../components/PageHeader'
 import LeadershipMessage from '../components/LeadershipMessage'
 import cmdPhoto from '../assets/director.png'
@@ -5,6 +6,10 @@ import cmdPhoto from '../assets/director.png'
 export default function CMDMessage() {
     return (
         <>
+            <SEO
+                title="CMD's Message | AKS Solar Systems"
+                description="A message from Kapil Sharma, CMD of AKS Solar Systems, on making reliable solar power reachable for every household across Himachal Pradesh and North India."
+            />
             <PageHeader
                 compact
                 eyebrow="CMD's Message"

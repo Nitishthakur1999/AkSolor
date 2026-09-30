@@ -1,3 +1,4 @@
+import SEO from '../components/SEO'
 import PageHeader from '../components/PageHeader'
 import LeadershipMessage from '../components/LeadershipMessage'
 import directorPhoto from '../assets/director_1.png'
@@ -5,6 +6,10 @@ import directorPhoto from '../assets/director_1.png'
 export default function DirectorMessage() {
     return (
         <>
+            <SEO
+                title="Director's Message | AKS Solar Systems"
+                description="A message from Vivek Grovar, Director at AKS Solar Systems, on careful surveys, proper design and quality solar installations across North India."
+            />
             <PageHeader
                 compact
                 eyebrow="Director's Message"
