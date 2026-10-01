@@ -1,48 +1,23 @@
 import { useState, useEffect } from "react";
 import { adminService } from "@/services/adminService";
 
-// ── Small inline icon set ──
-const Icon = {
-    Plus: (p: any) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" {...p}>
-            <path d="M12 5v14M5 12h14" />
-        </svg>
-    ),
-    Calendar: (p: any) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M8 3v4M16 3v4M3 10h18" />
-        </svg>
-    ),
-    Close: (p: any) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" {...p}>
-            <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-    ),
-    Inbox: (p: any) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="M22 12h-6l-2 3h-4l-2-3H2" />
-            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" />
-        </svg>
-    ),
-    Check: (p: any) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="M20 6 9 17l-5-5" />
-        </svg>
-    ),
-};
-
 const STATUS_DOT: Record<string, string> = {
     Approved: "bg-emerald-500",
     Pending: "bg-amber-500",
+    Forwarded: "bg-blue-500",
     Rejected: "bg-rose-500",
+    Cancelled: "bg-slate-400",
 };
 
 const STATUS_BADGE: Record<string, string> = {
     Approved: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
     Pending: "bg-amber-50 text-amber-700 border-amber-200/50",
+    Forwarded: "bg-blue-50 text-blue-700 border-blue-200/50",
     Rejected: "bg-rose-50 text-rose-700 border-rose-200/50",
+    Cancelled: "bg-slate-100 text-slate-500 border-slate-200",
 };
+
+const STATUS_FILTERS = ["", "Pending", "Forwarded", "Approved", "Rejected", "Cancelled"];
 
 const LEAVE_ACCENTS = [
     { ring: "#f59e0b", wash: "bg-amber-50", text: "text-amber-600" },
@@ -50,6 +25,20 @@ const LEAVE_ACCENTS = [
     { ring: "#10b981", wash: "bg-emerald-50", text: "text-emerald-600" },
     { ring: "#8b5cf6", wash: "bg-purple-50", text: "text-purple-600" },
 ];
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+// Total days between two yyyy-mm-dd strings (inclusive). Half day = 0.5
+function calcDays(from: string, to: string, halfDay: boolean): number | null {
+    if (!from) return null;
+    if (halfDay) return 0.5;
+    if (!to) return null;
+    const n = Math.round((new Date(to).getTime() - new Date(from).getTime()) / MS_PER_DAY) + 1;
+    return n >= 1 ? n : null;
+}
+
+const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
 // Circular progress ring
 function BalanceRing({ used, total, accent }: { used: number; total: number; accent: string }) {
@@ -97,6 +86,49 @@ const isLeaveTypeActive = (t: any) => {
 const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm";
 const labelClass = "block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1.5 ml-1";
 
+// ── Reliever dropdown (required) — shared by Apply + Edit ──
+function RelieverSelect({
+    value, onChange, relievers, loading, fallback,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+    relievers: any[];
+    loading: boolean;
+    // existing reliever (edit mode) so the select can still show it if not in list
+    fallback?: { id: string; name: string } | null;
+}) {
+    const inList = relievers.some((r) => String(r.employeeId) === value);
+    const showFallback = !!fallback && fallback.id === value && !inList;
+
+    return (
+        <div>
+            <label className={labelClass}>Reliever *</label>
+            <select
+                required
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                disabled={loading}
+                className={`${inputClass} cursor-pointer ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
+                <option value="">{loading ? "Loading employees..." : "Select reliever"}</option>
+                {showFallback && <option value={fallback!.id}>{fallback!.name}</option>}
+                {relievers.map((r: any) => (
+                    <option key={r.employeeId} value={String(r.employeeId)}>
+                        {r.name}{r.designation ? ` — ${r.designation}` : ""}
+                    </option>
+                ))}
+            </select>
+            {!loading && relievers.length === 0 && (
+                <p className="text-[11px] text-rose-500 font-medium mt-1.5 ml-1">
+                    Employee list could not be loaded. Please close and try again.
+                </p>
+            )}
+        </div>
+    );
+}
+
+const emptyForm = { fromDate: "", toDate: "", reason: "", halfDay: false, relieverEmployeeId: "" };
+
 export default function MyLeaves() {
     const [balances, setBalances] = useState<any[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
@@ -104,39 +136,39 @@ export default function MyLeaves() {
     const [loading, setLoading] = useState(true);
     const [requestsLoading, setRequestsLoading] = useState(false);
 
-    const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+    const currentYear = new Date().getFullYear();
+    const yearOptions = [currentYear, currentYear - 1, currentYear - 2];
+
+    const [filterYear, setFilterYear] = useState(currentYear);
     const [filterMonth, setFilterMonth] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
+
+    // ── Relievers (all active employees except self) ──
+    const [relievers, setRelievers] = useState<any[]>([]);
+    const [relieversLoading, setRelieversLoading] = useState(false);
 
     // ── Apply Leave modal state ──
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [applyError, setApplyError] = useState("");
     const [applySuccess, setApplySuccess] = useState("");
-    const [form, setForm] = useState({
-        fromDate: "",
-        toDate: "",
-        reason: "",
-        halfDay: false,
-    });
+    const [form, setForm] = useState(emptyForm);
 
     // ── Edit Leave modal state ──
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingRequest, setEditingRequest] = useState<any>(null);
     const [editSubmitting, setEditSubmitting] = useState(false);
     const [editError, setEditError] = useState("");
-    const [editForm, setEditForm] = useState({
-        fromDate: "",
-        toDate: "",
-        reason: "",
-        halfDay: false,
-    });
+    const [editForm, setEditForm] = useState(emptyForm);
 
     // ── Cancel Leave state ──
     const [cancellingId, setCancellingId] = useState<number | string | null>(null);
     const [confirmCancelId, setConfirmCancelId] = useState<number | string | null>(null);
 
     const activeLeaveTypes = leaveTypes.filter(isLeaveTypeActive);
+
+    const previewDays = calcDays(form.fromDate, form.toDate, form.halfDay);
+    const editPreviewDays = calcDays(editForm.fromDate, editForm.toDate, editForm.halfDay);
 
     useEffect(() => {
         fetchLeaveData();
@@ -148,6 +180,35 @@ export default function MyLeaves() {
         fetchLeaveRequests();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filterYear, filterMonth, filterStatus]);
+
+    // Year badle to balance bhi refresh
+    useEffect(() => {
+        fetchLeaveBalance();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterYear]);
+
+    // Modal khulte hi employees list load
+    useEffect(() => {
+        if (showApplyModal || showEditModal) fetchRelievers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showApplyModal, showEditModal]);
+
+    const fetchRelievers = async () => {
+        setRelieversLoading(true);
+        try {
+            const res = await adminService.getLeaveRelievers();
+            if (res.Success || res.success) {
+                setRelievers(res.Data || res.data || []);
+            } else {
+                setRelievers([]);
+            }
+        } catch (error) {
+            console.error("Error fetching relievers:", error);
+            setRelievers([]);
+        } finally {
+            setRelieversLoading(false);
+        }
+    };
 
     const fetchLeaveData = async () => {
         setLoading(true);
@@ -180,7 +241,6 @@ export default function MyLeaves() {
     const fetchLeaveRequests = async () => {
         setRequestsLoading(true);
         try {
-            // FIXED: Explicitly typed queryParams to allow adding arbitrary keys
             const queryParams: Record<string, any> = { year: filterYear };
             if (filterMonth) queryParams.month = filterMonth;
             if (filterStatus) queryParams.status = filterStatus;
@@ -196,6 +256,29 @@ export default function MyLeaves() {
         }
     };
 
+    const flashSuccess = (msg: string) => {
+        setApplySuccess(msg);
+        setTimeout(() => setApplySuccess(""), 3000);
+    };
+
+    const openApplyModal = () => {
+        setForm(emptyForm);
+        setApplyError("");
+        setShowApplyModal(true);
+    };
+
+    const closeApplyModal = () => {
+        setShowApplyModal(false);
+        setApplyError("");
+    };
+
+    const closeEditModal = () => {
+        setShowEditModal(false);
+        setEditingRequest(null);
+        setEditError("");
+    };
+
+    // ── Apply ──
     const handleApplyLeave = async (e: React.FormEvent) => {
         e.preventDefault();
         setApplyError("");
@@ -205,20 +288,14 @@ export default function MyLeaves() {
             return;
         }
 
-        const effectiveToDate = form.halfDay ? form.fromDate : form.toDate;
-
-        let totalDays: number;
-        if (form.halfDay) {
-            totalDays = 0.5;
-        } else {
-            const msPerDay = 1000 * 60 * 60 * 24;
-            const from = new Date(form.fromDate);
-            const to = new Date(form.toDate);
-            totalDays = Math.round((to.getTime() - from.getTime()) / msPerDay) + 1;
+        const totalDays = calcDays(form.fromDate, form.toDate, form.halfDay);
+        if (totalDays === null) {
+            setApplyError("To date must be on or after the from date.");
+            return;
         }
 
-        if (totalDays < 0.5) {
-            setApplyError("To date must be on or after the from date.");
+        if (!form.relieverEmployeeId) {
+            setApplyError("Please select a reliever.");
             return;
         }
 
@@ -226,23 +303,29 @@ export default function MyLeaves() {
         try {
             const payload = {
                 fromDate: form.fromDate,
-                toDate: effectiveToDate,
+                toDate: form.halfDay ? form.fromDate : form.toDate,
                 totalDays,
                 reason: form.reason,
+                relieverEmployeeId: Number(form.relieverEmployeeId),
             };
 
             const res = await adminService.applyLeave(payload);
 
             if (res.Success || res.success) {
                 const applied = res.Data || res.data;
-                setRequests((prev) => [applied, ...prev]);
 
-                setShowApplyModal(false);
-                setForm({ fromDate: "", toDate: "", reason: "", halfDay: false });
-                setApplySuccess("Leave request submitted successfully. It's pending approval.");
-                setTimeout(() => setApplySuccess(""), 3000);
+                // SP ka SIGNAL error ErrorMessage me aata hai
+                if (applied?.errorMessage) {
+                    setApplyError(applied.errorMessage);
+                    return;
+                }
 
-                fetchLeaveBalance();
+                closeApplyModal();
+                setForm(emptyForm);
+                flashSuccess("Leave request submitted successfully. It's pending approval.");
+
+                // server se sync (filters ke saath)
+                await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
             } else {
                 setApplyError(res.Message || res.message || "Failed to submit leave request.");
             }
@@ -254,37 +337,21 @@ export default function MyLeaves() {
         }
     };
 
-    const previewDays = (() => {
-        if (form.halfDay) return form.fromDate ? 0.5 : null;
-        if (!form.fromDate || !form.toDate) return null;
-        const msPerDay = 1000 * 60 * 60 * 24;
-        const n = Math.round((new Date(form.toDate).getTime() - new Date(form.fromDate).getTime()) / msPerDay) + 1;
-        return n >= 1 ? n : null;
-    })();
-
-    // ── Edit Leave: open modal pre-filled with the selected request ──
+    // ── Edit: open modal pre-filled ──
     const openEditModal = (req: any) => {
         setEditingRequest(req);
         setEditError("");
         const isHalfDay = Number(req.totalDays) === 0.5;
+        const from = req.fromDate ? String(req.fromDate).slice(0, 10) : "";
         setEditForm({
-            fromDate: req.fromDate ? String(req.fromDate).slice(0, 10) : "",
-            toDate: isHalfDay
-                ? (req.fromDate ? String(req.fromDate).slice(0, 10) : "")
-                : (req.toDate ? String(req.toDate).slice(0, 10) : ""),
+            fromDate: from,
+            toDate: isHalfDay ? from : (req.toDate ? String(req.toDate).slice(0, 10) : ""),
             reason: req.reason || "",
             halfDay: isHalfDay,
+            relieverEmployeeId: req.relieverEmployeeId ? String(req.relieverEmployeeId) : "",
         });
         setShowEditModal(true);
     };
-
-    const editPreviewDays = (() => {
-        if (editForm.halfDay) return editForm.fromDate ? 0.5 : null;
-        if (!editForm.fromDate || !editForm.toDate) return null;
-        const msPerDay = 1000 * 60 * 60 * 24;
-        const n = Math.round((new Date(editForm.toDate).getTime() - new Date(editForm.fromDate).getTime()) / msPerDay) + 1;
-        return n >= 1 ? n : null;
-    })();
 
     const handleUpdateLeave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -297,20 +364,14 @@ export default function MyLeaves() {
             return;
         }
 
-        const effectiveToDate = editForm.halfDay ? editForm.fromDate : editForm.toDate;
-
-        let totalDays: number;
-        if (editForm.halfDay) {
-            totalDays = 0.5;
-        } else {
-            const msPerDay = 1000 * 60 * 60 * 24;
-            const from = new Date(editForm.fromDate);
-            const to = new Date(editForm.toDate);
-            totalDays = Math.round((to.getTime() - from.getTime()) / msPerDay) + 1;
+        const totalDays = calcDays(editForm.fromDate, editForm.toDate, editForm.halfDay);
+        if (totalDays === null) {
+            setEditError("To date must be on or after the from date.");
+            return;
         }
 
-        if (totalDays < 0.5) {
-            setEditError("To date must be on or after the from date.");
+        if (!editForm.relieverEmployeeId) {
+            setEditError("Please select a reliever.");
             return;
         }
 
@@ -318,24 +379,27 @@ export default function MyLeaves() {
         try {
             const payload = {
                 fromDate: editForm.fromDate,
-                toDate: effectiveToDate,
+                toDate: editForm.halfDay ? editForm.fromDate : editForm.toDate,
                 totalDays,
                 reason: editForm.reason,
+                relieverEmployeeId: Number(editForm.relieverEmployeeId),
             };
 
             const res = await adminService.updateLeaveRequest(editingRequest.leaveId, payload);
 
-
             if (res.Success || res.success) {
-                const updated = res.Data || res.data || { ...editingRequest, ...payload };
-                setRequests((prev) => prev.map((r: any) => (r.leaveId === editingRequest.leaveId ? updated : r)));
+                const updated = res.Data || res.data;
 
-                setShowEditModal(false);
-                setEditingRequest(null);
-                setApplySuccess("Leave request updated successfully.");
-                setTimeout(() => setApplySuccess(""), 3000);
+                if (updated?.errorMessage) {
+                    setEditError(updated.errorMessage);
+                    return;
+                }
 
-                fetchLeaveBalance();
+                closeEditModal();
+                flashSuccess("Leave request updated successfully.");
+
+                // reliever name server se aata hai, isliye refetch
+                await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
             } else {
                 setEditError(res.Message || res.message || "Failed to update leave request.");
             }
@@ -347,16 +411,13 @@ export default function MyLeaves() {
         }
     };
 
-    // ── Cancel Leave ──
+    // ── Cancel ──
     const handleCancelLeave = async (req: any) => {
         setCancellingId(req.leaveId);
         try {
             const res = await adminService.cancelLeaveRequest(req.leaveId);
             if (res.Success || res.success) {
-                setApplySuccess(`Leave request for ${req.leaveName} cancelled.`);
-                setTimeout(() => setApplySuccess(""), 3000);
-
-                // refetch instead of trusting local filter — keeps UI in sync with server
+                flashSuccess(`Leave request for ${req.leaveName || "selected type"} cancelled.`);
                 await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
             } else {
                 console.error(res.Message || res.message || "Failed to cancel leave request.");
@@ -372,7 +433,7 @@ export default function MyLeaves() {
     return (
         <div className="space-y-6 font-sans relative z-0 pb-10">
 
-            {/* ── Premium Header Section ── */}
+            {/* ── Header ── */}
             <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-sm relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="flex items-center gap-4 relative z-10">
@@ -386,7 +447,7 @@ export default function MyLeaves() {
                 </div>
                 <div className="relative z-10 w-full sm:w-auto">
                     <button
-                        onClick={() => setShowApplyModal(true)}
+                        onClick={openApplyModal}
                         className="w-full sm:w-auto px-5 py-2.5 bg-amber-400 text-[#0b2836] font-bold rounded-xl text-xs shadow-md shadow-amber-400/20 hover:bg-amber-500 transition-all flex items-center justify-center gap-2"
                     >
                         <i className="fa-solid fa-plus" /> Apply Leave
@@ -400,7 +461,7 @@ export default function MyLeaves() {
                 </div>
             )}
 
-            {/* ── Leave Balances (Cards with progress rings) ── */}
+            {/* ── Leave Balances ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {loading ? (
                     Array.from({ length: 4 }).map((_, i) => <BalanceCardSkeleton key={i} />)
@@ -456,7 +517,7 @@ export default function MyLeaves() {
                 )}
             </div>
 
-            {/* ── Leave Requests Table Section ── */}
+            {/* ── Leave Requests Table ── */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-end gap-4">
                     <div className="w-32">
@@ -465,8 +526,9 @@ export default function MyLeaves() {
                             value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}
                             className={`${inputClass} cursor-pointer appearance-none`}
                         >
-                            <option value="2026">2026</option>
-                            <option value="2025">2025</option>
+                            {yearOptions.map((y) => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="w-36">
@@ -476,27 +538,18 @@ export default function MyLeaves() {
                             className={`${inputClass} cursor-pointer appearance-none`}
                         >
                             <option value="">All Months</option>
-                            <option value="1">January</option>
-                            <option value="2">February</option>
-                            <option value="3">March</option>
-                            <option value="4">April</option>
-                            <option value="5">May</option>
-                            <option value="6">June</option>
-                            <option value="7">July</option>
-                            <option value="8">August</option>
-                            <option value="9">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
+                            {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, idx) => (
+                                <option key={m} value={String(idx + 1)}>{m}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="flex-1 min-w-[200px] flex justify-end">
-                        <div className="bg-white border border-slate-200 rounded-xl p-1 flex shadow-sm w-full sm:w-auto">
-                            {["", "Pending", "Approved", "Rejected"].map((s) => (
+                        <div className="bg-white border border-slate-200 rounded-xl p-1 flex flex-wrap shadow-sm w-full sm:w-auto">
+                            {STATUS_FILTERS.map((s) => (
                                 <button
                                     key={s || "all"}
                                     onClick={() => setFilterStatus(s)}
-                                    className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${filterStatus === s
+                                    className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${filterStatus === s
                                         ? "bg-amber-500 text-white shadow-md"
                                         : "text-slate-500 hover:bg-slate-50"
                                         }`}
@@ -509,12 +562,13 @@ export default function MyLeaves() {
                 </div>
 
                 <div className="overflow-x-auto min-h-[300px]">
-                    <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+                    <table className="w-full text-sm text-left border-collapse min-w-[960px]">
                         <thead className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-4">Leave Type</th>
                                 <th className="px-6 py-4">Duration</th>
                                 <th className="px-6 py-4">Days</th>
+                                {/* <th className="px-6 py-4">Reliever</th> */}
                                 <th className="px-6 py-4">Reason</th>
                                 <th className="px-6 py-4 text-right">Status</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
@@ -523,7 +577,7 @@ export default function MyLeaves() {
                         <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                             {requestsLoading ? (
                                 <tr>
-                                    <td colSpan={6} className="py-20 text-center">
+                                    <td colSpan={7} className="py-20 text-center">
                                         <div className="flex flex-col items-center justify-center gap-4">
                                             <div className="relative w-10 h-10 flex items-center justify-center">
                                                 <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
@@ -535,7 +589,7 @@ export default function MyLeaves() {
                                 </tr>
                             ) : requests.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="py-20 text-center">
+                                    <td colSpan={7} className="py-20 text-center">
                                         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 text-2xl shadow-sm mb-4 border border-slate-100">
                                             <i className="fa-solid fa-inbox" />
                                         </div>
@@ -556,12 +610,22 @@ export default function MyLeaves() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 font-medium text-slate-600">
-                                            {new Date(req.fromDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
+                                            {fmtDate(req.fromDate)}
                                             <span className="text-xs text-slate-400 mx-2">to</span>
-                                            {new Date(req.toDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            {fmtDate(req.toDate)}
                                         </td>
-                                        <td className="px-6 py-4 font-mono font-bold text-amber-600">{req.totalDays} Day(s)</td>
+                                        <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">{req.totalDays} Day(s)</td>
+                                        {/* <td className="px-6 py-4 font-medium text-slate-600">
+                                            {req.relieverName ? (
+                                                <span className="inline-flex items-center gap-2">
+                                                    <i className="fa-solid fa-user-shield text-xs text-slate-400" />
+                                                    {req.relieverName}
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-300">—</span>
+                                            )}
+                                        </td> */}
                                         <td className="px-6 py-4 font-medium text-slate-500 max-w-xs truncate" title={req.reason}>{req.reason}</td>
                                         <td className="px-6 py-4 text-right">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wide ${STATUS_BADGE[req.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
@@ -621,13 +685,13 @@ export default function MyLeaves() {
             {/* ── Apply Leave Modal ── */}
             {showApplyModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md relative animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md max-h-[92vh] overflow-y-auto relative animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <i className="fa-solid fa-calendar-plus text-amber-500" /> Apply Leave
                             </h3>
                             <button
-                                onClick={() => setShowApplyModal(false)}
+                                onClick={closeApplyModal}
                                 className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                             >
                                 <i className="fa-solid fa-xmark text-lg" />
@@ -652,6 +716,7 @@ export default function MyLeaves() {
                                         type="date"
                                         required={!form.halfDay}
                                         disabled={form.halfDay}
+                                        min={form.fromDate || undefined}
                                         value={form.halfDay ? form.fromDate : form.toDate}
                                         onChange={(e) => setForm({ ...form, toDate: e.target.value })}
                                         className={`${inputClass} ${form.halfDay ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -678,6 +743,13 @@ export default function MyLeaves() {
                                 </div>
                             )}
 
+                            <RelieverSelect
+                                value={form.relieverEmployeeId}
+                                onChange={(v) => setForm({ ...form, relieverEmployeeId: v })}
+                                relievers={relievers}
+                                loading={relieversLoading}
+                            />
+
                             <div>
                                 <label className={labelClass}>Reason *</label>
                                 <textarea
@@ -685,6 +757,7 @@ export default function MyLeaves() {
                                     onChange={(e) => setForm({ ...form, reason: e.target.value })}
                                     rows={3}
                                     required
+                                    maxLength={500}
                                     className={`${inputClass} resize-y`}
                                     placeholder="Brief reason for your leave request..."
                                 />
@@ -699,7 +772,7 @@ export default function MyLeaves() {
                             <div className="pt-6 flex justify-end gap-3 border-t border-slate-100 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => setShowApplyModal(false)}
+                                    onClick={closeApplyModal}
                                     className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all"
                                 >
                                     Cancel
@@ -721,13 +794,13 @@ export default function MyLeaves() {
             {/* ── Edit Leave Modal ── */}
             {showEditModal && editingRequest && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md relative animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-7 w-full max-w-md max-h-[92vh] overflow-y-auto relative animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <i className="fa-solid fa-pen text-amber-500" /> Edit Leave Request
                             </h3>
                             <button
-                                onClick={() => { setShowEditModal(false); setEditingRequest(null); }}
+                                onClick={closeEditModal}
                                 className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                             >
                                 <i className="fa-solid fa-xmark text-lg" />
@@ -752,6 +825,7 @@ export default function MyLeaves() {
                                         type="date"
                                         required={!editForm.halfDay}
                                         disabled={editForm.halfDay}
+                                        min={editForm.fromDate || undefined}
                                         value={editForm.halfDay ? editForm.fromDate : editForm.toDate}
                                         onChange={(e) => setEditForm({ ...editForm, toDate: e.target.value })}
                                         className={`${inputClass} ${editForm.halfDay ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -778,6 +852,18 @@ export default function MyLeaves() {
                                 </div>
                             )}
 
+                            <RelieverSelect
+                                value={editForm.relieverEmployeeId}
+                                onChange={(v) => setEditForm({ ...editForm, relieverEmployeeId: v })}
+                                relievers={relievers}
+                                loading={relieversLoading}
+                                fallback={
+                                    editingRequest.relieverEmployeeId && editingRequest.relieverName
+                                        ? { id: String(editingRequest.relieverEmployeeId), name: editingRequest.relieverName }
+                                        : null
+                                }
+                            />
+
                             <div>
                                 <label className={labelClass}>Reason *</label>
                                 <textarea
@@ -785,6 +871,7 @@ export default function MyLeaves() {
                                     onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
                                     rows={3}
                                     required
+                                    maxLength={500}
                                     className={`${inputClass} resize-y`}
                                     placeholder="Brief reason for your leave request..."
                                 />
@@ -799,7 +886,7 @@ export default function MyLeaves() {
                             <div className="pt-6 flex justify-end gap-3 border-t border-slate-100 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => { setShowEditModal(false); setEditingRequest(null); }}
+                                    onClick={closeEditModal}
                                     className="px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-all"
                                 >
                                     Cancel

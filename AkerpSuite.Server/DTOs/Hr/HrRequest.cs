@@ -93,6 +93,7 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? Remarks { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? ErrorMessage { get; set; }
+        public int? RelieverEmployeeId { get; set; }
     }
 
     public class SelfAttendanceRegularizationRequestDto

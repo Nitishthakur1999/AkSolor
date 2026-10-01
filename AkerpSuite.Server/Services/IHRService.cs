@@ -31,6 +31,7 @@ namespace AkerpSuite.Server.Services
         Task<SelfProfileResponseDto> GetMyProfileAsync(int empId);
         Task<bool> UpdateMyProfileAsync(int empId, SelfProfileRequestDto request);
         Task<IEnumerable<SelfLeaveBalanceResponseDto>> GetMyLeaveBalanceAsync(int empId, int year);
+        Task<IEnumerable<LeaveRelieverDto>> GetLeaveRelieversAsync(int empId);
         Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year);
         Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request);
         Task<IEnumerable<SelfAttendanceResponseDto>> GetMyAttendanceAsync(int empId, DateTime? fromDate, DateTime? toDate);

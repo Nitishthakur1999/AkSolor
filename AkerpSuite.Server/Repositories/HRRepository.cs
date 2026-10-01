@@ -235,6 +235,15 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
         }
 
+        public async Task<IEnumerable<LeaveRelieverDto>> GetLeaveRelieversAsync(int empId)
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<LeaveRelieverDto>(
+                "sp_GetRelievers",
+                new { p_EmpId = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
         public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
         {
             using var connection = _context.CreateConnection();
@@ -251,6 +260,23 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
         }
 
+        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
+        //{
+        //    using var connection = _context.CreateConnection();
+
+        //    var parameters = new DynamicParameters();
+        //    parameters.Add("p_emp_id", empId);
+        //    parameters.Add("p_leave_type_id", request.LeaveTypeId);
+        //    parameters.Add("p_from_date", request.FromDate);
+        //    parameters.Add("p_to_date", request.ToDate);
+        //    parameters.Add("p_total_days", request.TotalDays);
+        //    parameters.Add("p_reason", request.Reason);
+
+        //    return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
+        //        "sp_leave_request_create",
+        //        parameters,
+        //        commandType: CommandType.StoredProcedure);
+        //}
         public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
         {
             using var connection = _context.CreateConnection();
@@ -262,11 +288,19 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_to_date", request.ToDate);
             parameters.Add("p_total_days", request.TotalDays);
             parameters.Add("p_reason", request.Reason);
+            parameters.Add("p_reliever_emp_id", request.RelieverEmployeeId);
 
-            return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
-                "sp_leave_request_create",
-                parameters,
-                commandType: CommandType.StoredProcedure);
+            try
+            {
+                return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
+                    "sp_leave_request_create",
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (MySqlException ex) when (ex.SqlState == "45000")
+            {
+                return new SelfLeaveResponseDto { ErrorMessage = ex.Message };
+            }
         }
 
         // Attendance

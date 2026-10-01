@@ -83,6 +83,13 @@
         public decimal UsedLeaves { get; set; }
         public decimal BalanceLeaves { get; set; }
     }
+
+    public class LeaveRelieverDto
+    {
+        public int EmployeeId { get; set; }
+        public string Name { get; set; } = "";
+        public string? Designation { get; set; }
+    }
     public class SelfAttendanceResponseDto
     {
         public int AttId { get; set; }
@@ -182,6 +189,8 @@
         public string? Remarks { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? ErrorMessage { get; set; }
+        public int? RelieverEmployeeId { get; set; }
+        public string? RelieverName { get; set; }
     }
     public class SalesLeadResponseDto
     {

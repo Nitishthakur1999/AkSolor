@@ -28,8 +28,8 @@ namespace AkerpSuite.Server.Repositories
 
         Task<SelfProfileResponseDto?> GetProfileAsync(int empId);
         Task<int> UpdateProfileAsync(SelfProfileResponseDto current, SelfProfileRequestDto request);
-
         Task<IEnumerable<SelfLeaveBalanceResponseDto>> GetLeaveBalanceAsync(int empId, int year);
+        Task<IEnumerable<LeaveRelieverDto>> GetLeaveRelieversAsync(int empId);
         Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year);
         Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request);
 

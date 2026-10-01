@@ -190,6 +190,16 @@ namespace AkerpSuite.Server.Controllers
             return Ok(ApiResponseDto<IEnumerable<SelfLeaveBalanceResponseDto>>.Ok(result));
         }
 
+        [HttpGet("leave/relievers")]
+        [RequirePermission("Leave", "Create")]
+        public async Task<IActionResult> GetLeaveRelievers()
+        {
+            var empId = User.GetEmpId();
+            var result = await _service.GetLeaveRelieversAsync(empId);
+
+            return Ok(ApiResponseDto<IEnumerable<LeaveRelieverDto>>.Ok(result));
+        }
+
         [HttpGet("leave/requests")]
         public async Task<IActionResult> GetMyLeaveRequests([FromQuery] string? status, [FromQuery] int? month, [FromQuery] int? year)
         {

@@ -267,6 +267,7 @@ export const adminService = {
     getMyProfile: () => apiCall(`${BASE}/api/hr/profile`),
     getMyLeaveBalance: (year?: any) => apiCall(`${BASE}/api/hr/leave/balance?year=${year}`),
     getMyLeaveRequests: (params?: any) => apiCall(`${BASE}/api/hr/leave/requests?${new URLSearchParams(params)}`),
+    getLeaveRelievers: () => apiCall(`${BASE}/api/hr/leave/relievers`),
     applyLeave: (data?: any) => apiCall(`${BASE}/api/hr/leave/apply`, "POST", data),
     updateLeaveRequest: (leaveId?: any, data?: any) => apiCall(`${BASE}/api/hr/leave/requests/${leaveId}`, "PUT", data),
     cancelLeaveRequest: (leaveId?: any) => apiCall(`${BASE}/api/hr/leave/requests/${leaveId}/cancel`, "PATCH"),

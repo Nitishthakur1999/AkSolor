@@ -281,6 +281,8 @@ namespace AkerpSuite.Server.Services
         {
             return await _repository.GetLeaveBalanceAsync(empId, year);
         }
+        public Task<IEnumerable<LeaveRelieverDto>> GetLeaveRelieversAsync(int empId)
+              => _repository.GetLeaveRelieversAsync(empId);
 
         public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
         {
