@@ -244,6 +244,72 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
         }
 
+        public async Task<LeaveTypeInfoDto?> GetLeaveTypeAsync(int leaveTypeId)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryFirstOrDefaultAsync<LeaveTypeInfoDto>(
+                @"SELECT leave_type_id        AS LeaveTypeId,
+                 leave_code           AS LeaveCode,
+                 leave_name           AS LeaveName,
+                 is_short_leave       AS IsShortLeave,
+                 max_hours_per_leave  AS MaxHoursPerLeave,
+                 max_per_month        AS MaxPerMonth
+          FROM leave_types
+          WHERE leave_type_id = @LeaveTypeId
+            AND is_active = 1",
+                new { LeaveTypeId = leaveTypeId });
+        }
+
+        public async Task<IEnumerable<LeaveTypeInfoDto>> GetLeaveTypesAsync()
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.QueryAsync<LeaveTypeInfoDto>(
+                @"SELECT leave_type_id        AS LeaveTypeId,
+                 leave_code           AS LeaveCode,
+                 leave_name           AS LeaveName,
+                 is_short_leave       AS IsShortLeave,
+                 max_hours_per_leave  AS MaxHoursPerLeave,
+                 max_per_month        AS MaxPerMonth
+          FROM leave_types
+          WHERE is_active = 1
+          ORDER BY leave_name");
+        }
+
+        public async Task<int> CountShortLeavesInMonthAsync(int empId, int leaveTypeId, int year, int month)
+        {
+            using var connection = _context.CreateConnection();
+
+            return await connection.ExecuteScalarAsync<int>(
+                @"SELECT COUNT(*)
+          FROM leave_requests
+          WHERE emp_id = @EmpId
+            AND leave_type_id = @LeaveTypeId
+            AND YEAR(from_date) = @Year
+            AND MONTH(from_date) = @Month
+            AND status IN ('Pending','Forwarded','Approved')",
+                new { EmpId = empId, LeaveTypeId = leaveTypeId, Year = year, Month = month });
+        }
+
+        public async Task<bool> HasLeaveConflictAsync(int empId, DateTime date, TimeSpan fromTime, TimeSpan toTime)
+        {
+            using var connection = _context.CreateConnection();
+
+            // from_time NULL = full/half day leave (poora din), isliye hamesha conflict
+            var count = await connection.ExecuteScalarAsync<int>(
+                @"SELECT COUNT(*)
+          FROM leave_requests
+          WHERE emp_id = @EmpId
+            AND status IN ('Pending','Forwarded','Approved')
+            AND @Date BETWEEN from_date AND to_date
+            AND (from_time IS NULL
+                 OR (from_time < @ToTime AND to_time > @FromTime))",
+                new { EmpId = empId, Date = date.Date, FromTime = fromTime, ToTime = toTime });
+
+            return count > 0;
+        }
+
         public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
         {
             using var connection = _context.CreateConnection();
@@ -276,18 +342,50 @@ namespace AkerpSuite.Server.Repositories
                 new { p_leave_id = leaveId, p_reliever_emp_id = relieverEmpId, p_action = action, p_remarks = remarks },
                 commandType: CommandType.StoredProcedure);
         }
+        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
+        //{
+        //    using var connection = _context.CreateConnection();
+
+        //    var parameters = new DynamicParameters();
+        //    parameters.Add("p_emp_id", empId);
+        //    parameters.Add("p_leave_type_id", request.LeaveTypeId);
+        //    parameters.Add("p_from_date", request.FromDate);
+        //    parameters.Add("p_to_date", request.ToDate);
+        //    parameters.Add("p_total_days", request.TotalDays);
+        //    parameters.Add("p_reason", request.Reason);
+        //    parameters.Add("p_reliever_emp_id", request.RelieverEmployeeId);
+        //    parameters.Add("p_reliever_emp_id", request.RelieverEmployeeId);
+        //    parameters.Add("p_from_time", request.FromTime);
+        //    parameters.Add("p_to_time", request.ToTime);
+        //    parameters.Add("p_duration_hours", request.DurationHours);
+
+        //    try
+        //    {
+        //        return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
+        //            "sp_leave_request_create",
+        //            parameters,
+        //            commandType: CommandType.StoredProcedure);
+        //    }
+        //    catch (MySqlException ex) when (ex.SqlState == "45000")
+        //    {
+        //        return new SelfLeaveResponseDto { ErrorMessage = ex.Message };
+        //    }
+        //}
         public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
         {
             using var connection = _context.CreateConnection();
 
             var parameters = new DynamicParameters();
             parameters.Add("p_emp_id", empId);
-            parameters.Add("p_leave_type_id", request.LeaveTypeId);
+            parameters.Add("p_leave_type_id", request.LeaveTypeId);       
             parameters.Add("p_from_date", request.FromDate);
             parameters.Add("p_to_date", request.ToDate);
             parameters.Add("p_total_days", request.TotalDays);
             parameters.Add("p_reason", request.Reason);
             parameters.Add("p_reliever_emp_id", request.RelieverEmployeeId);
+            parameters.Add("p_from_time", request.FromTime);
+            parameters.Add("p_to_time", request.ToTime);
+            parameters.Add("p_duration_hours", request.DurationHours);
 
             try
             {
@@ -335,7 +433,7 @@ namespace AkerpSuite.Server.Repositories
         }
 
         public async Task<IEnumerable<SelfAttendanceRegularizationResponseDto>> GetMyRegularizationRequestsAsync(
-           int empId, string? status, string? requestType = null)   // 🆕 optional param
+           int empId, string? status, string? requestType = null)   
         {
             using var connection = _context.CreateConnection();
 

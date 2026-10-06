@@ -109,6 +109,10 @@ namespace AkerpSuite.Server.DTOs.Hr
         public DateTime? CreatedAt { get; set; }
         public string? ErrorMessage { get; set; }
         public int? RelieverEmployeeId { get; set; }
+        public TimeSpan? FromTime { get; set; }
+        public TimeSpan? ToTime { get; set; }
+        public decimal? DurationHours { get; set; }
+
     }
 
     public class SelfAttendanceRegularizationRequestDto

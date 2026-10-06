@@ -193,6 +193,19 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? ErrorMessage { get; set; }
         public int? RelieverEmployeeId { get; set; }
         public string? RelieverName { get; set; }
+        public TimeSpan? FromTime { get; set; }
+        public TimeSpan? ToTime { get; set; }
+        public decimal? DurationHours { get; set; }
+        public bool IsShortLeave { get; set; }
+    }
+    public class LeaveTypeInfoDto
+    {
+        public int LeaveTypeId { get; set; }
+        public string LeaveCode { get; set; } = string.Empty;
+        public string LeaveName { get; set; } = string.Empty;
+        public bool IsShortLeave { get; set; }
+        public decimal? MaxHoursPerLeave { get; set; }
+        public int? MaxPerMonth { get; set; }
     }
 
     public class RelieverActionResult

@@ -32,7 +32,10 @@ namespace AkerpSuite.Server.Repositories
         Task<IEnumerable<LeaveRelieverDto>> GetLeaveRelieversAsync(int empId);
         Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year);
         Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request);
-
+        Task<LeaveTypeInfoDto?> GetLeaveTypeAsync(int leaveTypeId);
+        Task<IEnumerable<LeaveTypeInfoDto>> GetLeaveTypesAsync();
+        Task<int> CountShortLeavesInMonthAsync(int empId, int leaveTypeId, int year, int month);
+        Task<bool> HasLeaveConflictAsync(int empId, DateTime date, TimeSpan fromTime, TimeSpan toTime);
         Task<IEnumerable<SelfAttendanceResponseDto>> GetMyAttendanceAsync(int empId, DateTime? fromDate, DateTime? toDate);
         Task<int> CreateRegularizationRequestAsync(int empId, SelfAttendanceRegularizationRequestDto request);
         Task<IEnumerable<SelfAttendanceRegularizationResponseDto>> GetMyRegularizationRequestsAsync(int empId, string? status, string? requestType = null);

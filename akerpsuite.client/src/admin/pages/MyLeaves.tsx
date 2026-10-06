@@ -62,6 +62,12 @@ const LEAVE_ACCENTS = [
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
+// Ek din ke working ghante. appsettings.json ke "Leave:ShiftHours" se same rakho.
+const SHIFT_HOURS = 8;
+
+// Short leave max ghante. C# service ke MaxShortLeaveHours aur SP ke v_max_short_hours se same rakho.
+const SHORT_LEAVE_MAX_HOURS = 3;
+
 // Leave ki pehli date par is ghante (subah) tak hi cancel ho sakti hai
 const CANCEL_CUTOFF_HOUR = 8;
 
@@ -78,6 +84,24 @@ function calcDays(from: string, to: string, halfDay: boolean): number | null {
     const n = Math.round((new Date(to).getTime() - new Date(from).getTime()) / MS_PER_DAY) + 1;
     return n >= 1 ? n : null;
 }
+
+// ── Short leave helpers ──
+const toMinutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+};
+
+function calcShortHours(fromTime: string, toTime: string): number | null {
+    if (!fromTime || !toTime) return null;
+    const diff = toMinutes(toTime) - toMinutes(fromTime);
+    return diff > 0 ? Math.round((diff / 60) * 100) / 100 : null;
+}
+
+// "09:30:00" -> "09:30"
+const fmtTime = (t?: string | null) => (t ? String(t).slice(0, 5) : "");
+
+// Backend TimeSpan ko "HH:mm:ss" chahiye, <input type="time"> "HH:mm" deta hai
+const withSeconds = (t: string) => (t.length === 5 ? `${t}:00` : t);
 
 const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -171,7 +195,16 @@ function RelieverSelect({
     );
 }
 
-const emptyForm = { fromDate: "", toDate: "", reason: "", halfDay: false, relieverEmployeeId: "" };
+const emptyForm = {
+    fromDate: "",
+    toDate: "",
+    reason: "",
+    halfDay: false,
+    shortLeave: false,
+    fromTime: "",
+    toTime: "",
+    relieverEmployeeId: "",
+};
 
 export default function MyLeaves() {
     const [balances, setBalances] = useState<any[]>([]);
@@ -225,9 +258,13 @@ export default function MyLeaves() {
     const [confirmCancelId, setConfirmCancelId] = useState<number | string | null>(null);
     const [cancelError, setCancelError] = useState("");
 
+    // Short leave ka koi leave type nahi hota, balance cards normal types ke hi hain
     const activeLeaveTypes = leaveTypes.filter(isLeaveTypeActive);
 
-    const previewDays = calcDays(form.fromDate, form.toDate, form.halfDay);
+    const shortHours = calcShortHours(form.fromTime, form.toTime);
+    const shortDays = shortHours ? Math.round((shortHours / SHIFT_HOURS) * 100) / 100 : null;
+
+    const previewDays = form.shortLeave ? null : calcDays(form.fromDate, form.toDate, form.halfDay);
     const editPreviewDays = calcDays(editForm.fromDate, editForm.toDate, editForm.halfDay);
 
     useEffect(() => {
@@ -379,31 +416,58 @@ export default function MyLeaves() {
         e.preventDefault();
         setApplyError("");
 
-        if (!form.fromDate || (!form.halfDay && !form.toDate)) {
+        const singleDay = form.halfDay || form.shortLeave;
+
+        if (!form.fromDate || (!singleDay && !form.toDate)) {
             setApplyError("From date and to date are required.");
             return;
         }
 
-        const totalDays = calcDays(form.fromDate, form.toDate, form.halfDay);
+        let totalDays: number | null;
+
+        if (form.shortLeave) {
+            if (shortHours === null) {
+                setApplyError("To time must be after from time.");
+                return;
+            }
+            if (shortHours > SHIFT_HOURS) {
+                setApplyError("Short leave cannot be longer than a working day. Apply a full-day leave instead.");
+                return;
+            }
+            totalDays = shortDays;
+        } else {
+            totalDays = calcDays(form.fromDate, form.toDate, form.halfDay);
+        }
+
         if (totalDays === null) {
             setApplyError("To date must be on or after the from date.");
             return;
         }
 
-        if (!form.relieverEmployeeId) {
+        // CHANGE 1: reliever sirf normal leave me zaroori
+        if (!form.shortLeave && !form.relieverEmployeeId) {
             setApplyError("Please select a reliever.");
             return;
         }
 
         setSubmitting(true);
         try {
-            const payload = {
+            // CHANGE 2: payload me reliever hata diya
+            const payload: any = {
                 fromDate: form.fromDate,
-                toDate: form.halfDay ? form.fromDate : form.toDate,
+                toDate: singleDay ? form.fromDate : form.toDate,
                 totalDays,
                 reason: form.reason,
-                relieverEmployeeId: Number(form.relieverEmployeeId),
             };
+
+            if (form.shortLeave) {
+                // Short leave: koi leaveTypeId / reliever nahi, sirf time fields
+                payload.fromTime = withSeconds(form.fromTime);
+                payload.toTime = withSeconds(form.toTime);
+                payload.durationHours = shortHours;
+            } else {
+                payload.relieverEmployeeId = Number(form.relieverEmployeeId);
+            }
 
             const res = await adminService.applyLeave(payload);
 
@@ -416,9 +480,15 @@ export default function MyLeaves() {
                     return;
                 }
 
+                const wasShort = form.shortLeave;
                 closeApplyModal();
                 setForm(emptyForm);
-                flashSuccess("Leave request sent to your reliever. HR will see it after the reliever responds.");
+                // CHANGE 3: short leave ka message HR wala
+                flashSuccess(
+                    wasShort
+                        ? "Short leave request sent to HR."
+                        : "Leave request sent to your reliever. HR will see it after the reliever responds."
+                );
 
                 await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
             } else {
@@ -443,6 +513,9 @@ export default function MyLeaves() {
             toDate: isHalfDay ? from : (req.toDate ? String(req.toDate).slice(0, 10) : ""),
             reason: req.reason || "",
             halfDay: isHalfDay,
+            shortLeave: false,
+            fromTime: "",
+            toTime: "",
             relieverEmployeeId: req.relieverEmployeeId ? String(req.relieverEmployeeId) : "",
         });
         setShowEditModal(true);
@@ -578,7 +651,9 @@ export default function MyLeaves() {
     };
 
     // Edit tabhi jab reliever ne abhi accept nahi kiya.
-    const canEdit = (req: any) => req.status === "Pending" && req.relieverStatus !== "Accepted";
+    // Short leave edit nahi hoti (backend SP bhi block karta hai), cancel karke dobara apply karo.
+    const canEdit = (req: any) =>
+        req.status === "Pending" && req.relieverStatus !== "Accepted" && !req.isShortLeave;
 
     // Cancel: Pending / Forwarded / Approved, aur leave ki pehli date par subah 8:00 se pehle
     const canCancel = (req: any) =>
@@ -799,7 +874,12 @@ export default function MyLeaves() {
                                         return (
                                             <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-slate-900">
-                                                    {req.leaveName ? (
+                                                    {req.isShortLeave ? (
+                                                        <span className="inline-flex items-center gap-1.5 text-violet-700">
+                                                            <i className="fa-solid fa-clock text-xs" />
+                                                            Short Leave
+                                                        </span>
+                                                    ) : req.leaveName ? (
                                                         req.leaveName
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 text-slate-400 italic font-semibold">
@@ -808,12 +888,39 @@ export default function MyLeaves() {
                                                         </span>
                                                     )}
                                                 </td>
+
+                                                {/* Duration */}
                                                 <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
-                                                    {fmtDate(req.fromDate)}
-                                                    <span className="text-xs text-slate-400 mx-2">to</span>
-                                                    {fmtDate(req.toDate)}
+                                                    {req.isShortLeave && req.fromTime ? (
+                                                        <>
+                                                            {fmtDate(req.fromDate)}
+                                                            <span className="block text-xs font-bold text-violet-600 mt-0.5">
+                                                                {fmtTime(req.fromTime)} – {fmtTime(req.toTime)}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {fmtDate(req.fromDate)}
+                                                            <span className="text-xs text-slate-400 mx-2">to</span>
+                                                            {fmtDate(req.toDate)}
+                                                        </>
+                                                    )}
                                                 </td>
-                                                <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">{req.totalDays} Day(s)</td>
+
+                                                {/* Days */}
+                                                <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">
+                                                    {req.isShortLeave ? (
+                                                        <>
+                                                            {req.durationHours} hr(s)
+                                                            <span className="block text-[10px] font-semibold text-slate-400">
+                                                                = {req.totalDays} day
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>{req.totalDays} Day(s)</>
+                                                    )}
+                                                </td>
+
                                                 <td className="px-6 py-4 font-medium text-slate-600">
                                                     {req.relieverName ? (
                                                         <span className="inline-flex items-center gap-2">
@@ -953,16 +1060,33 @@ export default function MyLeaves() {
                                 ) : (
                                     relieverRequests.map((r: any) => {
                                         const awaiting = r.relieverStatus === "Pending" && r.status === "Pending";
+                                        // Time fields tabhi dikhenge jab reliever SP/DTO se aayein
+                                        const relShort = !!r.fromTime;
                                         return (
                                             <tr key={r.leaveId} className="hover:bg-slate-50/60 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-slate-900">{r.employeeName}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-600">{r.leaveType || r.leaveName || "—"}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
-                                                    {fmtDate(r.fromDate)}
-                                                    <span className="text-xs text-slate-400 mx-2">to</span>
-                                                    {fmtDate(r.toDate)}
+                                                <td className="px-6 py-4 font-medium text-slate-600">
+                                                    {relShort ? "Short Leave" : (r.leaveType || r.leaveName || "—")}
                                                 </td>
-                                                <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">{r.totalDays} Day(s)</td>
+                                                <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
+                                                    {relShort ? (
+                                                        <>
+                                                            {fmtDate(r.fromDate)}
+                                                            <span className="block text-xs font-bold text-violet-600 mt-0.5">
+                                                                {fmtTime(r.fromTime)} – {fmtTime(r.toTime)}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {fmtDate(r.fromDate)}
+                                                            <span className="text-xs text-slate-400 mx-2">to</span>
+                                                            {fmtDate(r.toDate)}
+                                                        </>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">
+                                                    {relShort && r.durationHours ? <>{r.durationHours} hr(s)</> : <>{r.totalDays} Day(s)</>}
+                                                </td>
                                                 <td className="px-6 py-4 font-medium text-slate-500 max-w-xs truncate" title={r.reason}>{r.reason}</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wide ${RELIEVER_BADGE[r.relieverStatus] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
@@ -1023,7 +1147,11 @@ export default function MyLeaves() {
                                         type="date"
                                         required
                                         value={form.fromDate}
-                                        onChange={(e) => setForm({ ...form, fromDate: e.target.value, toDate: form.halfDay ? e.target.value : form.toDate })}
+                                        onChange={(e) => setForm({
+                                            ...form,
+                                            fromDate: e.target.value,
+                                            toDate: (form.halfDay || form.shortLeave) ? e.target.value : form.toDate,
+                                        })}
                                         className={inputClass}
                                     />
                                 </div>
@@ -1031,25 +1159,75 @@ export default function MyLeaves() {
                                     <label className={labelClass}>To Date *</label>
                                     <input
                                         type="date"
-                                        required={!form.halfDay}
-                                        disabled={form.halfDay}
+                                        required={!form.halfDay && !form.shortLeave}
+                                        disabled={form.halfDay || form.shortLeave}
                                         min={form.fromDate || undefined}
-                                        value={form.halfDay ? form.fromDate : form.toDate}
+                                        value={(form.halfDay || form.shortLeave) ? form.fromDate : form.toDate}
                                         onChange={(e) => setForm({ ...form, toDate: e.target.value })}
-                                        className={`${inputClass} ${form.halfDay ? "opacity-50 cursor-not-allowed" : ""}`}
+                                        className={`${inputClass} ${(form.halfDay || form.shortLeave) ? "opacity-50 cursor-not-allowed" : ""}`}
                                     />
                                 </div>
                             </div>
 
-                            <label className="flex items-center gap-2.5 cursor-pointer select-none -mt-1">
-                                <input
-                                    type="checkbox"
-                                    checked={form.halfDay}
-                                    onChange={(e) => setForm({ ...form, halfDay: e.target.checked, toDate: e.target.checked ? form.fromDate : form.toDate })}
-                                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer"
-                                />
-                                <span className="text-xs font-bold text-slate-600">Half Day</span>
-                            </label>
+                            <div className="flex items-center gap-6 -mt-1">
+                                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.halfDay}
+                                        onChange={(e) => setForm({
+                                            ...form,
+                                            halfDay: e.target.checked,
+                                            shortLeave: false,
+                                            toDate: e.target.checked ? form.fromDate : form.toDate,
+                                        })}
+                                        className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer"
+                                    />
+                                    <span className="text-xs font-bold text-slate-600">Half Day</span>
+                                </label>
+
+                                {/* Short Leave: hamesha dikhta hai, leave type ki zaroorat nahi */}
+                                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.shortLeave}
+                                        onChange={(e) => setForm({
+                                            ...form,
+                                            shortLeave: e.target.checked,
+                                            halfDay: false,
+                                            fromTime: e.target.checked ? form.fromTime : "",
+                                            toTime: e.target.checked ? form.toTime : "",
+                                            toDate: e.target.checked ? form.fromDate : form.toDate,
+                                        })}
+                                        className="w-4 h-4 rounded border-slate-300 text-violet-500 focus:ring-violet-400 cursor-pointer"
+                                    />
+                                    <span className="text-xs font-bold text-slate-600">Short Leave</span>
+                                </label>
+                            </div>
+
+                            {form.shortLeave && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className={labelClass}>Going Out At *</label>
+                                        <input
+                                            type="time"
+                                            required
+                                            value={form.fromTime}
+                                            onChange={(e) => setForm({ ...form, fromTime: e.target.value })}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Back By *</label>
+                                        <input
+                                            type="time"
+                                            required
+                                            value={form.toTime}
+                                            onChange={(e) => setForm({ ...form, toTime: e.target.value })}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {previewDays && (
                                 <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 flex items-center gap-2">
@@ -1060,12 +1238,26 @@ export default function MyLeaves() {
                                 </div>
                             )}
 
-                            <RelieverSelect
-                                value={form.relieverEmployeeId}
-                                onChange={(v) => setForm({ ...form, relieverEmployeeId: v })}
-                                relievers={relievers}
-                                loading={relieversLoading}
-                            />
+                            {form.shortLeave && (
+                                <div className="bg-violet-50 border border-violet-200/60 rounded-xl p-3 flex items-start gap-2">
+                                    <i className="fa-solid fa-circle-info text-violet-500 mt-0.5" />
+                                    <div className="text-xs font-bold text-violet-700">
+                                        {shortHours
+                                            ? <>{shortHours} hr(s) = {shortDays} day. This will be deducted from your salary for that day.</>
+                                            : <>Select the time you go out and the time you will be back.</>}
+                                        
+                                    </div>
+                                </div>
+                            )}
+
+                            {!form.shortLeave && (
+                                <RelieverSelect
+                                    value={form.relieverEmployeeId}
+                                    onChange={(v) => setForm({ ...form, relieverEmployeeId: v })}
+                                    relievers={relievers}
+                                    loading={relieversLoading}
+                                />
+                            )}
 
                             <div>
                                 <label className={labelClass}>Reason *</label>
@@ -1247,8 +1439,18 @@ export default function MyLeaves() {
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
                                 <p className="font-bold text-slate-800">{actionTarget.req.employeeName}</p>
                                 <p className="text-slate-500 font-medium mt-1">
-                                    {fmtDate(actionTarget.req.fromDate)} to {fmtDate(actionTarget.req.toDate)}
-                                    {" · "}{actionTarget.req.totalDays} day(s)
+                                    {actionTarget.req.fromTime ? (
+                                        <>
+                                            {fmtDate(actionTarget.req.fromDate)}
+                                            {" · "}{fmtTime(actionTarget.req.fromTime)} – {fmtTime(actionTarget.req.toTime)}
+                                            {actionTarget.req.durationHours ? ` · ${actionTarget.req.durationHours} hr(s)` : ""}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {fmtDate(actionTarget.req.fromDate)} to {fmtDate(actionTarget.req.toDate)}
+                                            {" · "}{actionTarget.req.totalDays} day(s)
+                                        </>
+                                    )}
                                 </p>
                                 <p className="text-slate-500 mt-1">{actionTarget.req.reason}</p>
                             </div>

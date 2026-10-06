@@ -46,6 +46,21 @@ const formatDateOnly = (value) => {
     });
 };
 
+// Short leave time: "14:30:00" -> "02:30 PM" (timezone shift nahi)
+const formatTime = (value) => {
+    const m = String(value || "").match(/^(\d{2}):(\d{2})/);
+    if (!m) return "-";
+    let h = +m[1];
+    const ap = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${String(h).padStart(2, "0")}:${m[2]} ${ap}`;
+};
+
+// Short leave detect: flag ya time ya naam, kuch bhi mile to short leave
+const isShort = (r) =>
+    r.isShortLeave === true || r.isShortLeave === 1 ||
+    !!r.fromTime || r.leaveName === "Short Leave";
+
 export default function LeaveRequests() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -318,18 +333,44 @@ export default function LeaveRequests() {
                                                 );
                                             })()}
                                         </td>
+
+                                        {/* Leave Type: short leave = red badge */}
                                         <td className="px-6 py-4">
-                                            <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                                {req.leaveName || `Type-${req.leaveTypeId}`}
+                                            <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${isShort(req)
+                                                ? "bg-red-50 text-red-600 border-red-300"
+                                                : "bg-slate-100 text-slate-600 border-slate-200"
+                                                }`}>
+                                                {isShort(req)
+                                                    ? "Short Leave"
+                                                    : (req.leaveName || `Type-${req.leaveTypeId}`)}
                                             </span>
                                         </td>
+
+                                        {/* Duration: short leave = time + hours, normal = dates + days */}
                                         <td className="px-6 py-4">
-                                            <div className="text-[11px] font-medium text-slate-500">{formatDateOnly(req.fromDate)} to</div>
-                                            <div className="font-bold text-slate-800 mt-0.5">
-                                                {formatDateOnly(req.toDate)}
-                                                <span className="text-amber-600 ml-1.5 font-bold">({req.totalDays} Days)</span>
-                                            </div>
+                                            {isShort(req) ? (
+                                                <>
+                                                    <div className="text-[11px] font-medium text-slate-500">
+                                                        {formatDateOnly(req.fromDate)}
+                                                    </div>
+                                                    <div className="font-bold text-slate-800 mt-0.5">
+                                                        {formatTime(req.fromTime)} – {formatTime(req.toTime)}
+                                                        <span className="text-red-600 ml-1.5 font-bold">
+                                                            ({req.durationHours} hr)
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="text-[11px] font-medium text-slate-500">{formatDateOnly(req.fromDate)} to</div>
+                                                    <div className="font-bold text-slate-800 mt-0.5">
+                                                        {formatDateOnly(req.toDate)}
+                                                        <span className="text-amber-600 ml-1.5 font-bold">({req.totalDays} Days)</span>
+                                                    </div>
+                                                </>
+                                            )}
                                         </td>
+
                                         <td className="px-6 py-4 text-xs font-medium text-slate-600 max-w-[200px] truncate" title={req.reason}>
                                             {req.reason}
                                         </td>

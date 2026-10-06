@@ -246,6 +246,10 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? ErrorMessage { get; set; }
         public int? ForwardedTo { get; set; }
         public string? ForwardedToRole { get; set; }
+        public TimeSpan? FromTime { get; set; }
+        public TimeSpan? ToTime { get; set; }
+        public decimal? DurationHours { get; set; }
+        public bool IsShortLeave { get; set; }
     }
     public class NotificationDto
     {
