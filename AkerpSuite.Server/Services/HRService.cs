@@ -276,7 +276,6 @@ namespace AkerpSuite.Server.Services
         }
 
         // Leave
-
         public async Task<IEnumerable<SelfLeaveBalanceResponseDto>> GetMyLeaveBalanceAsync(int empId, int year)
         {
             return await _repository.GetLeaveBalanceAsync(empId, year);
@@ -364,6 +363,20 @@ namespace AkerpSuite.Server.Services
         public async Task<IEnumerable<EmployeeBankDetailResponseDto>> GetMyBankDetailsAsync(int empId)
         {
             return await _repository.GetMyBankDetailsAsync(empId);
+        }
+
+        public Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int empId, string? status)
+             => _repository.GetRelieverRequestsAsync(empId, status);
+
+        public async Task<string> RelieverActionAsync(int leaveId, int empId, RelieverActionDto dto)
+        {
+            var result = await _repository.RelieverActionAsync(leaveId, empId, dto.Action, dto.Remarks);
+
+            if (!result.Success)
+                throw new InvalidOperationException(result.Message);
+
+            _logger.LogInformation("Reliever {EmpId} did {Action} on leave {LeaveId}.", empId, dto.Action, leaveId);
+            return result.Message;
         }
 
         #endregion

@@ -38,9 +38,10 @@ namespace AkerpSuite.Server.Repositories
         Task<IEnumerable<SelfAttendanceRegularizationResponseDto>> GetMyRegularizationRequestsAsync(int empId, string? status, string? requestType = null);
         Task<SelfPayslipResponseDto?> GetMyPayslipAsync(int empId, int month, int year);
         Task<IEnumerable<SelfLoanResponseDto>> GetMyLoansAsync(int empId);
-
         Task<IEnumerable<AkerpSuite.Server.DTOs.Hr.EmployeeDocumentResponseDto>> GetMyDocumentsAsync(int empId);
         Task<IEnumerable<AkerpSuite.Server.DTOs.Hr.EmployeeBankDetailResponseDto>> GetMyBankDetailsAsync(int empId);
+        Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int relieverEmpId, string? relieverStatus);
+        Task<RelieverActionResult> RelieverActionAsync(int leaveId, int relieverEmpId, string action, string? remarks);
 
         #endregion
 

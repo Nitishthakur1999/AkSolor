@@ -1,4 +1,6 @@
-﻿namespace AkerpSuite.Server.DTOs.Hr
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AkerpSuite.Server.DTOs.Hr
 {
     public class EmployeeDocumentResponseDto
     {
@@ -192,6 +194,21 @@
         public int? RelieverEmployeeId { get; set; }
         public string? RelieverName { get; set; }
     }
+
+    public class RelieverActionResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = default!;
+        public int EmpId { get; set; }
+    }
+    public class RelieverActionDto
+    {
+        [Required, RegularExpression("^(Accept|Reject)$")]
+        public string Action { get; set; } = default!;
+        [MaxLength(500)]
+        public string? Remarks { get; set; }
+    }
+
     public class SalesLeadResponseDto
     {
         public int LeadId { get; set; }

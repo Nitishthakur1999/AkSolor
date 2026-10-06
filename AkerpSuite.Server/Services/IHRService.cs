@@ -41,7 +41,8 @@ namespace AkerpSuite.Server.Services
         Task<IEnumerable<SelfLoanResponseDto>> GetMyLoansAsync(int empId);
         Task<IEnumerable<EmployeeDocumentResponseDto>> GetMyDocumentsAsync(int empId);
         Task<IEnumerable<EmployeeBankDetailResponseDto>> GetMyBankDetailsAsync(int empId);
-
+        Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int empId, string? status);
+        Task<string> RelieverActionAsync(int leaveId, int empId, RelieverActionDto dto);
 
         #endregion
 

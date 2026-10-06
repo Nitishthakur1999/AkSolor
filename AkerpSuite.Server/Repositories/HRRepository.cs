@@ -259,24 +259,23 @@ namespace AkerpSuite.Server.Repositories
                 parameters,
                 commandType: CommandType.StoredProcedure);
         }
+        public async Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int relieverEmpId, string? relieverStatus)
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<RelieverLeaveRequestDto>(
+                "sp_leave_reliever_requests_get",
+                new { p_reliever_emp_id = relieverEmpId, p_reliever_status = relieverStatus },
+                commandType: CommandType.StoredProcedure);
+        }
 
-        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
-        //{
-        //    using var connection = _context.CreateConnection();
-
-        //    var parameters = new DynamicParameters();
-        //    parameters.Add("p_emp_id", empId);
-        //    parameters.Add("p_leave_type_id", request.LeaveTypeId);
-        //    parameters.Add("p_from_date", request.FromDate);
-        //    parameters.Add("p_to_date", request.ToDate);
-        //    parameters.Add("p_total_days", request.TotalDays);
-        //    parameters.Add("p_reason", request.Reason);
-
-        //    return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
-        //        "sp_leave_request_create",
-        //        parameters,
-        //        commandType: CommandType.StoredProcedure);
-        //}
+        public async Task<RelieverActionResult> RelieverActionAsync(int leaveId, int relieverEmpId, string action, string? remarks)
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryFirstAsync<RelieverActionResult>(
+                "sp_leave_reliever_action",
+                new { p_leave_id = leaveId, p_reliever_emp_id = relieverEmpId, p_action = action, p_remarks = remarks },
+                commandType: CommandType.StoredProcedure);
+        }
         public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
         {
             using var connection = _context.CreateConnection();

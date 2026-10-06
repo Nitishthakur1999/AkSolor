@@ -72,6 +72,21 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string? BloodGroup { get; set; }
         public string? MaritalStatus { get; set; }
     }
+    public class RelieverLeaveRequestDto
+    {
+        public int LeaveId { get; set; }
+        public int EmpId { get; set; }
+        public string EmployeeName { get; set; } = default!;
+        public string LeaveType { get; set; } = default!;
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+        public decimal TotalDays { get; set; }
+        public string Reason { get; set; } = default!;
+        public string RelieverStatus { get; set; } = default!;
+        public string Status { get; set; } = default!;
+        public DateTime CreatedAt { get; set; }
+    }
+
     public class SelfLeaveRequestDto
     {
         public int LeaveId { get; set; }

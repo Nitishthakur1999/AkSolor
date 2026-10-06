@@ -2,6 +2,50 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
+// ───────────────────────── Date/Time helpers ─────────────────────────
+// Server/DB clock timezone offset (bina Z wali createdAt isi offset me save hai).
+// Proof: real apply 10:28 AM IST = 04:58 UTC, raw = 21:58 (previous day) => server = UTC-7.
+// Agar backend ko UTC me fix kar diya (DateTime.UtcNow / GETUTCDATE) to "+00:00" kar do.
+const SERVER_UTC_OFFSET = "-07:00";
+
+// TEMP DEBUG: true karo to Applied On ke neeche raw createdAt dikhega.
+const SHOW_RAW_DEBUG = false;
+
+const parseServerDate = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    let s = String(value).trim().replace(" ", "T");
+    s = s.replace(/(\.\d{3})\d+/, "$1"); // .NET 7-digit fraction trim
+    const hasTz = /(Z|[+-]\d{2}:?\d{2})$/i.test(s);
+    if (!hasTz) s += SERVER_UTC_OFFSET;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+};
+
+// Applied On: date + time, hamesha IST me
+const formatDateTime = (value) => {
+    const d = parseServerDate(value);
+    if (!d) return null;
+    return {
+        date: d.toLocaleDateString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
+        }),
+        time: d.toLocaleTimeString("en-US", {
+            hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
+        }),
+    };
+};
+
+// From/To date: sirf date, timezone shift nahi hoga
+const formatDateOnly = (value) => {
+    const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return "-";
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.toLocaleDateString("en-GB", {
+        day: "2-digit", month: "short", year: "numeric", timeZone: "UTC",
+    });
+};
+
 export default function LeaveRequests() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -85,7 +129,7 @@ export default function LeaveRequests() {
                 status: statusAction,
                 approvedBy: user?.employeeId || 1,
                 remarks: remarksText,
-                // 🆕 Forwarded ke saath bhi leaveTypeId bhejo — HR ab forward karte time hi type select karta hai
+                // Forwarded ke saath bhi leaveTypeId bhejo — HR forward karte time hi type select karta hai
                 ...(statusAction === "Forwarded" ? { forwardedToRole, leaveTypeId } : {}),
                 ...(statusAction === "Approved" ? { leaveTypeId } : {}),
             };
@@ -98,7 +142,6 @@ export default function LeaveRequests() {
                             ? {
                                 ...req,
                                 status: statusAction,
-                                // 🆕 Forwarded ke saath local state me bhi leaveTypeId save karo
                                 ...(statusAction === "Forwarded" ? { forwardedToRole, leaveTypeId } : {}),
                                 ...(statusAction === "Approved" ? { leaveTypeId } : {}),
                                 ...(statusAction === "Approved" || statusAction === "Rejected"
@@ -129,17 +172,6 @@ export default function LeaveRequests() {
         } finally {
             setActioningId(null);
         }
-    };
-
-    // applied date + time formatter (createdAt from backend)
-    const formatDateTime = (value) => {
-        if (!value) return null;
-        const d = new Date(value);
-        if (isNaN(d.getTime())) return null;
-        return {
-            date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-            time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
-        };
     };
 
     const tabFilteredBase = leaveRequests.filter(item => {
@@ -277,6 +309,9 @@ export default function LeaveRequests() {
                                                     <>
                                                         <div className="font-bold text-slate-800">{applied.date}</div>
                                                         <div className="text-[11px] font-medium text-slate-500 mt-0.5">{applied.time}</div>
+                                                        {SHOW_RAW_DEBUG && (
+                                                            <div className="text-[9px] text-red-500 mt-0.5">raw: {String(req.createdAt)}</div>
+                                                        )}
                                                     </>
                                                 ) : (
                                                     <span className="text-slate-400">-</span>
@@ -289,9 +324,9 @@ export default function LeaveRequests() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-[11px] font-medium text-slate-500">{new Date(req.fromDate).toLocaleDateString()} to</div>
+                                            <div className="text-[11px] font-medium text-slate-500">{formatDateOnly(req.fromDate)} to</div>
                                             <div className="font-bold text-slate-800 mt-0.5">
-                                                {new Date(req.toDate).toLocaleDateString()}
+                                                {formatDateOnly(req.toDate)}
                                                 <span className="text-amber-600 ml-1.5 font-bold">({req.totalDays} Days)</span>
                                             </div>
                                         </td>
@@ -356,7 +391,7 @@ export default function LeaveRequests() {
                                                             </button>
                                                         </div>
                                                     ) : forwardPickerId === req.leaveId ? (
-                                                        // 🆕 Forward se pehle leave type select karna zaroori — CMD/Director ke liye pehle se tay ho jaata hai
+                                                        // Forward se pehle leave type select karna zaroori
                                                         <div className="flex items-center justify-center gap-2">
                                                             <select
                                                                 value={selectedLeaveTypeId}
@@ -423,7 +458,7 @@ export default function LeaveRequests() {
                                                 )
                                             ) : activeTab === "manager" && req.status === "Forwarded" ? (
                                                 isManagerRole && req.forwardedToRole === user?.role ? (
-                                                    // 🆕 CMD/Director ko sirf Approve/Reject — leave type HR ne forward karte time hi tay kar diya
+                                                    // CMD/Director ko sirf Approve/Reject — leave type HR ne pehle tay kar diya
                                                     <div className="flex items-center justify-center gap-2">
                                                         <button
                                                             disabled={actioningId === req.leaveId}

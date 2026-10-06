@@ -200,6 +200,28 @@ namespace AkerpSuite.Server.Controllers
             return Ok(ApiResponseDto<IEnumerable<LeaveRelieverDto>>.Ok(result));
         }
 
+        [HttpGet("leave/reliever-requests")]
+        [RequirePermission("Leave", "RelieverView")]
+        public async Task<IActionResult> GetRelieverRequests([FromQuery] string? status)
+        {
+            var empId = User.GetEmpId();
+            var result = await _service.GetRelieverRequestsAsync(empId, status);
+            return Ok(ApiResponseDto<IEnumerable<RelieverLeaveRequestDto>>.Ok(result));
+        }
+
+        [HttpPatch("leave/requests/{leaveId}/reliever-action")]
+        [RequirePermission("Leave", "RelieverAction")]
+        public async Task<IActionResult> RelieverAction(int leaveId, [FromBody] RelieverActionDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
+
+            var empId = User.GetEmpId();
+            var message = await _service.RelieverActionAsync(leaveId, empId, request);
+            return Ok(ApiResponseDto<bool>.Ok(true, message));
+        }
+
+
         [HttpGet("leave/requests")]
         public async Task<IActionResult> GetMyLeaveRequests([FromQuery] string? status, [FromQuery] int? month, [FromQuery] int? year)
         {

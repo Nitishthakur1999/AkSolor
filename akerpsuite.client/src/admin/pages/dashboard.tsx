@@ -5,6 +5,10 @@ import { adminService } from "@/services/adminService";
 
 const ANNOUNCEMENT_WRITE_ROLES = ["CMD", "Director", "Sr. Manager (HR & Social Media)"];
 
+// Sirf ye roles card par click karke detail table dekh sakte hain.
+// Baaki roles ko card + count dikhega, detail nahi.
+const DETAIL_VIEW_ROLES = ["CMD", "Director", "Sr. Manager (HR & Social Media)"];
+
 export default function Dashboard() {
     const navigate = useNavigate();
     const [cards, setCards] = useState([]);
@@ -26,12 +30,13 @@ export default function Dashboard() {
     // announcement state (widget, all users)
     const [announcements, setAnnouncements] = useState([]);
 
-    // ── NEW: dashboard tab state ──
+    // dashboard tab state
     const [activeTab, setActiveTab] = useState("overview"); // "overview" | "announcements"
 
     const role = localStorage.getItem("role") ?? "User";
     const username = localStorage.getItem("username") ?? "";
     const canManageAnnouncements = ANNOUNCEMENT_WRITE_ROLES.includes(role);
+    const canViewDetails = DETAIL_VIEW_ROLES.includes(role);
 
     const greeting = (() => {
         const h = new Date().getHours();
@@ -152,19 +157,23 @@ export default function Dashboard() {
         }
     };
 
-    // ── NEW: cards that should navigate to a real page instead of opening the inline detail table ──
-    // Add more cardKey → route mappings here in future if needed.
+    // Cards jo detail table ki jagah seedha page par navigate karte hain
     const isHrRole = ["HR", "Sr. Manager (HR & Social Media)"].includes(role);
     const CARD_ROUTES = {
         leaveApprovals: isHrRole ? "/hr/leave/requests?tab=hr" : "/hr/leave/requests?tab=manager",
     };
 
+    const isCardClickable = (card) => canViewDetails || !!CARD_ROUTES[card.cardKey];
+
     const handleCardClick = async (card) => {
-        // NEW: direct-navigation cards (e.g. "Leave Approvals") skip the modal entirely
+        // Direct-navigation cards (e.g. "Leave Approvals")
         if (CARD_ROUTES[card.cardKey]) {
             navigate(CARD_ROUTES[card.cardKey]);
             return;
         }
+
+        // Baaki roles ko sirf card dikhta hai, detail nahi
+        if (!canViewDetails) return;
 
         if (selectedCard?.cardKey === card.cardKey) {
             setSelectedCard(null);
@@ -299,7 +308,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ── NEW: Tab switcher (only shown if user can manage announcements) ── */}
+            {/* ── Tab switcher (only for users who can manage announcements) ── */}
             {canManageAnnouncements && (
                 <div className="flex gap-2 border-b border-slate-200">
                     <button
@@ -323,7 +332,7 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* ── NEW: Announcements management tab (CMD/Director/HR only) ── */}
+            {/* ── Announcements management tab (CMD/Director/HR only) ── */}
             {canManageAnnouncements && activeTab === "announcements" ? (
                 <AnnouncementsManageTab onChanged={loadAnnouncements} />
             ) : (
@@ -370,12 +379,13 @@ export default function Dashboard() {
                                         key={card.cardKey}
                                         card={card}
                                         onClick={handleCardClick}
-                                        isActive={selectedCard?.cardKey === card.cardKey}
+                                        isActive={canViewDetails && selectedCard?.cardKey === card.cardKey}
+                                        clickable={isCardClickable(card)}
                                     />
                                 ))}
                             </div>
 
-                            {selectedCard && (
+                            {canViewDetails && selectedCard && (
                                 <DetailTable
                                     card={selectedCard}
                                     rows={detailRows}
@@ -393,7 +403,7 @@ export default function Dashboard() {
     );
 }
 
-// ─── NEW: Announcements Manage Tab (CMD/Director/HR) ─────────────────────────
+// ─── Announcements Manage Tab (CMD/Director/HR) ─────────────────────────
 function AnnouncementsManageTab({ onChanged }) {
     const [list, setList] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -441,12 +451,6 @@ function AnnouncementsManageTab({ onChanged }) {
         } catch (err) {
             alert(err.message || "Failed to delete");
         }
-    };
-
-    const PRIORITY_STYLES = {
-        Normal: "bg-slate-100 text-slate-600",
-        Important: "bg-amber-100 text-amber-700",
-        Urgent: "bg-rose-100 text-rose-700",
     };
 
     return (
@@ -587,18 +591,25 @@ function AnnouncementsManageTab({ onChanged }) {
 }
 
 // ─── Single Card Component ────────────────────────────────────────────────────
-function DashboardCard({ card, onClick, isActive }) {
+function DashboardCard({ card, onClick, isActive, clickable }) {
     const formattedValue = formatValue(card.cardValue, card.prefix);
 
     return (
         <div
-            onClick={() => onClick(card)}
-            role="button"
-            tabIndex={0}
+            onClick={() => clickable && onClick(card)}
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : -1}
             onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onClick(card);
+                if (clickable && (e.key === "Enter" || e.key === " ")) onClick(card);
             }}
-            className={`group relative bg-white border rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer active:scale-[0.98] ${isActive ? "border-amber-400 ring-1 ring-amber-300/60" : "border-slate-200 hover:border-amber-300/60"
+            className={`group relative bg-white border rounded-xl p-3 sm:p-4 shadow-sm transition-all duration-300 ${clickable
+                ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+                : "cursor-default"
+                } ${isActive
+                    ? "border-amber-400 ring-1 ring-amber-300/60"
+                    : clickable
+                        ? "border-slate-200 hover:border-amber-300/60"
+                        : "border-slate-200"
                 }`}
         >
             <div
@@ -618,9 +629,11 @@ function DashboardCard({ card, onClick, isActive }) {
                 <h2 className="font-display text-xl sm:text-[26px] font-bold text-slate-900 tracking-tight tabular-nums">
                     {formattedValue}
                 </h2>
-                <i
-                    className={`fa-solid ${isActive ? "fa-chevron-up text-amber-500" : "fa-chevron-down text-slate-300 group-hover:text-amber-500"} text-[10px] transition-colors ml-auto self-center`}
-                />
+                {clickable && (
+                    <i
+                        className={`fa-solid ${isActive ? "fa-chevron-up text-amber-500" : "fa-chevron-down text-slate-300 group-hover:text-amber-500"} text-[10px] transition-colors ml-auto self-center`}
+                    />
+                )}
             </div>
         </div>
     );

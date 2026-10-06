@@ -272,6 +272,10 @@ export const adminService = {
     updateLeaveRequest: (leaveId?: any, data?: any) => apiCall(`${BASE}/api/hr/leave/requests/${leaveId}`, "PUT", data),
     cancelLeaveRequest: (leaveId?: any) => apiCall(`${BASE}/api/hr/leave/requests/${leaveId}/cancel`, "PATCH"),
 
+    // Reliever flow
+    getRelieverRequests: (params?: any) => apiCall(`${BASE}/api/hr/leave/reliever-requests?${new URLSearchParams(params)}`),
+    relieverAction: (leaveId?: any, data?: any) => apiCall(`${BASE}/api/hr/leave/requests/${leaveId}/reliever-action`, "PATCH", data),
+
     // 18. Self Service (Attendance)
     getMyAttendance: (params?: any) => apiCall(`${BASE}/api/hr/attendance?${new URLSearchParams(params)}`),
     requestRegularization: (data?: any) => apiCall(`${BASE}/api/hr/attendance/regularize`, "POST", data),
