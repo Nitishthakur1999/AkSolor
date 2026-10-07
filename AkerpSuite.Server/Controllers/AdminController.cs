@@ -667,6 +667,43 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Message = "Leave type deleted successfully" });
         }
 
+        // GET api/leave/allocation/5?year=2026
+        [HttpGet("allocation/{employeeId}")]
+        [RequirePermission("LeaveBalance", "View")]     
+        public async Task<IActionResult> GetLeaveAllocation(int employeeId, [FromQuery] int? year)
+        {
+            var data = await _service.GetLeaveAllocationByEmployeeAsync(employeeId, year ?? DateTime.Now.Year);
+            return Ok(new { Success = true, Data = data });
+        }
+
+        // POST api/leave/allocation
+        //[HttpPost("allocation")]
+        //[RequirePermission("LeaveBalance", "Update")]  
+        //public async Task<IActionResult> SaveLeaveAllocation([FromBody] SaveLeaveAllocationRequestDto request)
+        //{
+        //    var data = await _service.SaveLeaveAllocationAsync(request);
+        //    return Ok(new { Success = true, Message = "Leave allocation saved successfully", Data = data });
+        //}
+        // POST api/leave/allocation
+        [HttpPost("allocation")]
+        [RequirePermission("LeaveBalance", "Update")]
+        public async Task<IActionResult> SaveLeaveAllocation([FromBody] SaveLeaveAllocationRequestDto request)
+        {
+            try
+            {
+                var data = await _service.SaveLeaveAllocationAsync(request);
+                return Ok(new { Success = true, Message = "Leave allocation saved successfully", Data = data });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+            catch (MySqlConnector.MySqlException ex) when (ex.SqlState == "45000")
+            {
+                // SP ke SIGNAL wala message (total < used guard)
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
         // Leave Balance
 
         // POST api/leave/balance/initialize

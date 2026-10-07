@@ -214,7 +214,18 @@ namespace AkerpSuite.Server.DTOs.Role
         public bool CarryForward { get; set; }
         public bool IsActive { get; set; } = true;
     }
+    public class LeaveAllocationItemRequestDto
+    {
+        public int LeaveTypeId { get; set; }
+        public int Days { get; set; }
+    }
 
+    public class SaveLeaveAllocationRequestDto
+    {
+        public int EmployeeId { get; set; }
+        public int AllocationYear { get; set; }
+        public List<LeaveAllocationItemRequestDto> Items { get; set; } = new();
+    }
     public class LeaveRequestDto
     {
         public int EmpId { get; set; }

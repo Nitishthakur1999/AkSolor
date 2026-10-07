@@ -95,6 +95,8 @@ namespace AkerpSuite.Server.Repositories
         Task<LeaveTypeResponseDto?> GetLeaveTypeByIdAsync(int id);
         Task<bool> UpdateLeaveTypeAsync(int id, LeaveTypeRequestDto request);
         Task<bool> DeleteLeaveTypeAsync(int id);
+        Task<IEnumerable<LeaveAllocationResponseDto>> GetLeaveAllocationByEmployeeAsync(int employeeId, int allocationYear);
+        Task<bool> SaveLeaveAllocationAsync(SaveLeaveAllocationRequestDto request);
         Task<bool> UpdateLeaveRequestAsync(int leaveId, LeaveRequestDto request);
         Task<bool> CancelLeaveRequestAsync(int leaveId);
 

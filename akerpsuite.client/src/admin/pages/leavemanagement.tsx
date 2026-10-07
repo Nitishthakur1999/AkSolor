@@ -35,6 +35,13 @@ export default function LeaveManagement() {
     const [entryEmpSearchOpen, setEntryEmpSearchOpen] = useState(false);
     const [entryEmpSearchText, setEntryEmpSearchText] = useState("");
 
+    // ── Assign Leave (per-employee allocation) States ──
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [assignEmpId, setAssignEmpId] = useState("");
+    const [assignYear, setAssignYear] = useState<string | number>(new Date().getFullYear());
+    const [assignRows, setAssignRows] = useState<{ leaveTypeId: string; days: string | number }[]>([]);
+    const [assignLoading, setAssignLoading] = useState(false);
+
     useEffect(() => {
         loadData();
         setCurrentPage(1);
@@ -51,6 +58,14 @@ export default function LeaveManagement() {
             if (res.Success || res.success) setLeaveTypes(res.Data || res.data || []);
         }).catch(err => console.error("Error fetching leave types:", err));
     }, []);
+
+    // Employee ya year change hone par us employee ki allocation load karo
+    useEffect(() => {
+        const y = parseInt(String(assignYear), 10);
+        if (showAssignModal && assignEmpId && y) {
+            loadAllocation(assignEmpId, y);
+        }
+    }, [assignEmpId, assignYear, showAssignModal]);
 
     const loadData = async () => {
         setLoading(true);
@@ -247,9 +262,9 @@ export default function LeaveManagement() {
             } else {
                 alert(res.Message || "Failed to create leave balance entry");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert(err?.response?.data?.Message || "Something went wrong while creating the entry.");
+            alert(err?.message || "Something went wrong while creating the entry.");
         } finally {
             setActionLoading(false);
         }
@@ -296,6 +311,84 @@ export default function LeaveManagement() {
         } catch (err) {
             console.error(err);
             alert("Something went wrong while deleting the entry.");
+        }
+    };
+
+    // ── Assign Leave (per-employee allocation) handlers ──
+    const loadAllocation = async (empId: string, year: number) => {
+        setAssignLoading(true);
+        try {
+            const res = await adminService.getLeaveAllocation(empId, year);
+            const list = res.Data || res.data || [];
+
+            const existing = new Map<string, any>(
+                list.map((a: any) => [String(a.leaveTypeId), a.allocatedDays])
+            );
+
+            // Sab active type: row hai to asli total, nahi to default
+            const rows: { leaveTypeId: string; days: string | number }[] = leaveTypes
+                .filter((t: any) => t.isActive)
+                .map((t: any) => ({
+                    leaveTypeId: String(t.leaveTypeId),
+                    days: existing.has(String(t.leaveTypeId))
+                        ? existing.get(String(t.leaveTypeId))
+                        : t.maxPerYear,
+                }));
+
+            // Inactive type ki row bhi rakho, warna gayab ho jayegi
+            list.forEach((a: any) => {
+                const id = String(a.leaveTypeId);
+                if (!rows.some((r) => r.leaveTypeId === id)) {
+                    rows.push({ leaveTypeId: id, days: a.allocatedDays });
+                }
+            });
+
+            setAssignRows(rows);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load leave allocation.");
+        } finally {
+            setAssignLoading(false);
+        }
+    };
+
+    const openAssignModal = () => {
+        setAssignEmpId("");
+        setAssignRows([]);
+        setAssignYear(new Date().getFullYear());
+        setShowAssignModal(true);
+    };
+
+    const addAssignRow = () => setAssignRows((r) => [...r, { leaveTypeId: "", days: "" }]);
+    const removeAssignRow = (i: number) => setAssignRows((r) => r.filter((_, idx) => idx !== i));
+    const updateAssignRow = (i: number, patch: Partial<{ leaveTypeId: string; days: string | number }>) =>
+        setAssignRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
+    const handleSaveAssign = async (e) => {
+        e.preventDefault();
+        setActionLoading(true);
+        try {
+            const payload = {
+                employeeId: parseInt(assignEmpId, 10),
+                allocationYear: parseInt(String(assignYear), 10),
+                items: assignRows.map((r) => ({
+                    leaveTypeId: parseInt(r.leaveTypeId, 10),
+                    days: parseInt(String(r.days), 10) || 0,
+                })),
+            };
+            const res = await adminService.saveLeaveAllocation(payload);
+            if (res.Success || res.success) {
+                setShowAssignModal(false);
+                loadData();
+            } else {
+                alert(res.Message || "Failed to save leave allocation");
+            }
+        } catch (err: any) {
+            console.error(err);
+            // apiCall seedha Error(message) throw karta hai, err.response nahi hota
+            alert(err?.message || "Something went wrong while saving the allocation.");
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -363,12 +456,20 @@ export default function LeaveManagement() {
                         </button>
                     )}
                     {activeTab === "balances" && (
-                        <button
-                            onClick={() => setShowInitModal(true)}
-                            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2 shadow-sm"
-                        >
-                            <i className="fa-solid fa-bolt" /> Initialize Balance
-                        </button>
+                        <>
+                            <button
+                                onClick={openAssignModal}
+                                className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2 shadow-sm"
+                            >
+                                <i className="fa-solid fa-user-pen" /> Assign Leave
+                            </button>
+                            <button
+                                onClick={() => setShowInitModal(true)}
+                                className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2 shadow-sm"
+                            >
+                                <i className="fa-solid fa-bolt" /> Initialize Balance
+                            </button>
+                        </>
                     )}
                     {activeTab === "entries" && (
                         <button
@@ -586,7 +687,7 @@ export default function LeaveManagement() {
                                     <input type="text" required value={typeForm.leaveCode} onChange={e => setTypeForm({ ...typeForm, leaveCode: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all uppercase" placeholder="e.g. SL" />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Max Per Year *</label>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Default Max Per Year *</label>
                                     <input type="number" required min="0" value={typeForm.maxPerYear} onChange={e => setTypeForm({ ...typeForm, maxPerYear: parseInt(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
                                 </div>
                             </div>
@@ -625,7 +726,7 @@ export default function LeaveManagement() {
                                     <input type="text" required value={typeForm.leaveCode} onChange={e => setTypeForm({ ...typeForm, leaveCode: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all uppercase" />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Max Per Year *</label>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Default Max Per Year *</label>
                                     <input type="number" required min="0" value={typeForm.maxPerYear} onChange={e => setTypeForm({ ...typeForm, maxPerYear: parseInt(e.target.value) })} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
                                 </div>
                             </div>
@@ -679,6 +780,104 @@ export default function LeaveManagement() {
                             <div className="pt-5 border-t border-slate-100">
                                 <button type="submit" disabled={actionLoading} className="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-600/20 disabled:opacity-60 hover:-translate-y-0.5">
                                     {actionLoading ? "Processing..." : "Initialize Balance"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 👤 Modal popup: ASSIGN LEAVE TO EMPLOYEE */}
+            {showAssignModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-slate-200 w-full max-w-lg rounded-2xl p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-slate-900">Assign Leave to Employee</h3>
+                            <button onClick={() => setShowAssignModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                                <i className="fa-solid fa-xmark text-lg" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSaveAssign} className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="col-span-2">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Employee *</label>
+                                    <select required value={assignEmpId} onChange={(e) => setAssignEmpId(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all bg-white cursor-pointer">
+                                        <option value="" disabled>-- Select Employee --</option>
+                                        {visibleEmployees.map((emp) => (
+                                            <option key={emp.empId} value={emp.empId}>{emp.firstName} {emp.lastName} ({emp.empCode})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year *</label>
+                                    <input type="number" required min="2020" max={new Date().getFullYear() + 1} value={assignYear} onChange={(e) => setAssignYear(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all" />
+                                </div>
+                            </div>
+
+                            {assignEmpId && (
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-[1fr_110px_36px] gap-3 px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                                        <span>Leave Type</span>
+                                        <span>Days</span>
+                                        <span />
+                                    </div>
+
+                                    {assignLoading ? (
+                                        <div className="py-8 text-center text-sm text-slate-400 animate-pulse">Loading...</div>
+                                    ) : (
+                                        assignRows.map((row, i) => (
+                                            <div key={i} className="grid grid-cols-[1fr_110px_36px] gap-3 items-center">
+                                                <select
+                                                    required
+                                                    value={row.leaveTypeId}
+                                                    onChange={(e) => updateAssignRow(i, { leaveTypeId: e.target.value })}
+                                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-white cursor-pointer"
+                                                >
+                                                    <option value="" disabled>-- Select --</option>
+                                                    {leaveTypes
+                                                        .filter((t) => t.isActive)
+                                                        .map((t) => (
+                                                            <option
+                                                                key={t.leaveTypeId}
+                                                                value={t.leaveTypeId}
+                                                                disabled={assignRows.some((r, idx) => idx !== i && r.leaveTypeId === String(t.leaveTypeId))}
+                                                            >
+                                                                {t.leaveName} ({t.leaveCode})
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    min="0"
+                                                    step="1"
+                                                    value={row.days}
+                                                    onChange={(e) => updateAssignRow(i, { days: e.target.value })}
+                                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAssignRow(i)}
+                                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors"
+                                                    title="Remove"
+                                                >
+                                                    <i className="fa-solid fa-trash-can text-[13px]" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+
+                                    {!assignLoading && (
+                                        <button type="button" onClick={addAssignRow} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1.5 pt-1 pl-1">
+                                            <i className="fa-solid fa-plus" /> Add Leave
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="pt-5 border-t border-slate-100">
+                                <button type="submit" disabled={actionLoading || assignLoading || !assignEmpId} className="w-full py-3.5 bg-[#0b2836] hover:bg-[#0f3345] text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-[#0b2836]/20 disabled:opacity-60 hover:-translate-y-0.5">
+                                    {actionLoading ? "Saving..." : "Save Allocation"}
                                 </button>
                             </div>
                         </form>

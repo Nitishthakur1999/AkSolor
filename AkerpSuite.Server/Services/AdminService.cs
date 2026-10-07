@@ -832,6 +832,33 @@ namespace AkerpSuite.Server.Services
             return await _repository.DeleteLeaveTypeAsync(id);
         }
 
+        public async Task<IEnumerable<LeaveAllocationResponseDto>> GetLeaveAllocationByEmployeeAsync(int employeeId, int allocationYear)
+             => await _repository.GetLeaveAllocationByEmployeeAsync(employeeId, allocationYear);
+
+        public async Task<IEnumerable<LeaveAllocationResponseDto>> SaveLeaveAllocationAsync(SaveLeaveAllocationRequestDto request)
+        {
+            if (request.EmployeeId <= 0)
+                throw new InvalidOperationException("Employee is required.");
+
+            if (request.AllocationYear <= 0)
+                throw new InvalidOperationException("Year is required.");
+
+            request.Items ??= new List<LeaveAllocationItemRequestDto>();
+
+            if (request.Items.Any(i => i.LeaveTypeId <= 0))
+                throw new InvalidOperationException("Select a leave type in every row.");
+
+            if (request.Items.Any(i => i.Days < 0))
+                throw new InvalidOperationException("Days cannot be negative.");
+
+            if (request.Items.GroupBy(i => i.LeaveTypeId).Any(g => g.Count() > 1))
+                throw new InvalidOperationException("Same leave type added more than once.");
+
+            await _repository.SaveLeaveAllocationAsync(request);
+
+            return await _repository.GetLeaveAllocationByEmployeeAsync(request.EmployeeId, request.AllocationYear);
+        }
+
         public async Task<LeaveRequestResponseDto> UpdateLeaveRequestAsync(int leaveId, int empId, LeaveRequestDto request)
         {
             var leave = await _repository.GetLeaveRequestByIdAsync(leaveId);

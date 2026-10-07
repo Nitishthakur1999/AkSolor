@@ -958,6 +958,48 @@ namespace AkerpSuite.Server.Repositories
             return rows > 0;
         }
 
+        public async Task<IEnumerable<LeaveAllocationResponseDto>> GetLeaveAllocationByEmployeeAsync(int employeeId, int allocationYear)
+        {
+            using var conn = _context.CreateConnection();
+            return await conn.QueryAsync<LeaveAllocationResponseDto>(
+                "sp_leave_allocation_getbyemployee",
+                new { p_employee_id = employeeId, p_allocation_year = allocationYear },
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+
+        public async Task<bool> SaveLeaveAllocationAsync(SaveLeaveAllocationRequestDto request)
+        {
+            using var conn = _context.CreateConnection();
+            conn.Open(); // agar CreateConnection() already open deta hai to ye line hata do
+            using var tx = conn.BeginTransaction();
+
+            try
+            {
+                foreach (var item in request.Items)
+                {
+                    await conn.QueryFirstOrDefaultAsync<int>(
+                        "sp_leave_allocation_upsert",
+                        new
+                        {
+                            p_employee_id = request.EmployeeId,
+                            p_leave_type_id = item.LeaveTypeId,
+                            p_allocation_year = request.AllocationYear,
+                            p_allocated_days = item.Days
+                        },
+                        transaction: tx,
+                        commandType: System.Data.CommandType.StoredProcedure);
+                }
+
+                tx.Commit();
+                return true;
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
+        }
+
         public async Task<bool> UpdateLeaveRequestAsync(int leaveId, LeaveRequestDto request)
         {
             using var conn = _context.CreateConnection();

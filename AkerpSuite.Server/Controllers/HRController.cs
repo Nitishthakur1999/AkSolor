@@ -231,18 +231,6 @@ namespace AkerpSuite.Server.Controllers
             return Ok(ApiResponseDto<IEnumerable<SelfLeaveResponseDto>>.Ok(result));
         }
 
-        //[HttpPost("leave/apply")]
-        //public async Task<IActionResult> ApplyLeave([FromBody] SelfLeaveRequestDto request)
-        //{
-        //    if (!ModelState.IsValid)
-        //        return BadRequest(ApiResponseDto<object>.Fail("Invalid request."));
-
-        //    var empId = User.GetEmpId();
-        //    var result = await _service.ApplyLeaveAsync(empId, request);
-
-        //    return Ok(ApiResponseDto<SelfLeaveResponseDto>.Ok(result, "Leave request submitted successfully."));
-        //}
-
         [HttpPost("leave/apply")]
         public async Task<IActionResult> ApplyLeave([FromBody] SelfLeaveRequestDto request)
         {

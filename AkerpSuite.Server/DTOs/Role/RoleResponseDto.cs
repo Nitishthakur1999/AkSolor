@@ -208,6 +208,17 @@ namespace AkerpSuite.Server.DTOs.Role
         public bool IsActive { get; set; }
     }
 
+    public class LeaveAllocationResponseDto
+    {
+        public int AllocationId { get; set; }
+        public int EmployeeId { get; set; }
+        public int LeaveTypeId { get; set; }
+        public string LeaveCode { get; set; } = string.Empty;
+        public string LeaveName { get; set; } = string.Empty;
+        public int AllocationYear { get; set; }
+        public decimal AllocatedDays { get; set; }
+    }
+
     public class LeaveBalanceResponseDto
     {
         public int BalanceId { get; set; }

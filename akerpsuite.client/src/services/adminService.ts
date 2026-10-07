@@ -185,6 +185,8 @@ export const adminService = {
     createLeaveBalance: (data?: any) => apiCall(`${API_BASE}/balance`, "POST", data),
     updateLeaveBalance: (balanceId?: any, data?: any) => apiCall(`${API_BASE}/balance/${balanceId}`, "PUT", data),
     deleteLeaveBalance: (balanceId?: any) => apiCall(`${API_BASE}/balance/${balanceId}`, "DELETE"),
+    getLeaveAllocation: (empId: any, year: any) => apiCall(`${API_BASE}/allocation/${empId}?year=${year}`),
+    saveLeaveAllocation: (body?: any) => apiCall(`${API_BASE}/allocation`, "POST", body),
 
     // 10. Page Master
     getAllPages: () => apiCall(`${API_BASE}/getallpages`),
