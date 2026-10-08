@@ -170,7 +170,10 @@ export const adminService = {
     getSundayHolidayStatus: (month?: any, year?: any) => apiCall(`${ATTENDANCE_API_BASE}/sunday-holiday-status?month=${month}&year=${year}`),
     downloadSundayHolidayStatusPdf: (month?: any, year?: any) =>downloadFile(`${ATTENDANCE_API_BASE}/sunday-holiday-status/pdf?month=${month}&year=${year}`,
         `Sunday_Holiday_Working_Status_${String(month).padStart(2, "0")}_${year}.pdf`),
-    markSundayDuty: (payload?: any) =>apiCall(`${ATTENDANCE_API_BASE}/sunday-holiday-status/mark`, "POST", payload),
+    markSundayDuty: (payload?: any) => apiCall(`${ATTENDANCE_API_BASE}/sunday-holiday-status/mark`, "POST", payload),
+    getMonthlyAttendanceReport: (month?: any, year?: any, empId?: any) =>
+        apiCall(`${ATTENDANCE_API_BASE}/attendancereport/monthly?month=${month}&year=${year}${empId ? `&empId=${empId}` : ""}`),
+
 
     // 9. Leave Management
     getLeaveTypes: () => apiCall(`${API_BASE}/types`),

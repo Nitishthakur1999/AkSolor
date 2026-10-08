@@ -250,6 +250,7 @@ namespace AkerpSuite.Server.Repositories
         Task<List<SundayLedgerRecord>> GetSundayLedgerAsync(int month, int year);
         Task UpsertSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
         Task RecalculateLedgerAsync(int empId, int month, int year);
+        Task<IEnumerable<MonthlyAttendanceReportDto>> GetMonthlyAttendanceReportAsync(int month, int year, int? empId);
         #endregion
 
         #region Announcements

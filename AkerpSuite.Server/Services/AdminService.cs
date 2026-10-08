@@ -1859,7 +1859,12 @@ namespace AkerpSuite.Server.Services
                 request.DutyDate.Year
             );
         }
-
+        public async Task<IEnumerable<MonthlyAttendanceReportDto>> GetMonthlyAttendanceReportAsync(int month, int year, int? empId)
+        {
+            if (month < 1 || month > 12) throw new InvalidOperationException("Invalid month.");
+            if (year < 2000 || year > DateTime.Now.Year + 1) throw new InvalidOperationException("Invalid year.");
+            return await _repository.GetMonthlyAttendanceReportAsync(month, year, empId);
+        }
         private static List<DateTime> GetSundaysInMonth(int month, int year)
         {
             var result = new List<DateTime>();

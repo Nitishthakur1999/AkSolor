@@ -505,7 +505,26 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? Location { get; set; }
         public bool CountsAsDuty { get; set; } = true;
     }
-
+    public class MonthlyAttendanceReportDto
+    {
+        public int EmpId { get; set; }
+        public string? EmpCode { get; set; }
+        public string EmpName { get; set; } = "";
+        public decimal DaysPresent { get; set; }
+        public int HalfDays { get; set; }
+        public int AbsentDays { get; set; }
+        public int LeaveDays { get; set; }
+        public int WeekOffDays { get; set; }
+        public int HolidayDays { get; set; }
+        public int LateCount { get; set; }
+        public decimal TotalWorkingHours { get; set; }
+        public decimal OvertimeHours { get; set; }
+        public int SundaysWorked { get; set; }
+        public decimal SundayHours { get; set; }
+        public decimal SundayOpeningBalance { get; set; }
+        public decimal SundayCompOffUsed { get; set; }
+        public decimal SundayDue { get; set; }
+    }
     public class AnnouncementCreateDto
     {
         public string Title { get; set; }

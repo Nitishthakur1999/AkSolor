@@ -612,6 +612,14 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Message = "Sunday/Holiday duty status saved" });
         }
 
+        [HttpGet("attendancereport/monthly")]
+        [RequirePermission("Report", "View")]
+        public async Task<IActionResult> GetMonthlyAttendanceReport([FromQuery] int month, [FromQuery] int year, [FromQuery] int? empId)
+        {
+            var data = await _service.GetMonthlyAttendanceReportAsync(month, year, empId);
+            return Ok(new { Success = true, Data = data });
+        }
+
         #endregion
 
         #region Leave – Types, Balance & Requests

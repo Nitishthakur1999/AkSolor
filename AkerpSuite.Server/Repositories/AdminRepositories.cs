@@ -2100,6 +2100,15 @@ namespace AkerpSuite.Server.Repositories
                 commandType: CommandType.StoredProcedure);
         }
 
+        public async Task<IEnumerable<MonthlyAttendanceReportDto>> GetMonthlyAttendanceReportAsync(int month, int year, int? empId)
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<MonthlyAttendanceReportDto>(
+                "sp_attendance_monthly_report",
+                new { p_month = month, p_year = year, p_emp_id = empId },
+                commandType: CommandType.StoredProcedure);
+        }
+
         #endregion
 
         #region Announcements

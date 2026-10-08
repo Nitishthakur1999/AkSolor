@@ -241,6 +241,7 @@ namespace AkerpSuite.Server.Services
         Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year);
         Task<byte[]> GetSundayHolidayStatusPdfAsync(int month, int year);
         Task MarkSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
+        Task<IEnumerable<MonthlyAttendanceReportDto>> GetMonthlyAttendanceReportAsync(int month, int year, int? empId);
         #endregion
 
         #region Announcements

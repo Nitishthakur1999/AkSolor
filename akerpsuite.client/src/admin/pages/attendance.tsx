@@ -1,6 +1,24 @@
 import { useEffect, useState } from "react";
 import { adminService } from "@/services/adminService";
 
+// 🆕 Status badge — Present=green, Half-Day=amber, Leave=sky, Holiday=violet, baaki (Absent)=rose
+const STATUS_STYLES: Record<string, { box: string; dot: string }> = {
+    Present: { box: "bg-emerald-50 text-emerald-700 border-emerald-200/50", dot: "bg-emerald-500" },
+    "Half-Day": { box: "bg-amber-50 text-amber-700 border-amber-200/50", dot: "bg-amber-500" },
+    Leave: { box: "bg-sky-50 text-sky-700 border-sky-200/50", dot: "bg-sky-500" },
+    Holiday: { box: "bg-violet-50 text-violet-700 border-violet-200/50", dot: "bg-violet-500" },
+    Absent: { box: "bg-rose-50 text-rose-700 border-rose-200/50", dot: "bg-rose-500" },
+};
+const StatusBadge = ({ status }: { status: string }) => {
+    const s = STATUS_STYLES[status] || STATUS_STYLES.Absent;
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${s.box}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+            {status}
+        </span>
+    );
+};
+
 export default function Attendance() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userRole = (() => {
@@ -21,20 +39,19 @@ export default function Attendance() {
         }
     })();
 
-    // 🆕 DB-driven "CMD-equal" flag — roles list se resolve hota hai, hardcoded string list nahi
-    const [rolesList, setRolesList] = useState([]);
+    // DB-driven "CMD-equal" flag — roles list se resolve hota hai
+    const [rolesList, setRolesList] = useState<any[]>([]);
     useEffect(() => {
-        adminService.getRoles().then(res => {
+        adminService.getRoles().then((res: any) => {
             if (res.success || res.Success) setRolesList(res.data || res.Data || []);
-        }).catch(err => console.error("Failed to load roles for access check:", err));
+        }).catch((err: any) => console.error("Failed to load roles for access check:", err));
     }, []);
 
     const currentRoleData = rolesList.find(
-        r => String(r.roleName ?? r.RoleName ?? "").toUpperCase() === userRole
+        (r) => String(r.roleName ?? r.RoleName ?? "").toUpperCase() === userRole
     );
     const isCmdEqual = currentRoleData?.isCmdEqual ?? currentRoleData?.IsCmdEqual ?? false;
 
-    // 🆕 isCmdEqual OR purani hardcoded list — dono me se ek true ho to full access
     const isCMD = userRole === "CMD" || isCmdEqual;
     const isAdminLevel = isCmdEqual || ["CMD", "ADMIN", "HR"].includes(userRole);
     const isManager = userRole === "MANAGER" || userRole === "SR MANAGER" || userRole === "SR. MANAGER";
@@ -50,12 +67,12 @@ export default function Attendance() {
         }
     })();
 
-    const [attendanceLogs, setAttendanceLogs] = useState([]);
-    const [resignedEmpIds, setResignedEmpIds] = useState(new Set());
-    const [regRequests, setRegRequests] = useState([]);
-    const [summaries, setSummaries] = useState([]);
-    const [dashboardStats, setDashboardStats] = useState(null);
-    const [employees, setEmployees] = useState([]);
+    const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+    const [resignedEmpIds, setResignedEmpIds] = useState<Set<number>>(new Set());
+    const [regRequests, setRegRequests] = useState<any[]>([]);
+    const [summaries, setSummaries] = useState<any[]>([]);
+    const [dashboardStats, setDashboardStats] = useState<any>(null);
+    const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
     const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
@@ -66,19 +83,27 @@ export default function Attendance() {
         const t = setTimeout(() => setToast(null), 4000);
         return () => clearTimeout(t);
     }, [toast]);
-    const [sundayHolidayData, setSundayHolidayData] = useState([]);
+    const [sundayHolidayData, setSundayHolidayData] = useState<any[]>([]);
     const [sundayHolidayPeriod, setSundayHolidayPeriod] = useState({
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear()
     });
-    const [sundayHolidayMeta, setSundayHolidayMeta] = useState(null);
+    const [sundayHolidayMeta, setSundayHolidayMeta] = useState<any>(null);
     const [pdfDownloading, setPdfDownloading] = useState(false);
     const [activeTab, setActiveTab] = useState(isCMD ? "dashboard" : "logs");
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [dateFilter, setDateFilter] = useState("");
 
-    // 🆕 Dashboard card click ab yahin (dashboard tab ke andar) list dikhata hai, "logs" tab pe navigate nahi karta
+    // 🆕🆕 Monthly Attendance Report state
+    const [monthlyReportData, setMonthlyReportData] = useState<any[]>([]);
+    const [monthlyReportPeriod, setMonthlyReportPeriod] = useState({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        empId: ""
+    });
+
+    // Dashboard card click → inline list
     const [dashboardFilter, setDashboardFilter] = useState<{ label: string; status: string; date: string } | null>(null);
     const [dashboardLogsLoading, setDashboardLogsLoading] = useState(false);
 
@@ -94,15 +119,21 @@ export default function Attendance() {
     const [showDutyModal, setShowDutyModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [dutyLocationStatus, setDutyLocationStatus] = useState("idle");
-    const [dutyCapturedLocation, setDutyCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
+    const [dutyCapturedLocation, setDutyCapturedLocation] = useState<any>({ latitude: null, longitude: null, address: null });
     const [checkoutLocationStatus, setCheckoutLocationStatus] = useState("idle");
-    const [checkoutCapturedLocation, setCheckoutCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
+    const [checkoutCapturedLocation, setCheckoutCapturedLocation] = useState<any>({ latitude: null, longitude: null, address: null });
 
-    // 🆕 Edit Attendance modal state
+    // 🆕 FIX: location + punch state upar le aaye (pehle neeche declare the, readability/TDZ risk)
+    const [locationStatus, setLocationStatus] = useState("idle");
+    const [capturedLocation, setCapturedLocation] = useState<any>({ latitude: null, longitude: null, address: null });
+    const [punchMode, setPunchMode] = useState<any>(null);
+    const [todaysRecord, setTodaysRecord] = useState<any>(null);
+
+    // Edit Attendance modal state
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ attId: null, empName: "", attDate: "", status: "", checkIn: "", checkOut: "", remarks: "" });
+    const [editForm, setEditForm] = useState<any>({ attId: null, empName: "", attDate: "", status: "", checkIn: "", checkOut: "", remarks: "" });
 
-    // 🆕🆕 Back Date Attendance (HR direct entry) state
+    // Back Date Attendance (HR direct entry) state
     const [showBackDateModal, setShowBackDateModal] = useState(false);
     const [backDateEmpSearchOpen, setBackDateEmpSearchOpen] = useState(false);
     const [backDateEmpSearchText, setBackDateEmpSearchText] = useState("");
@@ -123,16 +154,15 @@ export default function Attendance() {
     };
 
     const LATE_CUTOFF = "09:05";
-    const toMinutes = (t) => {
+    const toMinutes = (t: string) => {
         if (!t) return null;
         const [h, m] = t.slice(0, 5).split(":").map(Number);
         if (Number.isNaN(h) || Number.isNaN(m)) return null;
         return h * 60 + m;
     };
-    const LATE_CUTOFF_MIN = toMinutes(LATE_CUTOFF);
+    const LATE_CUTOFF_MIN = toMinutes(LATE_CUTOFF) as number;
 
-
-    const isSunday = (dateStr) => {
+    const isSunday = (dateStr: string) => {
         if (!dateStr) return false;
         const d = new Date(dateStr);
         return !isNaN(d.getTime()) && d.getDay() === 0;
@@ -173,7 +203,6 @@ export default function Attendance() {
             setStatusFilter("");
             setDateFilter("");
         }
-        // 🆕 tab badalte hi dashboard ki inline list band kar do
         if (activeTab !== "dashboard") {
             setDashboardFilter(null);
         }
@@ -183,21 +212,20 @@ export default function Attendance() {
         setCurrentPage(1);
     }, [searchTerm]);
 
-
     useEffect(() => {
-        adminService.getEmployees().then(res => {
+        adminService.getEmployees().then((res: any) => {
             if (res.Success || res.success) {
                 const all = res.Data || res.data || [];
 
-                // 🆕 Resigned employees ki list bana lo — inki attendance logs/dashboard se hide karni hai
-                const resignedIds = new Set(
+                // Resigned employees ki list — inki attendance logs/dashboard/report se hide karni hai
+                const resignedIds = new Set<number>(
                     all
-                        .filter(emp => String(emp.employmentStatus ?? emp.EmploymentStatus ?? "").toUpperCase() === "RESIGNED")
-                        .map(emp => Number(emp.empId ?? emp.EmpId))
+                        .filter((emp: any) => String(emp.employmentStatus ?? emp.EmploymentStatus ?? "").toUpperCase() === "RESIGNED")
+                        .map((emp: any) => Number(emp.empId ?? emp.EmpId))
                 );
                 setResignedEmpIds(resignedIds);
 
-                const filtered = all.filter(emp => {
+                const filtered = all.filter((emp: any) => {
                     const empRole = String(emp.role ?? emp.Role ?? emp.roleName ?? emp.RoleName ?? "").toUpperCase();
                     const empStatus = String(emp.employmentStatus ?? emp.EmploymentStatus ?? "").toUpperCase();
                     return empRole !== "DIRECTOR" && empRole !== "CMD" && empStatus !== "RESIGNED";
@@ -207,7 +235,6 @@ export default function Attendance() {
         });
     }, []);
 
-
     useEffect(() => {
         if (!isAdminLevel && activeTab === "summaries") {
             setActiveTab("logs");
@@ -215,8 +242,11 @@ export default function Attendance() {
         if (!isTeamLevel && activeTab === "sundayWorking") {
             setActiveTab("logs");
         }
-        // 🆕 backDate tab bhi admin-only, non-admin ko wapas logs pe bhejo
         if (!isAdminLevel && activeTab === "backDate") {
+            setActiveTab("logs");
+        }
+        // 🆕🆕 monthlyReport bhi admin-only
+        if (!isAdminLevel && activeTab === "monthlyReport") {
             setActiveTab("logs");
         }
     }, [activeTab, isAdminLevel, isTeamLevel]);
@@ -230,8 +260,12 @@ export default function Attendance() {
             setLoading(false);
             return;
         }
-        // 🆕
         if (!isAdminLevel && activeTab === "backDate") {
+            setLoading(false);
+            return;
+        }
+        // 🆕🆕
+        if (!isAdminLevel && activeTab === "monthlyReport") {
             setLoading(false);
             return;
         }
@@ -246,9 +280,22 @@ export default function Attendance() {
                 const res = await adminService.getAttendanceAll();
                 if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
             } else if (activeTab === "backDate") {
-                // 🆕 back-date tab bhi attendanceLogs hi use karta hai (already-added back entries dikhane ke liye)
                 const res = await adminService.getAttendanceAll();
                 if (res.Success || res.success) setAttendanceLogs(res.Data || res.data || []);
+            } else if (activeTab === "monthlyReport") {
+                // 🆕🆕 Monthly Attendance Report
+                const res = await adminService.getMonthlyAttendanceReport(
+                    monthlyReportPeriod.month,
+                    monthlyReportPeriod.year,
+                    monthlyReportPeriod.empId ? Number(monthlyReportPeriod.empId) : undefined
+                );
+                if (res.Success || res.success) {
+                    const rows = res.Data || res.data || [];
+                    setMonthlyReportData(Array.isArray(rows) ? rows : []);
+                } else {
+                    setMonthlyReportData([]);
+                    showToast(res.Message || "Failed to load monthly report.", "error");
+                }
             } else if (activeTab === "sundayWorking") {
                 const res = await adminService.getSundayHolidayStatus(
                     sundayHolidayPeriod.month,
@@ -267,16 +314,21 @@ export default function Attendance() {
                 const res = await adminService.getSummary({ year: new Date().getFullYear() });
                 if (res.Success || res.success) setSummaries(res.Data || res.data || []);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Attendance data load error:", err);
+            if (activeTab === "monthlyReport") {
+                setMonthlyReportData([]);
+                showToast(err?.message || "Failed to load monthly report.", "error");
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    // 🆕 Dashboard card click handler — tab change nahi karta, sirf inline list dikhata/filter karta hai
-    const openDashboardFilter = async (label, status) => {
-        const today = new Date().toISOString().split("T")[0];
+    // Dashboard card click handler — tab change nahi karta, inline list dikhata hai
+    const openDashboardFilter = async (label: string, status: string) => {
+        // 🆕 FIX: toISOString() UTC deta hai → IST me subah ko kal ki date aa jaati thi. Local date use karo.
+        const today = getTodayDateStr();
         setDashboardFilter({ label, status, date: today });
         setCurrentPage(1);
         if (attendanceLogs.length === 0) {
@@ -292,7 +344,7 @@ export default function Attendance() {
         }
     };
 
-    const determinePunchMode = async (empId) => {
+    const determinePunchMode = async (empId: any) => {
         if (!empId) {
             setPunchMode(null);
             setTodaysRecord(null);
@@ -304,7 +356,7 @@ export default function Attendance() {
             const list = res.Data || res.data || [];
             const today = getTodayDateStr();
             const rec = list.find(
-                (r) => Number(r.empId) === Number(empId) && (r.attDate || "").slice(0, 10) === today
+                (r: any) => Number(r.empId) === Number(empId) && (r.attDate || "").slice(0, 10) === today
             );
             if (!rec) {
                 setTodaysRecord(null);
@@ -354,7 +406,7 @@ export default function Attendance() {
         setShowMarkModal(true);
     };
 
-    const handleMarkEmployeeChange = (empId) => {
+    const handleMarkEmployeeChange = (empId: string) => {
         setMarkForm(prev => ({ ...prev, empId }));
         determinePunchMode(empId);
     };
@@ -395,8 +447,8 @@ export default function Attendance() {
         setShowDutyModal(true);
     };
 
-    // 🆕 Edit Attendance handlers
-    const openEditModal = (log) => {
+    // Edit Attendance handlers
+    const openEditModal = (log: any) => {
         setEditForm({
             attId: log.attId,
             empName: log.fullName || `EMP-${log.empId}`,
@@ -409,7 +461,7 @@ export default function Attendance() {
         setShowEditModal(true);
     };
 
-    const handleEditAttendance = async (e) => {
+    const handleEditAttendance = async (e: any) => {
         e.preventDefault();
         setActionLoading(true);
         try {
@@ -428,7 +480,7 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to update attendance.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Edit attendance error:", err);
             showToast(err?.message || "Something went wrong while updating.", "error");
         } finally {
@@ -436,7 +488,7 @@ export default function Attendance() {
         }
     };
 
-    // 🆕🆕 Back Date Attendance handlers (HR/Admin direct entry, no GPS, no approval)
+    // Back Date Attendance handlers (HR/Admin direct entry, no GPS, no approval)
     const openBackDateModal = () => {
         setBackDateForm({
             empId: "",
@@ -451,7 +503,7 @@ export default function Attendance() {
         setShowBackDateModal(true);
     };
 
-    const handleBackDateAttendance = async (e) => {
+    const handleBackDateAttendance = async (e: any) => {
         e.preventDefault();
 
         if (!backDateForm.empId) {
@@ -498,7 +550,7 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to add back-date attendance.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Back-date attendance error:", err);
             showToast(err?.message || "Something went wrong while adding back-date attendance.", "error");
         } finally {
@@ -506,7 +558,7 @@ export default function Attendance() {
         }
     };
 
-    const reverseGeocode = async (latitude, longitude) => {
+    const reverseGeocode = async (latitude: number, longitude: number) => {
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
@@ -544,7 +596,7 @@ export default function Attendance() {
 
     type LocationResult = { latitude: number | null; longitude: number | null; address: string | null };
 
-    // IP-based fallback — jab GPS bilkul fail ho jaye (no signal / no permission)
+    // IP-based fallback — jab GPS bilkul fail ho jaye
     const getIpBasedLocation = async (): Promise<LocationResult> => {
         try {
             const res = await fetch("https://ipapi.co/json/");
@@ -587,22 +639,19 @@ export default function Attendance() {
                 resolve(loc);
             };
 
-            // 🆕 Attempt 1: High accuracy GPS — timeout badhaya (12s → 25s), GPS ko
-            // satellite lock lene ke liye zyada waqt chahiye hota hai, especially indoors.
+            // Attempt 1: High accuracy GPS (25s)
             navigator.geolocation.getCurrentPosition(
                 onSuccess,
                 (err) => {
                     console.warn("High-accuracy attempt 1 failed, retrying high-accuracy once more:", err.message);
 
-                    // 🆕 Attempt 2: Low-accuracy pe seedha girne se pehle high-accuracy
-                    // ko ek aur mauka do — GPS chip warm-up ke baad zyada accurate lock deta hai.
+                    // Attempt 2: high accuracy ek aur baar (20s)
                     navigator.geolocation.getCurrentPosition(
                         onSuccess,
                         (err2) => {
                             console.warn("High-accuracy attempt 2 failed, trying low-accuracy (network-based):", err2.message);
 
-                            // 🆕 Attempt 3: Ab hi low-accuracy try karo, aur maximumAge hata diya
-                            // (pehle 60000ms tha — 60 sec purani cached/stale location accept ho jaati thi)
+                            // Attempt 3: low accuracy, no stale cache
                             navigator.geolocation.getCurrentPosition(
                                 onSuccess,
                                 async (err3) => {
@@ -629,12 +678,6 @@ export default function Attendance() {
     const getCheckoutLocation = (): Promise<LocationResult> =>
         captureLocation(setCheckoutLocationStatus, setCheckoutCapturedLocation);
 
-    const [locationStatus, setLocationStatus] = useState("idle");
-    const [capturedLocation, setCapturedLocation] = useState({ latitude: null, longitude: null, address: null });
-
-    const [punchMode, setPunchMode] = useState(null);
-    const [todaysRecord, setTodaysRecord] = useState(null);
-
     useEffect(() => {
         if (punchMode === "out" && todaysRecord) {
             setMarkForm(prev => ({
@@ -660,7 +703,7 @@ export default function Attendance() {
         getCheckoutLocation();
     };
 
-    const handleMarkAttendance = async (e) => {
+    const handleMarkAttendance = async (e: any) => {
         e.preventDefault();
 
         if (punchMode === "done") {
@@ -682,7 +725,7 @@ export default function Attendance() {
             return;
         }
 
-        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && toMinutes(markForm.checkIn) > LATE_CUTOFF_MIN;
+        const isLatePunchIn = punchMode === "in" && !noPunchStatus && !!markForm.checkIn && (toMinutes(markForm.checkIn) as number) > LATE_CUTOFF_MIN;
 
         setActionLoading(true);
         try {
@@ -693,7 +736,7 @@ export default function Attendance() {
                 ? (todaysRecord?.checkIn || (markForm.checkIn ? markForm.checkIn + ":00" : null))
                 : (markForm.checkIn ? markForm.checkIn + ":00" : null);
 
-            const checkoutLoc = markForm.checkOut
+            const checkoutLoc: any = markForm.checkOut
                 ? (checkoutLocationStatus === "captured" ? checkoutCapturedLocation : await getCheckoutLocation())
                 : { latitude: null, longitude: null, address: null };
 
@@ -715,7 +758,6 @@ export default function Attendance() {
 
             const res = await adminService.markAttendance(payload);
             if (res.Success || res.success) {
-
                 setShowMarkModal(false);
                 setMarkForm({ empId: "", attDate: getTodayDateStr(), checkIn: "", checkOut: "", status: "Present", remarks: "" });
                 setLocationStatus("idle");
@@ -733,7 +775,7 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to mark attendance.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Mark attendance error:", err);
             showToast(err?.message || "Something went wrong while marking attendance.", "error");
         } finally {
@@ -741,7 +783,7 @@ export default function Attendance() {
         }
     };
 
-    const handleRegAction = async (requestId, statusAction) => {
+    const handleRegAction = async (requestId: any, statusAction: string) => {
         if (!isAdminLevel) {
             showToast("You don't have permission to approve or reject regularization requests.", "error");
             return;
@@ -756,13 +798,13 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to update request.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Reg action error:", err);
             showToast(err?.message || "Something went wrong while updating the request.", "error");
         }
     };
 
-    const handleLateApprovalAction = async (requestId, statusAction) => {
+    const handleLateApprovalAction = async (requestId: any, statusAction: string) => {
         if (!isAdminLevel) {
             showToast("You don't have permission to approve or reject attendance.", "error");
             return;
@@ -775,13 +817,13 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to update approval.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Late approval action error:", err);
             showToast(err?.message || "Something went wrong while updating approval.", "error");
         }
     };
 
-    const handleCreateRegRequest = async (e) => {
+    const handleCreateRegRequest = async (e: any) => {
         e.preventDefault();
         setActionLoading(true);
         try {
@@ -801,7 +843,7 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to submit regularization request.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Create reg request error:", err);
             showToast(err?.message || "Something went wrong while submitting the request.", "error");
         } finally {
@@ -809,7 +851,7 @@ export default function Attendance() {
         }
     };
 
-    const handleGenerateSummary = async (e) => {
+    const handleGenerateSummary = async (e: any) => {
         e.preventDefault();
         setActionLoading(true);
         try {
@@ -825,7 +867,7 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to generate summary.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Generate summary error:", err);
             showToast(err?.message || "Something went wrong while generating the summary.", "error");
         } finally {
@@ -833,7 +875,7 @@ export default function Attendance() {
         }
     };
 
-    const handleMarkSundayDuty = async (e) => {
+    const handleMarkSundayDuty = async (e: any) => {
         e.preventDefault();
         if (!dutyForm.empId) {
             showToast("Please select an employee.", "error");
@@ -857,7 +899,7 @@ export default function Attendance() {
             } else {
                 showToast(res.Message || "Failed to save Sunday/Holiday duty status.", "error");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Mark Sunday duty error:", err);
             showToast(err?.message || "Something went wrong while saving duty status.", "error");
         } finally {
@@ -872,7 +914,7 @@ export default function Attendance() {
                 sundayHolidayPeriod.month,
                 sundayHolidayPeriod.year
             );
-        } catch (err) {
+        } catch (err: any) {
             console.error("Download Sunday/Holiday PDF error:", err);
             showToast(err?.message || "Failed to download PDF.", "error");
         } finally {
@@ -886,11 +928,12 @@ export default function Attendance() {
         { key: "requests", label: "Attendance Approval Requests" },
         ...(isTeamLevel ? [{ key: "sundayWorking", label: "Sunday Working" }] : []),
         ...(isAdminLevel ? [{ key: "summaries", label: "Monthly Summary" }] : []),
-        // 🆕🆕 Back Date Attendance tab — HR/Admin only
-        ...(isAdminLevel ? [{ key: "backDate", label: "Back Date Attendance" }] : [])
+        ...(isAdminLevel ? [{ key: "backDate", label: "Back Date Attendance" }] : []),
+        // 🆕🆕 Monthly Attendance Report tab — HR/Admin only
+        ...(isAdminLevel ? [{ key: "monthlyReport", label: "Monthly Report" }] : [])
     ];
 
-    const filterBySearch = (list, fields) => {
+    const filterBySearch = (list: any[], fields: string[]) => {
         const q = searchTerm.trim().toLowerCase();
         if (!q) return list;
         return list.filter((row) =>
@@ -898,12 +941,12 @@ export default function Attendance() {
         );
     };
 
-    const paginate = (list) => {
+    const paginate = (list: any[]) => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return list.slice(start, start + ITEMS_PER_PAGE);
     };
 
-    const scopeToEmployee = (list) => {
+    const scopeToEmployee = (list: any[]) => {
         if (isAdminLevel) return list;
         if (isManager) {
             const teamIds = new Set(selectableEmployees.map((e) => Number(e.empId)));
@@ -913,7 +956,7 @@ export default function Attendance() {
     };
 
     const filteredLogsBase = attendanceLogs.filter((log) => {
-        if (resignedEmpIds.has(Number(log.empId))) return false; // 🆕 resigned employee hide
+        if (resignedEmpIds.has(Number(log.empId))) return false;
         const statusMatch = !statusFilter || log.status === statusFilter;
         const dateMatch = !dateFilter || (log.attDate || "").slice(0, 10) === dateFilter;
         return statusMatch && dateMatch;
@@ -939,7 +982,7 @@ export default function Attendance() {
         sundayHolidayMeta?.sundayDates ||
         sundayHolidayMeta?.SundayDates ||
         []
-    ).map(d => new Date(d));
+    ).map((d: any) => new Date(d));
 
     const filteredSundayHolidayData = filterBySearch(
         scopeToEmployee((sundayHolidayData || []).map(r => ({
@@ -950,51 +993,94 @@ export default function Attendance() {
         ["fullName"]
     );
 
-    // 🆕🆕 Back Date tab ke liye — sirf past-date, Manual-source entries dikhao (jo HR ne back-add ki)
+    // Back Date tab — sirf past-date entries
     const todayStrForBackDate = getTodayDateStr();
     const backDateLogsBase = attendanceLogs.filter((log) =>
-        (log.attDate || "").slice(0, 10) < todayStrForBackDate && !resignedEmpIds.has(Number(log.empId)) // 🆕
+        (log.attDate || "").slice(0, 10) < todayStrForBackDate && !resignedEmpIds.has(Number(log.empId))
     );
     const filteredBackDateLogs = filterBySearch(scopeToEmployee(backDateLogsBase), ["fullName", "status", "source"])
         .slice()
         .sort((a, b) => (b.attDate || "").slice(0, 10).localeCompare((a.attDate || "").slice(0, 10)));
 
+    // 🆕🆕 Monthly Report — camel/Pascal dono handle, resigned hide, search by name/code
+    const filteredMonthlyReport = filterBySearch(
+        scopeToEmployee(
+            (monthlyReportData || [])
+                .map((r: any) => ({
+                    empId: r.empId ?? r.EmpId,
+                    empCode: r.empCode ?? r.EmpCode ?? "",
+                    empName: r.empName ?? r.EmpName ?? "",
+                    daysPresent: r.daysPresent ?? r.DaysPresent ?? 0,
+                    halfDays: r.halfDays ?? r.HalfDays ?? 0,
+                    absentDays: r.absentDays ?? r.AbsentDays ?? 0,
+                    leaveDays: r.leaveDays ?? r.LeaveDays ?? 0,
+                    weekOffDays: r.weekOffDays ?? r.WeekOffDays ?? 0,
+                    holidayDays: r.holidayDays ?? r.HolidayDays ?? 0,
+                    lateCount: r.lateCount ?? r.LateCount ?? 0,
+                    totalWorkingHours: r.totalWorkingHours ?? r.TotalWorkingHours ?? 0,
+                    overtimeHours: r.overtimeHours ?? r.OvertimeHours ?? 0,
+                    sundaysWorked: r.sundaysWorked ?? r.SundaysWorked ?? 0,
+                    sundayHours: r.sundayHours ?? r.SundayHours ?? 0,
+                }))
+                .filter((r: any) => !resignedEmpIds.has(Number(r.empId)))
+        ),
+        ["empName", "empCode"]
+    );
+
+    const handleExportMonthlyCsv = () => {
+        const head = ["Code", "Employee", "Present", "Half Days", "Absent", "Leave", "Week Off", "Holiday", "Late", "Work Hrs", "OT Hrs", "Sundays Worked", "Sunday Hrs"];
+        const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+        const lines = filteredMonthlyReport.map((r: any) =>
+            [
+                r.empCode, r.empName, r.daysPresent, r.halfDays, r.absentDays, r.leaveDays,
+                r.weekOffDays, r.holidayDays, r.lateCount, r.totalWorkingHours, r.overtimeHours,
+                r.sundaysWorked, r.sundayHours
+            ].map(esc).join(",")
+        );
+        const csv = [head.map(esc).join(","), ...lines].join("\n");
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `Attendance_Report_${String(monthlyReportPeriod.month).padStart(2, "0")}_${monthlyReportPeriod.year}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    };
+
     const isDashboardAbsentFilter = dashboardFilter?.status === "Absent";
     const isDashboardLateFilter = dashboardFilter?.label === "Late Arrivals";
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    // 🆕 FIX: local date (UTC nahi)
+    const todayStr = getTodayDateStr();
     const lateArrivalsCount = attendanceLogs.filter(
         (log) => (log.attDate || "").slice(0, 10) === todayStr && log.checkIn && log.checkIn.slice(0, 5) > LATE_CUTOFF && !resignedEmpIds.has(Number(log.empId))
     ).length;
     const onHolidayCount = attendanceLogs.filter(
         (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Holiday" && !resignedEmpIds.has(Number(log.empId))
     ).length;
-
-    // 🆕 On Leave count
+    // 🆕 FIX: resigned filter yahan bhi lagaya (pehle missing tha)
     const onLeaveCount = attendanceLogs.filter(
-        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Leave"
+        (log) => (log.attDate || "").slice(0, 10) === todayStr && log.status === "Leave" && !resignedEmpIds.has(Number(log.empId))
     ).length;
 
     const dashboardAbsentEmployees = isDashboardAbsentFilter
         ? scopeToEmployee(
             employees.filter((emp) => {
                 const rec = attendanceLogs.find(
-                    (log) => Number(log.empId) === Number(emp.empId) && (log.attDate || "").slice(0, 10) === dashboardFilter.date
+                    (log) => Number(log.empId) === Number(emp.empId) && (log.attDate || "").slice(0, 10) === dashboardFilter!.date
                 );
-                // koi record nahi mila (punch hi nahi kiya) YA record explicitly "Absent" mark hai
+                // record nahi mila YA explicitly "Absent"
                 return !rec || rec.status === "Absent";
             })
         )
         : [];
 
-    // 🆕 Baaki cards (Total/Present/Late) ke liye purana logic — attendanceLogs se filter
     const dashboardFilteredLogs = dashboardFilter && !isDashboardAbsentFilter
         ? scopeToEmployee(
             attendanceLogs.filter((log) => {
-                if (resignedEmpIds.has(Number(log.empId))) return false; // 🆕 resigned employee hide
+                if (resignedEmpIds.has(Number(log.empId))) return false;
                 const dateMatch = (log.attDate || "").slice(0, 10) === dashboardFilter.date;
                 if (!dateMatch) return false;
-                // 🆕 Late Arrivals: 09:05 cutoff ke baad checkIn wale, "Late" status pe depend nahi karta
+                // Late Arrivals: 09:05 cutoff ke baad checkIn wale
                 if (isDashboardLateFilter) {
                     return !!log.checkIn && log.checkIn.slice(0, 5) > LATE_CUTOFF;
                 }
@@ -1004,7 +1090,6 @@ export default function Attendance() {
         )
         : [];
 
-    // 🆕 Dono me se jo applicable ho wahi "rows" ban jaata hai — table isi ko render karega
     const dashboardRows = isDashboardAbsentFilter ? dashboardAbsentEmployees : dashboardFilteredLogs;
 
     const pagedLogs = paginate(filteredLogs);
@@ -1012,20 +1097,20 @@ export default function Attendance() {
     const pagedSummaries = paginate(filteredSummaries);
     const pagedSundayHoliday = paginate(filteredSundayHolidayData);
     const pagedDashboardLogs = dashboardFilter ? paginate(dashboardRows) : [];
-    // 🆕🆕
     const pagedBackDateLogs = paginate(filteredBackDateLogs);
+    const pagedMonthlyReport = paginate(filteredMonthlyReport);
 
-    const activeListMeta = {
+    const activeListMeta: { total: number; placeholder: string } | undefined = ({
         logs: { total: filteredLogs.length, placeholder: "Search by employee, status, or source..." },
         requests: { total: filteredRequests.length, placeholder: "Search by employee, reason, or status..." },
         summaries: { total: filteredSummaries.length, placeholder: "Search by employee name..." },
         sundayWorking: { total: filteredSundayHolidayData.length, placeholder: "Search by employee name..." },
-        // 🆕🆕
         backDate: { total: filteredBackDateLogs.length, placeholder: "Search by employee, status..." },
-    }[activeTab];
+        // 🆕🆕
+        monthlyReport: { total: filteredMonthlyReport.length, placeholder: "Search by employee name or code..." },
+    } as any)[activeTab];
 
     const totalPages = activeListMeta ? Math.max(1, Math.ceil(activeListMeta.total / ITEMS_PER_PAGE)) : 1;
-    // 🆕 dashboard inline list ka apna pagination total
     const dashboardTotalPages = dashboardFilter ? Math.max(1, Math.ceil(dashboardRows.length / ITEMS_PER_PAGE)) : 1;
 
     const PaginationBar = () => {
@@ -1062,7 +1147,6 @@ export default function Attendance() {
         );
     };
 
-    // 🆕 Dashboard inline list ke liye alag pagination bar (apna total/page count use karta hai)
     const DashboardPaginationBar = () => {
         if (!dashboardFilter || dashboardRows.length === 0) return null;
         const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
@@ -1159,12 +1243,20 @@ export default function Attendance() {
                                 </button>
                             </>
                         ) : activeTab === "backDate" && isAdminLevel ? (
-                            // 🆕🆕 Back Date tab ka apna header action button
                             <button
                                 onClick={openBackDateModal}
                                 className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2"
                             >
                                 <i className="fa-solid fa-clock-rotate-left" /> Add Back Date Attendance
+                            </button>
+                        ) : activeTab === "monthlyReport" && isAdminLevel ? (
+                            // 🆕🆕 Monthly Report tab ka header action
+                            <button
+                                onClick={handleExportMonthlyCsv}
+                                disabled={filteredMonthlyReport.length === 0}
+                                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-[#0b2836] bg-amber-400 hover:bg-amber-500 transition-colors shrink-0 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <i className="fa-solid fa-file-csv" /> Export CSV
                             </button>
                         ) : (
                             <>
@@ -1246,10 +1338,50 @@ export default function Attendance() {
                     </div>
                 )}
 
-                {/* Search & Loading States */}
-                {/* 🆕 FIX: pehle ek "SearchBar" function-component tha jo har render pe naya define hota
-                    tha — React use naya component treat karke remount kar deta, isliye ek character
-                    type karte hi input focus lose ho jaata tha. Ab seedha inline JSX hai, koi remount nahi. */}
+                {/* 🆕🆕 Period + Employee Picker for Monthly Report */}
+                {!loading && activeTab === "monthlyReport" && isAdminLevel && (
+                    <div className="px-6 pt-5 flex flex-wrap items-center gap-3">
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Period Selector:</label>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <select
+                                value={monthlyReportPeriod.month}
+                                onChange={(e) => setMonthlyReportPeriod(prev => ({ ...prev, month: Number(e.target.value) }))}
+                                className="px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium bg-slate-50 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
+                            >
+                                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                                    <option key={m} value={m}>{new Date(2000, m - 1, 1).toLocaleString("default", { month: "long" })}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={monthlyReportPeriod.year}
+                                onChange={(e) => setMonthlyReportPeriod(prev => ({ ...prev, year: Number(e.target.value) }))}
+                                className="px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium bg-slate-50 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
+                            >
+                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={monthlyReportPeriod.empId}
+                                onChange={(e) => setMonthlyReportPeriod(prev => ({ ...prev, empId: e.target.value }))}
+                                className="px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium bg-slate-50 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer max-w-[240px]"
+                            >
+                                <option value="">All Employees</option>
+                                {employees.map((emp) => (
+                                    <option key={emp.empId} value={emp.empId}>{emp.firstName} {emp.lastName} ({emp.empCode})</option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={loadAttendanceData}
+                                className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition-all"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Search bar — inline JSX (component bana ke define karne se input focus lose hota tha) */}
                 {!loading && activeListMeta && (
                     <div className="bg-white px-6 pt-5 pb-2">
                         <div className="relative group max-w-sm">
@@ -1275,16 +1407,16 @@ export default function Attendance() {
                     </div>
                 ) : activeTab === "dashboard" && isCMD ? (
                     <div className="p-6">
-                            <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                         <button
-                            type="button"
-                            onClick={() => openDashboardFilter("Total Employees", "")}
-                            className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
-                        >
-                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
-                            <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
-                        </button>
+                        <h3 className="text-lg font-bold text-slate-800 mb-5">Today's Attendance Overview</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                            <button
+                                type="button"
+                                onClick={() => openDashboardFilter("Total Employees", "")}
+                                className={`p-5 rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow text-left cursor-pointer ${dashboardFilter?.label === "Total Employees" ? "border-slate-400 ring-2 ring-slate-200" : "border-slate-200"}`}
+                            >
+                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Total Employees</p>
+                                <p className="text-3xl font-black text-slate-800">{dashboardStats?.totalEmployees || 0}</p>
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => openDashboardFilter("Present Today", "Present")}
@@ -1317,20 +1449,17 @@ export default function Attendance() {
                                 <p className="text-[11px] text-violet-600 font-bold uppercase tracking-wider mb-1">On Holiday</p>
                                 <p className="text-3xl font-black text-violet-700">{onHolidayCount}</p>
                             </button>
-
-                                {/* 🆕 On Leave card */}
-                                <button
-                                    type="button"
-                                    onClick={() => openDashboardFilter("On Leave", "Leave")}
-                                    className={`p-5 rounded-2xl border bg-sky-50/50 shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "On Leave" ? "border-sky-400 ring-2 ring-sky-200" : "border-sky-100"}`}
-                                >
-                                    <p className="text-[11px] text-sky-600 font-bold uppercase tracking-wider mb-1">On Leave</p>
-                                    <p className="text-3xl font-black text-sky-700">{onLeaveCount}</p>
-                                </button>
-
+                            <button
+                                type="button"
+                                onClick={() => openDashboardFilter("On Leave", "Leave")}
+                                className={`p-5 rounded-2xl border bg-sky-50/50 shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-left cursor-pointer ${dashboardFilter?.label === "On Leave" ? "border-sky-400 ring-2 ring-sky-200" : "border-sky-100"}`}
+                            >
+                                <p className="text-[11px] text-sky-600 font-bold uppercase tracking-wider mb-1">On Leave</p>
+                                <p className="text-3xl font-black text-sky-700">{onLeaveCount}</p>
+                            </button>
                         </div>
 
-                        {/* 🆕 Card click ka result — same page, neeche inline list */}
+                        {/* Card click ka result — same page, neeche inline list */}
                         {dashboardFilter ? (
                             <div className="border border-slate-200 rounded-2xl overflow-hidden">
                                 <div className="flex justify-between items-center px-6 py-4 bg-slate-50/80 border-b border-slate-200">
@@ -1374,7 +1503,7 @@ export default function Attendance() {
                                                         </td>
                                                     </tr>
                                                 ) : isDashboardAbsentFilter ? (
-                                                    // 🆕 Absent rows employee-master se aati hai (koi punch record hi nahi), isliye alag field names
+                                                    // Absent rows employee-master se aati hai, isliye alag field names
                                                     pagedDashboardLogs.map((emp) => (
                                                         <tr key={emp.empId} className="hover:bg-slate-50/60 transition-colors">
                                                             <td className="px-6 py-4 font-bold text-slate-900">
@@ -1387,10 +1516,7 @@ export default function Attendance() {
                                                             <td className="px-6 py-4 font-mono font-medium text-slate-400">--:--</td>
                                                             <td className="px-6 py-4 text-[13px] text-slate-300">—</td>
                                                             <td className="px-6 py-4">
-                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border bg-rose-50 text-rose-700 border-rose-200/50">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                                                    Absent
-                                                                </span>
+                                                                <StatusBadge status="Absent" />
                                                             </td>
                                                         </tr>
                                                     ))
@@ -1409,10 +1535,7 @@ export default function Attendance() {
                                                                 {log.locationAddress ? log.locationAddress : log.latitude && log.longitude ? `${Number(log.latitude).toFixed(5)}, ${Number(log.longitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
-                                                                    <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />
-                                                                    {log.status}
-                                                                </span>
+                                                                <StatusBadge status={log.status} />
                                                             </td>
                                                         </tr>
                                                     ))
@@ -1444,13 +1567,14 @@ export default function Attendance() {
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Approval</th>
                                     <th className="px-6 py-4">Source</th>
-                                    <th className="px-6 py-4">Actions</th>
+                                    {/* 🆕 FIX: Actions header sirf admin ko (td bhi sirf admin ko tha → misalignment) */}
+                                    {isAdminLevel && <th className="px-6 py-4">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                 {filteredLogs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                        <td colSpan={isAdminLevel ? 10 : 9} className="px-6 py-16 text-center text-slate-400 font-medium">
                                             {searchTerm ? "No matching attendance records found" : "No attendance records found"}
                                         </td>
                                     </tr>
@@ -1478,10 +1602,7 @@ export default function Attendance() {
                                             {log.checkOutLocationAddress ? log.checkOutLocationAddress : log.checkOutLatitude && log.checkOutLongitude ? `${Number(log.checkOutLatitude).toFixed(5)}, ${Number(log.checkOutLongitude).toFixed(5)}` : <span className="text-slate-300">—</span>}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />
-                                                {log.status}
-                                            </span>
+                                            <StatusBadge status={log.status} />
                                         </td>
                                         <td className="px-6 py-4">
                                             {log.approvalStatus === "Pending Approval" ? (
@@ -1584,67 +1705,79 @@ export default function Attendance() {
                         <PaginationBar />
                     </div>
                 ) : activeTab === "sundayWorking" && isTeamLevel ? (
-                    <div className="overflow-x-auto flex-1">
-                        <table className="w-full text-left border-collapse min-w-[900px]">
-                            <thead>
-                                <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
-                                    <th className="px-4 py-4 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Employee</th>
-                                    {sundayDateColumns.map((d, i) => (
-                                        <th key={i} className="px-3 py-4 text-center whitespace-nowrap border-l border-slate-200/50">
-                                            {d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                                        </th>
-                                    ))}
-                                    <th className="px-4 py-4 text-center border-l border-slate-200/50">Duty</th>
-                                    <th className="px-4 py-4 text-center border-l border-slate-200/50">Comp-Off</th>
-                                    <th className="px-4 py-4 text-center border-l border-slate-200/50">Prev Bal</th>
-                                    <th className="px-4 py-4 text-center border-l border-slate-200/50">Final Dues</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-sm">
-                                {filteredSundayHolidayData.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={sundayDateColumns.length + 5} className="px-6 py-16 text-center text-slate-400 font-medium">
-                                            {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
-                                        </td>
+                    <div className="flex-1 flex flex-col">
+                        <div className="overflow-x-auto flex-1">
+                            <table className="w-full text-left border-collapse min-w-[900px]">
+                                <thead>
+                                    <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                                        <th className="px-4 py-4 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Employee</th>
+                                        {sundayDateColumns.map((d: Date, i: number) => (
+                                            <th key={i} className="px-3 py-4 text-center whitespace-nowrap border-l border-slate-200/50">
+                                                {d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                                            </th>
+                                        ))}
+                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Duty</th>
+                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Comp-Off</th>
+                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Prev Bal</th>
+                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Final Dues</th>
                                     </tr>
-                                ) : pagedSundayHoliday.map((row, idx) => {
-                                    const cells = row.cells || row.Cells || [];
-                                    const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
-                                    return (
-                                        <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/60 transition-colors">
-                                            <td className="px-4 py-3 font-bold text-slate-900 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
-                                                {empName}
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {filteredSundayHolidayData.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={sundayDateColumns.length + 5} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                                {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
                                             </td>
-                                            {sundayDateColumns.map((d, i) => {
-                                                const cell = cells.find(c => new Date(c.date || c.Date).toDateString() === d.toDateString());
-                                                const status = cell?.status || cell?.Status || "OFF";
-                                                const isOnDuty = status.startsWith("ON-DUTY") || status === "Present";
-                                                const isAbsent = status === "Absent";
-                                                const isHalfDay = status === "Half-Day";
-                                                return (
-                                                    <td key={i} className="px-3 py-3 text-center border-l border-slate-100">
-                                                        <span
-                                                            title={status}
-                                                            className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider whitespace-nowrap border ${isOnDuty ? "bg-emerald-50 text-emerald-700 border-emerald-200/50"
-                                                                : isAbsent ? "bg-rose-50 text-rose-700 border-rose-200/50"
-                                                                    : isHalfDay ? "bg-amber-50 text-amber-700 border-amber-200/50"
-                                                                        : "bg-slate-50 text-slate-400 border-slate-200"
-                                                                }`}
-                                                        >
-                                                            {status === "N/A" ? "N/A" : status.toUpperCase()}
-                                                        </span>
-                                                    </td>
-                                                );
-                                            })}
-                                            <td className="px-4 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{row.monthDutyCount ?? row.MonthDutyCount ?? 0}</td>
-                                            <td className="px-4 py-3 text-center font-mono font-bold text-amber-600 border-l border-slate-100">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
-                                            <td className="px-4 py-3 text-center font-mono font-semibold text-slate-500 border-l border-slate-100">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
-                                            <td className="px-4 py-3 text-center font-mono font-black text-[#0b2836] border-l border-slate-100 bg-slate-50/50">{row.finalDues ?? row.FinalDues ?? 0}</td>
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                    ) : pagedSundayHoliday.map((row, idx) => {
+                                        const cells = row.cells || row.Cells || [];
+                                        const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
+                                        // 🆕 Duty count cells se: Present / ON-DUTY = 1, Half-Day = 0.5
+                                        const computedDuty = sundayDateColumns.reduce((sum: number, d: Date) => {
+                                            const cell = cells.find((c: any) => new Date(c.date || c.Date).toDateString() === d.toDateString());
+                                            const st = String(cell?.status || cell?.Status || "").toUpperCase();
+                                            if (st.startsWith("ON-DUTY") || st === "PRESENT") return sum + 1;
+                                            if (st === "HALF-DAY") return sum + 0.5;
+                                            return sum;
+                                        }, 0);
+                                        const backendDuty = Number(row.monthDutyCount ?? row.MonthDutyCount ?? 0);
+                                        const dutyCount = Math.max(computedDuty, backendDuty);
+                                        return (
+                                            <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/60 transition-colors">
+                                                <td className="px-4 py-3 font-bold text-slate-900 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
+                                                    {empName}
+                                                </td>
+                                                {sundayDateColumns.map((d: Date, i: number) => {
+                                                    const cell = cells.find((c: any) => new Date(c.date || c.Date).toDateString() === d.toDateString());
+                                                    const status = cell?.status || cell?.Status || "OFF";
+                                                    const isOnDuty = status.startsWith("ON-DUTY") || status === "Present";
+                                                    const isAbsent = status === "Absent";
+                                                    const isHalfDay = status === "Half-Day";
+                                                    return (
+                                                        <td key={i} className="px-3 py-3 text-center border-l border-slate-100">
+                                                            <span
+                                                                title={status}
+                                                                className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider whitespace-nowrap border ${isOnDuty ? "bg-emerald-50 text-emerald-700 border-emerald-200/50"
+                                                                    : isAbsent ? "bg-rose-50 text-rose-700 border-rose-200/50"
+                                                                        : isHalfDay ? "bg-amber-50 text-amber-700 border-amber-200/50"
+                                                                            : "bg-slate-50 text-slate-400 border-slate-200"
+                                                                    }`}
+                                                            >
+                                                                {status === "N/A" ? "N/A" : status.toUpperCase()}
+                                                            </span>
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="px-4 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{dutyCount}</td>
+                                                <td className="px-4 py-3 text-center font-mono font-bold text-amber-600 border-l border-slate-100">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
+                                                <td className="px-4 py-3 text-center font-mono font-semibold text-slate-500 border-l border-slate-100">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
+                                                <td className="px-4 py-3 text-center font-mono font-black text-[#0b2836] border-l border-slate-100 bg-slate-50/50">{row.finalDues ?? row.FinalDues ?? 0}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                         <PaginationBar />
                     </div>
                 ) : activeTab === "summaries" && isAdminLevel ? (
@@ -1658,13 +1791,12 @@ export default function Attendance() {
                                     <th className="px-6 py-4 text-center text-emerald-600">Present</th>
                                     <th className="px-6 py-4 text-center text-rose-600">Absent</th>
                                     <th className="px-6 py-4 text-center text-amber-600">Late Marks</th>
-
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
                                 {filteredSummaries.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                        <td colSpan={6} className="px-6 py-16 text-center text-slate-400 font-medium">
                                             {searchTerm ? "No matching summaries found" : "No summaries found. Generate one using the button above."}
                                         </td>
                                     </tr>
@@ -1676,7 +1808,6 @@ export default function Attendance() {
                                         <td className="px-6 py-4 text-center font-mono font-bold text-emerald-600 bg-emerald-50/30">{sum.presentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-rose-600 bg-rose-50/30">{sum.absentDays}</td>
                                         <td className="px-6 py-4 text-center font-mono font-bold text-amber-600 bg-amber-50/30">{sum.lateMarks}</td>
-
                                     </tr>
                                 ))}
                             </tbody>
@@ -1684,7 +1815,6 @@ export default function Attendance() {
                         <PaginationBar />
                     </div>
                 ) : activeTab === "backDate" && isAdminLevel ? (
-                    // 🆕🆕 Back Date Attendance tab content — HR/Admin ne jo bhi back-date entries daali hain unki list
                     <div className="overflow-x-auto flex-1">
                         <table className="w-full text-left border-collapse min-w-[800px]">
                             <thead>
@@ -1716,10 +1846,7 @@ export default function Attendance() {
                                         <td className="px-6 py-4 font-mono font-medium text-slate-600">{log.checkIn || "--:--"}</td>
                                         <td className="px-6 py-4 font-mono font-medium text-slate-600">{log.checkOut || "--:--"}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${log.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" : "bg-rose-50 text-rose-700 border-rose-200/50"}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${log.status === "Present" ? "bg-emerald-500" : "bg-rose-500"}`} />
-                                                {log.status}
-                                            </span>
+                                            <StatusBadge status={log.status} />
                                         </td>
                                         <td className="px-6 py-4 text-xs font-semibold">
                                             <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-500">{log.source}</span>
@@ -1736,6 +1863,58 @@ export default function Attendance() {
                                 ))}
                             </tbody>
                         </table>
+                        <PaginationBar />
+                    </div>
+                ) : activeTab === "monthlyReport" && isAdminLevel ? (
+                    // 🆕🆕 Monthly Attendance Report tab
+                    <div className="flex-1 flex flex-col">
+                        <div className="overflow-x-auto flex-1">
+                            <table className="w-full text-left border-collapse min-w-[1000px]">
+                                <thead>
+                                    <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                                        <th className="px-4 py-4 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Employee</th>
+                                        <th className="px-3 py-4 text-center text-emerald-600">Present</th>
+                                        <th className="px-3 py-4 text-center">Half Days</th>
+                                        <th className="px-3 py-4 text-center text-rose-600">Absent</th>
+                                        <th className="px-3 py-4 text-center text-sky-600">Leave</th>
+                                        <th className="px-3 py-4 text-center">Week Off</th>
+                                        <th className="px-3 py-4 text-center text-violet-600">Holiday</th>
+                                        <th className="px-3 py-4 text-center text-amber-600">Late</th>
+                                        <th className="px-3 py-4 text-center border-l border-slate-200/50">Work Hrs</th>
+                                        <th className="px-3 py-4 text-center">OT Hrs</th>
+                                        <th className="px-3 py-4 text-center border-l border-slate-200/50">Sundays</th>
+                                        <th className="px-3 py-4 text-center">Sun Hrs</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {filteredMonthlyReport.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={12} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                                {searchTerm ? "No matching employees found" : "No report data found for this period"}
+                                            </td>
+                                        </tr>
+                                    ) : pagedMonthlyReport.map((r: any) => (
+                                        <tr key={r.empId} className="hover:bg-slate-50/60 transition-colors">
+                                            <td className="px-4 py-3 font-bold text-slate-900 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
+                                                {r.empName || `EMP-${r.empId}`}{" "}
+                                                <span className="text-slate-400 font-normal text-xs">({r.empCode || "-"})</span>
+                                            </td>
+                                            <td className="px-3 py-3 text-center font-mono font-bold text-emerald-600 bg-emerald-50/30">{r.daysPresent}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-semibold text-slate-600">{r.halfDays}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-bold text-rose-600 bg-rose-50/30">{r.absentDays}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-semibold text-sky-600">{r.leaveDays}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-semibold text-slate-500">{r.weekOffDays}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-semibold text-violet-600">{r.holidayDays}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-bold text-amber-600 bg-amber-50/30">{r.lateCount}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{Number(r.totalWorkingHours).toFixed(2)}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-semibold text-slate-600">{Number(r.overtimeHours).toFixed(2)}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{r.sundaysWorked}</td>
+                                            <td className="px-3 py-3 text-center font-mono font-semibold text-slate-600">{Number(r.sundayHours).toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                         <PaginationBar />
                     </div>
                 ) : (
@@ -2204,7 +2383,7 @@ export default function Attendance() {
                 </div>
             )}
 
-            {/* 🆕 Edit Attendance Modal (Admin Only) */}
+            {/* Edit Attendance Modal (Admin Only) */}
             {showEditModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white border border-slate-200 w-full max-w-md rounded-[24px] p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
@@ -2278,7 +2457,7 @@ export default function Attendance() {
                 </div>
             )}
 
-            {/* 🆕🆕 Back Date Attendance Modal (HR/Admin Only) */}
+            {/* Back Date Attendance Modal (HR/Admin Only) */}
             {showBackDateModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white border border-slate-200 w-full max-w-md rounded-[24px] p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
