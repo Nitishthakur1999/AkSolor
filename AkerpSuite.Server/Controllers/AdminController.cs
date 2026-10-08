@@ -677,14 +677,6 @@ namespace AkerpSuite.Server.Controllers
         }
 
         // POST api/leave/allocation
-        //[HttpPost("allocation")]
-        //[RequirePermission("LeaveBalance", "Update")]  
-        //public async Task<IActionResult> SaveLeaveAllocation([FromBody] SaveLeaveAllocationRequestDto request)
-        //{
-        //    var data = await _service.SaveLeaveAllocationAsync(request);
-        //    return Ok(new { Success = true, Message = "Leave allocation saved successfully", Data = data });
-        //}
-        // POST api/leave/allocation
         [HttpPost("allocation")]
         [RequirePermission("LeaveBalance", "Update")]
         public async Task<IActionResult> SaveLeaveAllocation([FromBody] SaveLeaveAllocationRequestDto request)

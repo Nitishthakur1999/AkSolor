@@ -187,6 +187,9 @@ export const adminService = {
     deleteLeaveBalance: (balanceId?: any) => apiCall(`${API_BASE}/balance/${balanceId}`, "DELETE"),
     getLeaveAllocation: (empId: any, year: any) => apiCall(`${API_BASE}/allocation/${empId}?year=${year}`),
     saveLeaveAllocation: (body?: any) => apiCall(`${API_BASE}/allocation`, "POST", body),
+    shortLeavePunchOut: (leaveId?: any) => apiCall(`${BASE}/api/hr/leave/${leaveId}/punch-out`, "POST"),
+    shortLeavePunchIn: (leaveId?: any) => apiCall(`${BASE}/api/hr/leave/${leaveId}/punch-in`, "POST"),
+
 
     // 10. Page Master
     getAllPages: () => apiCall(`${API_BASE}/getallpages`),

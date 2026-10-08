@@ -3,9 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
 // ───────────────────────── Date/Time helpers ─────────────────────────
-// Server/DB clock timezone offset (bina Z wali createdAt isi offset me save hai).
-// Proof: real apply 10:28 AM IST = 04:58 UTC, raw = 21:58 (previous day) => server = UTC-7.
-// Agar backend ko UTC me fix kar diya (DateTime.UtcNow / GETUTCDATE) to "+00:00" kar do.
+
 const SERVER_UTC_OFFSET = "-07:00";
 
 // TEMP DEBUG: true karo to Applied On ke neeche raw createdAt dikhega.
@@ -22,7 +20,7 @@ const parseServerDate = (value) => {
     return isNaN(d.getTime()) ? null : d;
 };
 
-// Applied On: date + time, hamesha IST me
+// Applied On: date + time, hamesha IST me (createdAt server tz se convert hota hai)
 const formatDateTime = (value) => {
     const d = parseServerDate(value);
     if (!d) return null;
@@ -46,20 +44,58 @@ const formatDateOnly = (value) => {
     });
 };
 
-// Short leave time: "14:30:00" -> "02:30 PM" (timezone shift nahi)
-const formatTime = (value) => {
-    const m = String(value || "").match(/^(\d{2}):(\d{2})/);
+// FIX: punch / from / to time pehle se IST (naive) hai -> koi timezone conversion nahi.
+// Accepts "10:49:00", "10:49", "2026-10-08T10:49:00", "2026-10-08 10:49:00" -> "10:49 AM"
+const fmtClock = (value) => {
+    if (!value) return "-";
+    const m = String(value).trim().match(/(?:[T ]|^)(\d{1,2}):(\d{2})/);
     if (!m) return "-";
-    let h = +m[1];
+    const h = Number(m[1]);
+    const min = m[2];
+    if (isNaN(h) || h > 23) return "-";
     const ap = h >= 12 ? "PM" : "AM";
-    h = h % 12 || 12;
-    return `${String(h).padStart(2, "0")}:${m[2]} ${ap}`;
+    return `${String(h % 12 || 12).padStart(2, "0")}:${min} ${ap}`;
+};
+
+// 0.01 -> "<1 min", 0.5 -> "30 min", 1.25 -> "1 hr 15 min"
+const formatHours = (h) => {
+    if (h === null || h === undefined || h === "") return "";
+    const n = Number(h);
+    if (isNaN(n)) return "";
+    const mins = Math.round(n * 60);
+    if (mins < 1) return "<1 min";
+    if (mins < 60) return `${mins} min`;
+    const hr = Math.floor(mins / 60);
+    const rest = mins % 60;
+    return rest ? `${hr} hr ${rest} min` : `${hr} hr`;
 };
 
 // Short leave detect: flag ya time ya naam, kuch bhi mile to short leave
 const isShort = (r) =>
     r.isShortLeave === true || r.isShortLeave === 1 ||
     !!r.fromTime || r.leaveName === "Short Leave";
+
+const STATUS_BADGE = {
+    Approved: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+    Pending: "bg-amber-50 text-amber-700 border-amber-200/50",
+    Forwarded: "bg-sky-50 text-sky-700 border-sky-200/50",
+    Cancelled: "bg-slate-100 text-slate-500 border-slate-200",
+    Rejected: "bg-rose-50 text-rose-700 border-rose-200/50",
+};
+
+const STATUS_DOT = {
+    Approved: "bg-emerald-500",
+    Pending: "bg-amber-500",
+    Forwarded: "bg-sky-500",
+    Cancelled: "bg-slate-400",
+    Rejected: "bg-rose-500",
+};
+
+const STATUS_NOTE = {
+    Approved: "text-emerald-600",
+    Rejected: "text-rose-600",
+    Forwarded: "text-sky-600",
+};
 
 export default function LeaveRequests() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -312,171 +348,218 @@ export default function LeaveRequests() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
-                                {currentItems.map((req) => (
-                                    <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900">{req.fullName || `EMP-${req.empId}`}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {(() => {
-                                                const applied = formatDateTime(req.createdAt);
-                                                return applied ? (
+                                {currentItems.map((req) => {
+                                    const short = isShort(req);
+                                    // API me punch fields hon to wahi; purani API (fields nahi) ho to from/to time fallback
+                                    const hasPunchFields = "punchOutTime" in req || "punchInTime" in req;
+                                    const outVal = hasPunchFields ? req.punchOutTime : req.fromTime;
+                                    const inVal = hasPunchFields ? req.punchInTime : req.toTime;
+                                    const hasOut = !!outVal;
+                                    const hasIn = !!inVal;
+                                    // Short leave: jab tak employee Punch Out + Punch In nahi karta, HR action nahi le sakta.
+                                    // (SP sirf punched-in rows bhejta hai, ye sirf safety net hai)
+                                    const awaitingOut =
+                                        short && hasPunchFields && !(hasOut && hasIn) && req.status === "Pending";
+                                    return (
+                                        // h-[88px]: short leave aur normal rows ki height same rahe
+                                        <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors group h-[88px]">
+                                            <td className="px-6 py-4 align-middle">
+                                                <div className="font-bold text-slate-900">{req.fullName || `EMP-${req.empId}`}</div>
+                                            </td>
+                                            <td className="px-6 py-4 align-middle">
+                                                {(() => {
+                                                    const applied = formatDateTime(req.createdAt);
+                                                    return applied ? (
+                                                        <>
+                                                            <div className="font-bold text-slate-800">{applied.date}</div>
+                                                            <div className="text-[11px] font-medium text-slate-500 mt-0.5">{applied.time}</div>
+                                                            {SHOW_RAW_DEBUG && (
+                                                                <div className="text-[9px] text-red-500 mt-0.5">raw: {String(req.createdAt)}</div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-slate-400">-</span>
+                                                    );
+                                                })()}
+                                            </td>
+
+                                            {/* Leave Type: short leave = red badge */}
+                                            <td className="px-6 py-4 align-middle">
+                                                <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${short
+                                                    ? "bg-red-50 text-red-600 border-red-300"
+                                                    : "bg-slate-100 text-slate-600 border-slate-200"
+                                                    }`}>
+                                                    {short
+                                                        ? "Short Leave"
+                                                        : (req.leaveName || `Type-${req.leaveTypeId}`)}
+                                                </span>
+                                            </td>
+
+                                            {/* Duration: short leave = punch time (already IST) + time away, normal = dates + days */}
+                                            <td className="px-6 py-4 align-middle">
+                                                {short ? (
                                                     <>
-                                                        <div className="font-bold text-slate-800">{applied.date}</div>
-                                                        <div className="text-[11px] font-medium text-slate-500 mt-0.5">{applied.time}</div>
-                                                        {SHOW_RAW_DEBUG && (
-                                                            <div className="text-[9px] text-red-500 mt-0.5">raw: {String(req.createdAt)}</div>
-                                                        )}
+                                                        <div className="text-[11px] font-medium text-slate-500">
+                                                            {formatDateOnly(req.fromDate)}
+                                                        </div>
+                                                        <div className="font-bold text-slate-800 mt-0.5">
+                                                            {hasOut ? fmtClock(outVal) : "--:--"}
+                                                            {" – "}
+                                                            {hasIn ? fmtClock(inVal) : "--:--"}
+                                                        </div>
+                                                        <div className="text-[11px] font-bold text-red-600 mt-0.5">
+                                                            {!hasOut
+                                                                ? "Not punched out"
+                                                                : !hasIn
+                                                                    ? "Out, not back yet"
+                                                                    : formatHours(req.durationHours) || "—"}
+                                                        </div>
                                                     </>
                                                 ) : (
-                                                    <span className="text-slate-400">-</span>
-                                                );
-                                            })()}
-                                        </td>
+                                                    <>
+                                                        <div className="text-[11px] font-medium text-slate-500">{formatDateOnly(req.fromDate)} to</div>
+                                                        <div className="font-bold text-slate-800 mt-0.5">
+                                                            {formatDateOnly(req.toDate)}
+                                                            <span className="text-amber-600 ml-1.5 font-bold">({req.totalDays} Days)</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </td>
 
-                                        {/* Leave Type: short leave = red badge */}
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${isShort(req)
-                                                ? "bg-red-50 text-red-600 border-red-300"
-                                                : "bg-slate-100 text-slate-600 border-slate-200"
-                                                }`}>
-                                                {isShort(req)
-                                                    ? "Short Leave"
-                                                    : (req.leaveName || `Type-${req.leaveTypeId}`)}
-                                            </span>
-                                        </td>
+                                            <td className="px-6 py-4 align-middle text-xs font-medium text-slate-600 max-w-[200px] truncate" title={req.reason}>
+                                                {req.reason}
+                                            </td>
+                                            <td className="px-6 py-4 align-middle">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${STATUS_BADGE[req.status] || STATUS_BADGE.Rejected}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[req.status] || STATUS_DOT.Rejected}`} />
+                                                    {req.status}
+                                                </span>
 
-                                        {/* Duration: short leave = time + hours, normal = dates + days */}
-                                        <td className="px-6 py-4">
-                                            {isShort(req) ? (
-                                                <>
-                                                    <div className="text-[11px] font-medium text-slate-500">
-                                                        {formatDateOnly(req.fromDate)}
+                                                {req.forwardedToRole && (
+                                                    <div className={`text-[10px] font-bold mt-1.5 uppercase tracking-wide ${STATUS_NOTE[req.status] || "text-slate-400"}`}>
+                                                        {req.status === "Forwarded" ? `→ ${req.forwardedToRole}` : `${req.status} by ${req.forwardedToRole}`}
                                                     </div>
-                                                    <div className="font-bold text-slate-800 mt-0.5">
-                                                        {formatTime(req.fromTime)} – {formatTime(req.toTime)}
-                                                        <span className="text-red-600 ml-1.5 font-bold">
-                                                            ({req.durationHours} hr)
+                                                )}
+
+                                                {/* Short leave: punch state dikhao */}
+                                                {short && !req.forwardedToRole && (hasOut || hasIn) && (
+                                                    <div className="text-[10px] font-bold mt-1.5 uppercase tracking-wide text-violet-600">
+                                                        {hasIn ? "Back" : "Out"} at {fmtClock(hasIn ? inVal : outVal)}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 align-middle text-center">
+                                                {activeTab === "hr" && req.status === "Pending" ? (
+                                                    awaitingOut ? (
+                                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">
+                                                            {hasOut ? "Waiting for punch in" : "Waiting for punch out"}
                                                         </span>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="text-[11px] font-medium text-slate-500">{formatDateOnly(req.fromDate)} to</div>
-                                                    <div className="font-bold text-slate-800 mt-0.5">
-                                                        {formatDateOnly(req.toDate)}
-                                                        <span className="text-amber-600 ml-1.5 font-bold">({req.totalDays} Days)</span>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </td>
-
-                                        <td className="px-6 py-4 text-xs font-medium text-slate-600 max-w-[200px] truncate" title={req.reason}>
-                                            {req.reason}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${req.status === "Approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200/50" :
-                                                req.status === "Pending" ? "bg-amber-50 text-amber-700 border-amber-200/50" :
-                                                    req.status === "Forwarded" ? "bg-sky-50 text-sky-700 border-sky-200/50" :
-                                                        "bg-rose-50 text-rose-700 border-rose-200/50"
-                                                }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${req.status === "Approved" ? "bg-emerald-500" :
-                                                    req.status === "Pending" ? "bg-amber-500" :
-                                                        req.status === "Forwarded" ? "bg-sky-500" :
-                                                            "bg-rose-500"
-                                                    }`} />
-                                                {req.status}
-                                            </span>
-
-                                            {req.forwardedToRole && (
-                                                <div className={`text-[10px] font-bold mt-1.5 uppercase tracking-wide ${req.status === "Approved" ? "text-emerald-600" :
-                                                    req.status === "Rejected" ? "text-rose-600" :
-                                                        req.status === "Forwarded" ? "text-sky-600" :
-                                                            "text-slate-400"
-                                                    }`}>
-                                                    {req.status === "Forwarded" ? `→ ${req.forwardedToRole}` : `${req.status} by ${req.forwardedToRole}`}
-                                                </div>
-                                            )}
-
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            {activeTab === "hr" && req.status === "Pending" ? (
-                                                isHrRole ? (
-                                                    approvePickerId === req.leaveId ? (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <select
-                                                                value={selectedLeaveTypeId}
-                                                                onChange={(e) => setSelectedLeaveTypeId(e.target.value)}
-                                                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-700 bg-white focus:outline-none focus:border-amber-400"
-                                                            >
-                                                                <option value="" disabled>-- Select type --</option>
-                                                                {leaveTypes.map((t) => (
-                                                                    <option key={t.leaveTypeId} value={t.leaveTypeId}>
-                                                                        {t.leaveName}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <button
-                                                                disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Approved", null, selectedLeaveTypeId)}
-                                                                className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                {actioningId === req.leaveId ? "..." : "Confirm"}
-                                                            </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => { setApprovePickerId(null); setSelectedLeaveTypeId(""); }}
-                                                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    ) : forwardPickerId === req.leaveId ? (
-                                                        // Forward se pehle leave type select karna zaroori
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <select
-                                                                value={selectedLeaveTypeId}
-                                                                onChange={(e) => setSelectedLeaveTypeId(e.target.value)}
-                                                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-700 bg-white focus:outline-none focus:border-amber-400"
-                                                            >
-                                                                <option value="" disabled>-- Select type --</option>
-                                                                {leaveTypes.map((t) => (
-                                                                    <option key={t.leaveTypeId} value={t.leaveTypeId}>
-                                                                        {t.leaveName}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <span className="text-[11px] font-bold text-slate-500">to:</span>
-                                                            <button
-                                                                disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "CMD", selectedLeaveTypeId)}
-                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                CMD
-                                                            </button>
-                                                            <button
-                                                                disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
-                                                                onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "Director", selectedLeaveTypeId)}
-                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Director
-                                                            </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => { setForwardPickerId(null); setSelectedLeaveTypeId(""); }}
-                                                                className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
+                                                    ) : isHrRole ? (
+                                                        approvePickerId === req.leaveId ? (
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <select
+                                                                    value={selectedLeaveTypeId}
+                                                                    onChange={(e) => setSelectedLeaveTypeId(e.target.value)}
+                                                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-700 bg-white focus:outline-none focus:border-amber-400"
+                                                                >
+                                                                    <option value="" disabled>-- Select type --</option>
+                                                                    {leaveTypes.map((t) => (
+                                                                        <option key={t.leaveTypeId} value={t.leaveTypeId}>
+                                                                            {t.leaveName}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <button
+                                                                    disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
+                                                                    onClick={() => handleLeaveAction(req.leaveId, "Approved", null, selectedLeaveTypeId)}
+                                                                    className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    {actioningId === req.leaveId ? "..." : "Confirm"}
+                                                                </button>
+                                                                <button
+                                                                    disabled={actioningId === req.leaveId}
+                                                                    onClick={() => { setApprovePickerId(null); setSelectedLeaveTypeId(""); }}
+                                                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        ) : forwardPickerId === req.leaveId ? (
+                                                            // Forward se pehle leave type select karna zaroori
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <select
+                                                                    value={selectedLeaveTypeId}
+                                                                    onChange={(e) => setSelectedLeaveTypeId(e.target.value)}
+                                                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-700 bg-white focus:outline-none focus:border-amber-400"
+                                                                >
+                                                                    <option value="" disabled>-- Select type --</option>
+                                                                    {leaveTypes.map((t) => (
+                                                                        <option key={t.leaveTypeId} value={t.leaveTypeId}>
+                                                                            {t.leaveName}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <span className="text-[11px] font-bold text-slate-500">to:</span>
+                                                                <button
+                                                                    disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
+                                                                    onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "CMD", selectedLeaveTypeId)}
+                                                                    className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    CMD
+                                                                </button>
+                                                                <button
+                                                                    disabled={!selectedLeaveTypeId || actioningId === req.leaveId}
+                                                                    onClick={() => handleLeaveAction(req.leaveId, "Forwarded", "Director", selectedLeaveTypeId)}
+                                                                    className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    Director
+                                                                </button>
+                                                                <button
+                                                                    disabled={actioningId === req.leaveId}
+                                                                    onClick={() => { setForwardPickerId(null); setSelectedLeaveTypeId(""); }}
+                                                                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    disabled={actioningId === req.leaveId}
+                                                                    onClick={() => { setApprovePickerId(req.leaveId); setSelectedLeaveTypeId(""); }}
+                                                                    className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    disabled={actioningId === req.leaveId}
+                                                                    onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
+                                                                    className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    {actioningId === req.leaveId ? "..." : "Reject"}
+                                                                </button>
+                                                                <button
+                                                                    disabled={actioningId === req.leaveId}
+                                                                    onClick={() => { setForwardPickerId(req.leaveId); setSelectedLeaveTypeId(""); }}
+                                                                    className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
+                                                                >
+                                                                    Forward
+                                                                </button>
+                                                            </div>
+                                                        )
                                                     ) : (
+                                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">HR Only</span>
+                                                    )
+                                                ) : activeTab === "manager" && req.status === "Forwarded" ? (
+                                                    isManagerRole && req.forwardedToRole === user?.role ? (
+                                                        // CMD/Director ko sirf Approve/Reject — leave type HR ne pehle tay kar diya
                                                         <div className="flex items-center justify-center gap-2">
                                                             <button
                                                                 disabled={actioningId === req.leaveId}
-                                                                onClick={() => { setApprovePickerId(req.leaveId); setSelectedLeaveTypeId(""); }}
+                                                                onClick={() => handleLeaveAction(req.leaveId, "Approved", null, req.leaveTypeId)}
                                                                 className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
                                                             >
-                                                                Approve
+                                                                {actioningId === req.leaveId ? "..." : "Approve"}
                                                             </button>
                                                             <button
                                                                 disabled={actioningId === req.leaveId}
@@ -485,48 +568,19 @@ export default function LeaveRequests() {
                                                             >
                                                                 {actioningId === req.leaveId ? "..." : "Reject"}
                                                             </button>
-                                                            <button
-                                                                disabled={actioningId === req.leaveId}
-                                                                onClick={() => { setForwardPickerId(req.leaveId); setSelectedLeaveTypeId(""); }}
-                                                                className="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200/50 text-[11px] font-bold uppercase tracking-wider text-sky-700 hover:bg-sky-100 disabled:opacity-40 transition-colors"
-                                                            >
-                                                                Forward
-                                                            </button>
                                                         </div>
+                                                    ) : (
+                                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">
+                                                            {isManagerRole ? "Not addressed to you" : "CMD/Director Only"}
+                                                        </span>
                                                     )
                                                 ) : (
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">HR Only</span>
-                                                )
-                                            ) : activeTab === "manager" && req.status === "Forwarded" ? (
-                                                isManagerRole && req.forwardedToRole === user?.role ? (
-                                                    // CMD/Director ko sirf Approve/Reject — leave type HR ne pehle tay kar diya
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <button
-                                                            disabled={actioningId === req.leaveId}
-                                                            onClick={() => handleLeaveAction(req.leaveId, "Approved", null, req.leaveTypeId)}
-                                                            className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/50 text-[11px] font-bold uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
-                                                        >
-                                                            {actioningId === req.leaveId ? "..." : "Approve"}
-                                                        </button>
-                                                        <button
-                                                            disabled={actioningId === req.leaveId}
-                                                            onClick={() => handleLeaveAction(req.leaveId, "Rejected")}
-                                                            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200/50 text-[11px] font-bold uppercase tracking-wider text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition-colors"
-                                                        >
-                                                            {actioningId === req.leaveId ? "..." : "Reject"}
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">
-                                                        {isManagerRole ? "Not addressed to you" : "CMD/Director Only"}
-                                                    </span>
-                                                )
-                                            ) : (
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">Action Taken</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 italic">Action Taken</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     )}
@@ -549,7 +603,7 @@ export default function LeaveRequests() {
                             </button>
                             <div className="hidden sm:flex gap-1.5">
                                 {[...Array(totalPages)].map((_, index) => (
-                                    <button
+                                    <button 
                                         key={index}
                                         onClick={() => setCurrentPage(index + 1)}
                                         className={`w-8 h-8 rounded-lg border text-sm font-bold transition-all shadow-sm flex items-center justify-center ${currentPage === index + 1

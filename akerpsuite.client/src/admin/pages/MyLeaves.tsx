@@ -4,6 +4,8 @@ import { adminService } from "@/services/adminService";
 type Stage =
     | "Awaiting Reliever"
     | "Awaiting HR"
+    | "Awaiting Punch Out"
+    | "Out on Short Leave"
     | "Forwarded"
     | "Approved"
     | "Rejected by Reliever"
@@ -13,6 +15,18 @@ type Stage =
 function getStage(req: any): Stage {
     const status = req.status;
     const rel = req.relieverStatus;
+
+    // Short leave: status hamesha Pending, stage punch times se nikalta hai
+    if (req.isShortLeave && status === "Pending") {
+        if (!req.punchOutTime) return "Awaiting Punch Out";
+        // Punch Out ke baad employee "out" hai. HR ko request Punch In ke baad hi dikhti hai.
+        if (!req.punchInTime) return "Out on Short Leave";
+        return "Awaiting HR";
+    }
+    if (req.isShortLeave && req.punchOutTime && !req.punchInTime && ["Forwarded", "Approved"].includes(status)) {
+        return status as Stage;
+    }
+    if (status === "Out") return "Out on Short Leave";
 
     if (status === "Pending") {
         return rel === "Pending" ? "Awaiting Reliever" : "Awaiting HR";
@@ -24,6 +38,8 @@ function getStage(req: any): Stage {
 const STAGE_DOT: Record<string, string> = {
     "Awaiting Reliever": "bg-violet-500",
     "Awaiting HR": "bg-amber-500",
+    "Awaiting Punch Out": "bg-slate-400",
+    "Out on Short Leave": "bg-violet-500",
     Forwarded: "bg-blue-500",
     Approved: "bg-emerald-500",
     "Rejected by Reliever": "bg-rose-500",
@@ -34,6 +50,8 @@ const STAGE_DOT: Record<string, string> = {
 const STAGE_BADGE: Record<string, string> = {
     "Awaiting Reliever": "bg-violet-50 text-violet-700 border-violet-200/50",
     "Awaiting HR": "bg-amber-50 text-amber-700 border-amber-200/50",
+    "Awaiting Punch Out": "bg-slate-100 text-slate-600 border-slate-200",
+    "Out on Short Leave": "bg-violet-50 text-violet-700 border-violet-200/50",
     Forwarded: "bg-blue-50 text-blue-700 border-blue-200/50",
     Approved: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
     "Rejected by Reliever": "bg-rose-50 text-rose-700 border-rose-200/50",
@@ -62,17 +80,25 @@ const LEAVE_ACCENTS = [
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-// Ek din ke working ghante. appsettings.json ke "Leave:ShiftHours" se same rakho.
-const SHIFT_HOURS = 8;
-
-// Short leave max ghante. C# service ke MaxShortLeaveHours aur SP ke v_max_short_hours se same rakho.
+// Short leave max ghante (sirf info text ke liye). C# service ke MaxShortLeaveHours aur SP ke v_max_short_hours se same rakho.
 const SHORT_LEAVE_MAX_HOURS = 3;
+
+// true = short leave ka punch sirf aaj ki date par (punch time server ka asli time hota hai)
+const SHORT_LEAVE_TODAY_ONLY = true;
+
+const todayStr = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD (local date)
+
+// "2026-10-08" / "2026-10-08T00:00:00" -> local Date (timezone shift nahi hota)
+const parseLocalDate = (d: string): Date => {
+    const [y, m, day] = String(d).slice(0, 10).split("-").map(Number);
+    return new Date(y, (m || 1) - 1, day || 1);
+};
 
 // Leave ki pehli date par is ghante (subah) tak hi cancel ho sakti hai
 const CANCEL_CUTOFF_HOUR = 8;
 
 const cancelDeadline = (req: any) => {
-    const d = new Date(String(req.fromDate).slice(0, 10) + "T00:00:00");
+    const d = parseLocalDate(req.fromDate);
     d.setHours(CANCEL_CUTOFF_HOUR, 0, 0, 0);
     return d;
 };
@@ -81,30 +107,56 @@ function calcDays(from: string, to: string, halfDay: boolean): number | null {
     if (!from) return null;
     if (halfDay) return 0.5;
     if (!to) return null;
-    const n = Math.round((new Date(to).getTime() - new Date(from).getTime()) / MS_PER_DAY) + 1;
+    const n = Math.round((parseLocalDate(to).getTime() - parseLocalDate(from).getTime()) / MS_PER_DAY) + 1;
     return n >= 1 ? n : null;
 }
 
-// ── Short leave helpers ──
-const toMinutes = (t: string) => {
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + m;
+// "09:30:00" -> "09:30"
+const fmtTime = (t?: string | null) => {
+    if (!t) return "";
+    const s = String(t);
+    // DATETIME ("2026-10-07T09:30:00") ho ya TIME ("09:30:00"), dono handle
+    return s.includes("T") ? s.slice(11, 16) : s.slice(0, 5);
 };
 
-function calcShortHours(fromTime: string, toTime: string): number | null {
-    if (!fromTime || !toTime) return null;
-    const diff = toMinutes(toTime) - toMinutes(fromTime);
-    return diff > 0 ? Math.round((diff / 60) * 100) / 100 : null;
-}
+// 0.02 -> "1 min", 0.5 -> "30 min", 1.25 -> "1 hr 15 min"
+const fmtDuration = (h: any) => {
+    const n = Number(h);
+    if (h === null || h === undefined || h === "" || isNaN(n)) return "—";
+    const mins = Math.round(n * 60);
+    if (mins < 1) return "<1 min";
+    if (mins < 60) return `${mins} min`;
+    const hr = Math.floor(mins / 60);
+    const rest = mins % 60;
+    return rest ? `${hr} hr ${rest} min` : `${hr} hr`;
+};
 
-// "09:30:00" -> "09:30"
-const fmtTime = (t?: string | null) => (t ? String(t).slice(0, 5) : "");
-
-// Backend TimeSpan ko "HH:mm:ss" chahiye, <input type="time"> "HH:mm" deta hai
-const withSeconds = (t: string) => (t.length === 5 ? `${t}:00` : t);
-
+// FIX: new Date("YYYY-MM-DD") UTC parse hota hai -> kuch timezone me ek din pichhe dikhta tha
 const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    parseLocalDate(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+// ── Short leave punch helpers ──
+// Flow: date + Short Leave tick -> "Punch Out" (jab jaye) -> "Punch In" (jab wapas aaye) -> tab HR ko request dikhti hai
+// Punch Out ho gaya par Punch In baaki = employee "out" hai
+const isOpenShort = (req: any) =>
+    !!req.isShortLeave &&
+    !!req.punchOutTime &&
+    !req.punchInTime &&
+    !["Rejected", "Cancelled"].includes(req.status);
+
+// Table me Punch In button (Punch Out modal se hota hai)
+const punchState = (req: any): "in" | null => (isOpenShort(req) ? "in" : null);
+
+// FIX: short leave record ban gaya par Punch Out nahi hua (purane / atke hue rows)
+const awaitingPunchOut = (req: any) =>
+    !!req.isShortLeave && !req.punchOutTime && req.status === "Pending";
+
+// Punch button nahi dikh raha to uski wajah (Days column me dikhate hain)
+const punchHint = (req: any): string => {
+    if (!req.punchOutTime) return "Not punched out";
+    if (!req.punchInTime) return "Out — Punch In when back";
+    return "—";
+};
 
 // Circular progress ring
 function BalanceRing({ used, total, accent }: { used: number; total: number; accent: string }) {
@@ -201,8 +253,6 @@ const emptyForm = {
     reason: "",
     halfDay: false,
     shortLeave: false,
-    fromTime: "",
-    toTime: "",
     relieverEmployeeId: "",
 };
 
@@ -258,11 +308,18 @@ export default function MyLeaves() {
     const [confirmCancelId, setConfirmCancelId] = useState<number | string | null>(null);
     const [cancelError, setCancelError] = useState("");
 
+    // ── Punch (short leave) state ──
+    const [punchingId, setPunchingId] = useState<number | string | null>(null);
+    // Jo short leave abhi open hai (Punch Out hua, Punch In baaki). Table filter se independent.
+    const [openShort, setOpenShort] = useState<any>(null);
+    // Open short leave check chal raha hai (modal khulte hi) — tab tak dono punch buttons disabled
+    const [openShortLoading, setOpenShortLoading] = useState(false);
+
     // Short leave ka koi leave type nahi hota, balance cards normal types ke hi hain
     const activeLeaveTypes = leaveTypes.filter(isLeaveTypeActive);
 
-    const shortHours = calcShortHours(form.fromTime, form.toTime);
-    const shortDays = shortHours ? Math.round((shortHours / SHIFT_HOURS) * 100) / 100 : null;
+    const activeOut = openShort;
+    const shortDateOk = !SHORT_LEAVE_TODAY_ONLY || form.fromDate === todayStr();
 
     const previewDays = form.shortLeave ? null : calcDays(form.fromDate, form.toDate, form.halfDay);
     const editPreviewDays = calcDays(editForm.fromDate, editForm.toDate, editForm.halfDay);
@@ -295,6 +352,33 @@ export default function MyLeaves() {
         if (showApplyModal || showEditModal) fetchRelievers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showApplyModal, showEditModal]);
+
+    // Apply modal khulte hi check karo ki employee already "out" to nahi
+    useEffect(() => {
+        if (showApplyModal) fetchOpenShort();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showApplyModal]);
+
+    // Page load par bhi check karo (modal khole bina Punch Out button ke liye)
+    useEffect(() => {
+        fetchOpenShort();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const fetchOpenShort = async () => {
+        setOpenShortLoading(true);
+        try {
+            const res = await adminService.getMyLeaveRequests({ year: currentYear });
+            if (res.Success || res.success) {
+                const list = res.Data || res.data || [];
+                setOpenShort(list.find(isOpenShort) || null);
+            }
+        } catch (error) {
+            console.error("Error fetching open short leave:", error);
+        } finally {
+            setOpenShortLoading(false);
+        }
+    };
 
     const fetchRelievers = async () => {
         setRelieversLoading(true);
@@ -397,6 +481,7 @@ export default function MyLeaves() {
     const openApplyModal = () => {
         setForm(emptyForm);
         setApplyError("");
+        setOpenShort(null); // purana state hata do, fresh check modal khulte hi hoga
         setShowApplyModal(true);
     };
 
@@ -411,84 +496,67 @@ export default function MyLeaves() {
         setEditError("");
     };
 
+    // Orphan short leave record hatao. Fail ho to silent mat chhodo, log karo.
+    const cleanupShortLeave = async (id: number | string) => {
+        try {
+            const res = await adminService.cancelLeaveRequest(id);
+            if (!(res.Success || res.success)) {
+                console.warn("Short leave cleanup refused by server:", id, res.Message || res.message);
+            }
+        } catch (err) {
+            console.warn("Short leave cleanup failed:", id, err);
+        }
+    };
+
     // ── Apply ──
     const handleApplyLeave = async (e: React.FormEvent) => {
         e.preventDefault();
         setApplyError("");
 
-        const singleDay = form.halfDay || form.shortLeave;
+        // Short leave submit se nahi hota, Punch Out / Punch In buttons use hote hain
+        if (form.shortLeave) return;
 
-        if (!form.fromDate || (!singleDay && !form.toDate)) {
+        // ── Normal / Half day leave ──
+        if (!form.fromDate || (!form.halfDay && !form.toDate)) {
             setApplyError("From date and to date are required.");
             return;
         }
 
-        let totalDays: number | null;
-
-        if (form.shortLeave) {
-            if (shortHours === null) {
-                setApplyError("To time must be after from time.");
-                return;
-            }
-            if (shortHours > SHIFT_HOURS) {
-                setApplyError("Short leave cannot be longer than a working day. Apply a full-day leave instead.");
-                return;
-            }
-            totalDays = shortDays;
-        } else {
-            totalDays = calcDays(form.fromDate, form.toDate, form.halfDay);
-        }
+        const totalDays = calcDays(form.fromDate, form.toDate, form.halfDay);
 
         if (totalDays === null) {
             setApplyError("To date must be on or after the from date.");
             return;
         }
 
-        // CHANGE 1: reliever sirf normal leave me zaroori
-        if (!form.shortLeave && !form.relieverEmployeeId) {
+        if (!form.relieverEmployeeId) {
             setApplyError("Please select a reliever.");
             return;
         }
 
         setSubmitting(true);
         try {
-            // CHANGE 2: payload me reliever hata diya
-            const payload: any = {
+            const payload = {
                 fromDate: form.fromDate,
-                toDate: singleDay ? form.fromDate : form.toDate,
+                toDate: form.halfDay ? form.fromDate : form.toDate,
                 totalDays,
                 reason: form.reason,
+                relieverEmployeeId: Number(form.relieverEmployeeId),
             };
-
-            if (form.shortLeave) {
-                // Short leave: koi leaveTypeId / reliever nahi, sirf time fields
-                payload.fromTime = withSeconds(form.fromTime);
-                payload.toTime = withSeconds(form.toTime);
-                payload.durationHours = shortHours;
-            } else {
-                payload.relieverEmployeeId = Number(form.relieverEmployeeId);
-            }
 
             const res = await adminService.applyLeave(payload);
 
             if (res.Success || res.success) {
                 const applied = res.Data || res.data;
 
-                // SP ka SIGNAL error ErrorMessage me aata hai
                 if (applied?.errorMessage) {
                     setApplyError(applied.errorMessage);
                     return;
                 }
 
-                const wasShort = form.shortLeave;
                 closeApplyModal();
                 setForm(emptyForm);
-                // CHANGE 3: short leave ka message HR wala
-                flashSuccess(
-                    wasShort
-                        ? "Short leave request sent to HR."
-                        : "Leave request sent to your reliever. HR will see it after the reliever responds."
-                );
+                flashSuccess("Leave request sent to your reliever. HR will see it after the reliever responds.");
 
                 await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
             } else {
@@ -497,6 +565,90 @@ export default function MyLeaves() {
         } catch (error: any) {
             console.error("Error applying leave:", error);
             setApplyError(error.message || "Something went wrong while submitting your leave request.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // ── Short leave Punch Out: record banao (applyLeave) + usi par Punch Out ──
+    const handleShortPunchOut = async () => {
+        setApplyError("");
+
+        if (openShort) {
+            setApplyError("You are already out on a short leave. Please Punch In first.");
+            return;
+        }
+        if (!form.fromDate) {
+            setApplyError("Please select the date.");
+            return;
+        }
+        if (!shortDateOk) {
+            setApplyError("Short leave punch is only allowed for today's date.");
+            return;
+        }
+        if (!form.reason.trim()) {
+            setApplyError("Please enter a reason.");
+            return;
+        }
+
+        setSubmitting(true);
+        let createdId: number | string | null = null;
+        let punchedOut = false;
+        try {
+            // 1) Record (reliever / leave type / time nahi, time punch se aayega)
+            const res = await adminService.applyLeave({
+                fromDate: form.fromDate,
+                toDate: form.fromDate,
+                totalDays: 0,
+                reason: form.reason.trim(),
+                isShortLeave: true,
+            });
+
+            if (!(res.Success || res.success)) {
+                setApplyError(res.Message || res.message || "Failed to start short leave.");
+                return;
+            }
+
+            const applied = res.Data || res.data;
+            if (applied?.errorMessage) {
+                setApplyError(applied.errorMessage);
+                return;
+            }
+
+            createdId = applied?.leaveId ?? null;
+            if (!createdId) {
+                setApplyError("Short leave was created but its id was not returned. Please check My Requests.");
+                await fetchLeaveRequests();
+                return;
+            }
+
+            // 2) Usi record par Punch Out
+            const punchRes = await adminService.shortLeavePunchOut(createdId);
+            const punchData = punchRes.Data || punchRes.data;
+
+            if (!(punchRes.Success || punchRes.success) || punchData?.errorMessage) {
+                // Punch out fail hua to bacha hua record hata do
+                await cleanupShortLeave(createdId);
+                setApplyError(
+                    punchData?.errorMessage || punchRes.Message || punchRes.message || "Punch out failed."
+                );
+                await fetchLeaveRequests();
+                return;
+            }
+
+            punchedOut = true;
+            closeApplyModal();
+            setForm(emptyForm);
+            flashSuccess("Punched out. Punch In when you are back, then your request goes to HR.");
+            await Promise.all([fetchLeaveRequests(), fetchOpenShort()]);
+        } catch (error: any) {
+            // apiCall 400 par throw karta hai (jaise "You can punch out only on the leave date.")
+            console.error("Error in short leave punch out:", error);
+            if (createdId && !punchedOut) {
+                await cleanupShortLeave(createdId);
+                await fetchLeaveRequests();
+            }
+            setApplyError(error.message || "Punch out failed. Please try again.");
         } finally {
             setSubmitting(false);
         }
@@ -514,8 +666,6 @@ export default function MyLeaves() {
             reason: req.reason || "",
             halfDay: isHalfDay,
             shortLeave: false,
-            fromTime: "",
-            toTime: "",
             relieverEmployeeId: req.relieverEmployeeId ? String(req.relieverEmployeeId) : "",
         });
         setShowEditModal(true);
@@ -585,7 +735,7 @@ export default function MyLeaves() {
         try {
             const res = await adminService.cancelLeaveRequest(req.leaveId);
             if (res.Success || res.success) {
-                flashSuccess(`Leave request for ${req.leaveName || "selected type"} cancelled.`);
+                flashSuccess(`Leave request for ${req.isShortLeave ? "Short Leave" : (req.leaveName || "selected type")} cancelled.`);
                 await Promise.all([fetchLeaveRequests(), fetchLeaveBalance()]);
             } else {
                 setCancelError(res.Message || res.message || "Failed to cancel leave request.");
@@ -596,6 +746,66 @@ export default function MyLeaves() {
         } finally {
             setCancellingId(null);
             setConfirmCancelId(null);
+        }
+    };
+
+    // ── Short leave Punch Out on existing record (atke hue rows ke liye) ──
+    const handlePunchOutExisting = async (req: any) => {
+        if (!req || !awaitingPunchOut(req)) return;
+        setPunchingId(req.leaveId);
+        setCancelError("");
+        try {
+            const res = await adminService.shortLeavePunchOut(req.leaveId);
+            const data = res.Data || res.data;
+
+            if (!(res.Success || res.success) || data?.errorMessage) {
+                setCancelError(data?.errorMessage || res.Message || res.message || "Punch Out failed.");
+                return;
+            }
+
+            flashSuccess("Punched out. Punch In when you are back, then your request goes to HR.");
+            await Promise.all([fetchLeaveRequests(), fetchOpenShort()]);
+        } catch (error: any) {
+            console.error("Error in punch out (existing):", error);
+            setCancelError(error.message || "Punch Out failed. Please try again.");
+        } finally {
+            setPunchingId(null);
+        }
+    };
+
+    // ── Short leave Punch In (Punch Out Apply modal se hota hai) ──
+    const handlePunchIn = async (req: any) => {
+        if (!req || !isOpenShort(req)) return; // punch out ke bina Punch In nahi
+        setPunchingId(req.leaveId);
+        setCancelError("");
+        setApplyError("");
+        try {
+            const res = await adminService.shortLeavePunchIn(req.leaveId);
+
+            if (res.Success || res.success) {
+                const data = res.Data || res.data;
+                if (data?.errorMessage) {
+                    // Modal khula ho to error modal me, warna page ke banner me
+                    if (showApplyModal) setApplyError(data.errorMessage);
+                    else setCancelError(data.errorMessage);
+                    return;
+                }
+                // Modal se Punch In dabaya ho to band kar do
+                if (showApplyModal) closeApplyModal();
+                flashSuccess("Punched in. Your return time is recorded and your request has gone to HR.");
+                await Promise.all([fetchLeaveRequests(), fetchLeaveBalance(), fetchOpenShort()]);
+            } else {
+                const msg = res.Message || res.message || "Punch In failed.";
+                if (showApplyModal) setApplyError(msg);
+                else setCancelError(msg);
+            }
+        } catch (error: any) {
+            console.error("Error in punch in:", error);
+            const msg = error.message || "Punch In failed. Please try again.";
+            if (showApplyModal) setApplyError(msg);
+            else setCancelError(msg);
+        } finally {
+            setPunchingId(null);
         }
     };
 
@@ -651,14 +861,26 @@ export default function MyLeaves() {
     };
 
     // Edit tabhi jab reliever ne abhi accept nahi kiya.
-    // Short leave edit nahi hoti (backend SP bhi block karta hai), cancel karke dobara apply karo.
+    // Short leave edit nahi hoti (backend SP bhi block karta hai).
     const canEdit = (req: any) =>
         req.status === "Pending" && req.relieverStatus !== "Accepted" && !req.isShortLeave;
 
-    // Cancel: Pending / Forwarded / Approved, aur leave ki pehli date par subah 8:00 se pehle
-    const canCancel = (req: any) =>
-        ["Pending", "Forwarded", "Approved"].includes(req.status) &&
-        new Date() < cancelDeadline(req);
+    // Cancel:
+    //  - Short leave: jab tak Punch Out nahi hua, hamesha cancel ho sakti hai (atke rows hatane ke liye)
+    //  - Baaki: Pending / Forwarded / Approved, leave ki pehli date par subah 8:00 se pehle
+    // Punch out ho gaya to cancel nahi.
+    const canCancel = (req: any) => {
+        if (req.punchOutTime) return false;
+        if (req.isShortLeave) return req.status === "Pending";
+        return (
+            ["Pending", "Forwarded", "Approved"].includes(req.status) &&
+            new Date() < cancelDeadline(req)
+        );
+    };
+
+    // Modal ke punch buttons ki state (ek jagah, taaki dono opposite chalein)
+    const punchInDisabled = openShortLoading || !activeOut || punchingId === activeOut?.leaveId;
+    const punchOutDisabled = openShortLoading || submitting || !!activeOut || !form.fromDate || !shortDateOk;
 
     return (
         <div className="space-y-6 font-sans relative z-0 pb-10">
@@ -871,6 +1093,10 @@ export default function MyLeaves() {
                                 ) : (
                                     requests.map((req: any) => {
                                         const stage = getStage(req);
+                                        const punch = punchState(req);
+                                        const needsPunchOut = awaitingPunchOut(req);
+                                        const isToday = String(req.fromDate).slice(0, 10) === todayStr();
+                                        const confirming = confirmCancelId === req.leaveId;
                                         return (
                                             <tr key={req.leaveId} className="hover:bg-slate-50/60 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-slate-900">
@@ -891,11 +1117,13 @@ export default function MyLeaves() {
 
                                                 {/* Duration */}
                                                 <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
-                                                    {req.isShortLeave && req.fromTime ? (
+                                                    {req.isShortLeave ? (
                                                         <>
                                                             {fmtDate(req.fromDate)}
                                                             <span className="block text-xs font-bold text-violet-600 mt-0.5">
-                                                                {fmtTime(req.fromTime)} – {fmtTime(req.toTime)}
+                                                                {req.punchOutTime ? fmtTime(req.punchOutTime) : "--:--"}
+                                                                {" – "}
+                                                                {req.punchInTime ? fmtTime(req.punchInTime) : "--:--"}
                                                             </span>
                                                         </>
                                                     ) : (
@@ -910,12 +1138,18 @@ export default function MyLeaves() {
                                                 {/* Days */}
                                                 <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">
                                                     {req.isShortLeave ? (
-                                                        <>
-                                                            {req.durationHours} hr(s)
-                                                            <span className="block text-[10px] font-semibold text-slate-400">
-                                                                = {req.totalDays} day
+                                                        req.punchInTime ? (
+                                                            <>
+                                                                {fmtDuration(req.durationHours)}
+                                                                <span className="block text-[10px] font-semibold text-slate-400">
+                                                                    = {req.totalDays} day
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-xs font-semibold text-slate-400">
+                                                                {punchHint(req)}
                                                             </span>
-                                                        </>
+                                                        )
                                                     ) : (
                                                         <>{req.totalDays} Day(s)</>
                                                     )}
@@ -945,36 +1179,44 @@ export default function MyLeaves() {
                                                         {stage}
                                                     </span>
                                                 </td>
+
+                                                {/* Actions */}
                                                 <td className="px-6 py-4">
-                                                    {canCancel(req) ? (
-                                                        confirmCancelId === req.leaveId ? (
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                <span className="text-[11px] font-bold text-slate-500">Cancel this?</span>
-                                                                <button
-                                                                    onClick={() => handleCancelLeave(req)}
-                                                                    disabled={cancellingId === req.leaveId}
-                                                                    className="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-bold hover:bg-rose-600 disabled:opacity-60 transition-colors"
-                                                                >
-                                                                    {cancellingId === req.leaveId ? "..." : "Yes"}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setConfirmCancelId(null)}
-                                                                    className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200 transition-colors"
-                                                                >
-                                                                    No
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                {canEdit(req) && (
-                                                                    <button
-                                                                        onClick={() => openEditModal(req)}
-                                                                        title="Edit"
-                                                                        className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                                                                    >
-                                                                        <i className="fa-solid fa-pen text-xs" />
-                                                                    </button>
-                                                                )}
+                                                    {confirming && canCancel(req) ? (
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <span className="text-[11px] font-bold text-slate-500">Cancel this?</span>
+                                                            <button
+                                                                onClick={() => handleCancelLeave(req)}
+                                                                disabled={cancellingId === req.leaveId}
+                                                                className="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-bold hover:bg-rose-600 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                {cancellingId === req.leaveId ? "..." : "Yes"}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setConfirmCancelId(null)}
+                                                                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200 transition-colors"
+                                                            >
+                                                                No
+                                                            </button>
+                                                        </div>
+                                                    ) : needsPunchOut ? (
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => handlePunchOutExisting(req)}
+                                                                disabled={punchingId === req.leaveId || !!openShort || !isToday}
+                                                                title={
+                                                                    openShort
+                                                                        ? "Punch In your open short leave first"
+                                                                        : !isToday
+                                                                            ? "You can punch out only on the leave date"
+                                                                            : ""
+                                                                }
+                                                                className="px-3 py-1.5 rounded-lg text-white text-[11px] font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700"
+                                                            >
+                                                                <i className="fa-solid fa-right-from-bracket" />
+                                                                {punchingId === req.leaveId ? "..." : "Punch Out"}
+                                                            </button>
+                                                            {canCancel(req) && (
                                                                 <button
                                                                     onClick={() => { setCancelError(""); setConfirmCancelId(req.leaveId); }}
                                                                     title="Cancel"
@@ -982,8 +1224,38 @@ export default function MyLeaves() {
                                                                 >
                                                                     <i className="fa-solid fa-trash-can text-xs" />
                                                                 </button>
-                                                            </div>
-                                                        )
+                                                            )}
+                                                        </div>
+                                                    ) : punch ? (
+                                                        <div className="flex justify-end">
+                                                            <button
+                                                                onClick={() => handlePunchIn(req)}
+                                                                disabled={punchingId === req.leaveId}
+                                                                className="px-3 py-1.5 rounded-lg text-white text-[11px] font-bold disabled:opacity-60 transition-colors flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                                                            >
+                                                                <i className="fa-solid fa-right-to-bracket" />
+                                                                {punchingId === req.leaveId ? "..." : "Punch In"}
+                                                            </button>
+                                                        </div>
+                                                    ) : canCancel(req) ? (
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {canEdit(req) && (
+                                                                <button
+                                                                    onClick={() => openEditModal(req)}
+                                                                    title="Edit"
+                                                                    className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                                                                >
+                                                                    <i className="fa-solid fa-pen text-xs" />
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => { setCancelError(""); setConfirmCancelId(req.leaveId); }}
+                                                                title="Cancel"
+                                                                className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                                            >
+                                                                <i className="fa-solid fa-trash-can text-xs" />
+                                                            </button>
+                                                        </div>
                                                     ) : (
                                                         <span className="text-[11px] text-slate-300 font-medium flex justify-end">—</span>
                                                     )}
@@ -1060,8 +1332,8 @@ export default function MyLeaves() {
                                 ) : (
                                     relieverRequests.map((r: any) => {
                                         const awaiting = r.relieverStatus === "Pending" && r.status === "Pending";
-                                        // Time fields tabhi dikhenge jab reliever SP/DTO se aayein
-                                        const relShort = !!r.fromTime;
+                                        // Short leave me reliever hota hi nahi, par agar DTO se aaye to safe rehne ke liye
+                                        const relShort = !!r.isShortLeave;
                                         return (
                                             <tr key={r.leaveId} className="hover:bg-slate-50/60 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-slate-900">{r.employeeName}</td>
@@ -1070,12 +1342,7 @@ export default function MyLeaves() {
                                                 </td>
                                                 <td className="px-6 py-4 font-medium text-slate-600 whitespace-nowrap">
                                                     {relShort ? (
-                                                        <>
-                                                            {fmtDate(r.fromDate)}
-                                                            <span className="block text-xs font-bold text-violet-600 mt-0.5">
-                                                                {fmtTime(r.fromTime)} – {fmtTime(r.toTime)}
-                                                            </span>
-                                                        </>
+                                                        <>{fmtDate(r.fromDate)}</>
                                                     ) : (
                                                         <>
                                                             {fmtDate(r.fromDate)}
@@ -1085,7 +1352,7 @@ export default function MyLeaves() {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 font-mono font-bold text-amber-600 whitespace-nowrap">
-                                                    {relShort && r.durationHours ? <>{r.durationHours} hr(s)</> : <>{r.totalDays} Day(s)</>}
+                                                    {relShort ? <>—</> : <>{r.totalDays} Day(s)</>}
                                                 </td>
                                                 <td className="px-6 py-4 font-medium text-slate-500 max-w-xs truncate" title={r.reason}>{r.reason}</td>
                                                 <td className="px-6 py-4 text-right">
@@ -1139,7 +1406,7 @@ export default function MyLeaves() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleApplyLeave} className="space-y-5">
+                        <form onSubmit={handleApplyLeave} noValidate={form.shortLeave} className="space-y-5">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClass}>From Date *</label>
@@ -1185,49 +1452,27 @@ export default function MyLeaves() {
                                     <span className="text-xs font-bold text-slate-600">Half Day</span>
                                 </label>
 
-                                {/* Short Leave: hamesha dikhta hai, leave type ki zaroorat nahi */}
+                                {/* Short Leave: Punch Out / Punch In, leave type / reliever / date ki zaroorat nahi */}
                                 <label className="flex items-center gap-2.5 cursor-pointer select-none">
                                     <input
                                         type="checkbox"
                                         checked={form.shortLeave}
-                                        onChange={(e) => setForm({
-                                            ...form,
-                                            shortLeave: e.target.checked,
-                                            halfDay: false,
-                                            fromTime: e.target.checked ? form.fromTime : "",
-                                            toTime: e.target.checked ? form.toTime : "",
-                                            toDate: e.target.checked ? form.fromDate : form.toDate,
-                                        })}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            const from = checked && !form.fromDate ? todayStr() : form.fromDate;
+                                            setForm({
+                                                ...form,
+                                                shortLeave: checked,
+                                                halfDay: false,
+                                                fromDate: from,
+                                                toDate: checked ? from : form.toDate,
+                                            });
+                                        }}
                                         className="w-4 h-4 rounded border-slate-300 text-violet-500 focus:ring-violet-400 cursor-pointer"
                                     />
                                     <span className="text-xs font-bold text-slate-600">Short Leave</span>
                                 </label>
                             </div>
-
-                            {form.shortLeave && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>Going Out At *</label>
-                                        <input
-                                            type="time"
-                                            required
-                                            value={form.fromTime}
-                                            onChange={(e) => setForm({ ...form, fromTime: e.target.value })}
-                                            className={inputClass}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Back By *</label>
-                                        <input
-                                            type="time"
-                                            required
-                                            value={form.toTime}
-                                            onChange={(e) => setForm({ ...form, toTime: e.target.value })}
-                                            className={inputClass}
-                                        />
-                                    </div>
-                                </div>
-                            )}
 
                             {previewDays && (
                                 <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3 flex items-center gap-2">
@@ -1241,11 +1486,27 @@ export default function MyLeaves() {
                             {form.shortLeave && (
                                 <div className="bg-violet-50 border border-violet-200/60 rounded-xl p-3 flex items-start gap-2">
                                     <i className="fa-solid fa-circle-info text-violet-500 mt-0.5" />
-                                    <div className="text-xs font-bold text-violet-700">
-                                        {shortHours
-                                            ? <>{shortHours} hr(s) = {shortDays} day. This will be deducted from your salary for that day.</>
-                                            : <>Select the time you go out and the time you will be back.</>}
-                                        
+                                    <div className="text-xs font-bold text-violet-700 space-y-1">
+                                        {activeOut ? (
+                                            <>
+                                                <p>
+                                                    You are out
+                                                    {activeOut.punchOutTime ? ` since ${fmtTime(activeOut.punchOutTime)}` : ""}.
+                                                    Click Punch In when you are back.
+                                                </p>
+                                                <p className="font-semibold text-violet-500">
+                                                    Your request goes to HR after you Punch In.
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <p>
+                                                Click Punch Out when you leave. Click Punch In when you are back, then your request goes to HR for approval.
+                                                Maximum {SHORT_LEAVE_MAX_HOURS} hrs.
+                                            </p>
+                                        )}
+                                        {!activeOut && form.fromDate && !shortDateOk && (
+                                            <p className="text-rose-600">Punch is only allowed for today's date. Select today's date.</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -1259,18 +1520,21 @@ export default function MyLeaves() {
                                 />
                             )}
 
-                            <div>
-                                <label className={labelClass}>Reason *</label>
-                                <textarea
-                                    value={form.reason}
-                                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                                    rows={3}
-                                    required
-                                    maxLength={500}
-                                    className={`${inputClass} resize-y`}
-                                    placeholder="Brief reason for your leave request..."
-                                />
-                            </div>
+                            {/* Already out hone par reason ki zaroorat nahi, sirf Punch In chahiye */}
+                            {!(form.shortLeave && activeOut) && (
+                                <div>
+                                    <label className={labelClass}>Reason *</label>
+                                    <textarea
+                                        value={form.reason}
+                                        onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                                        rows={3}
+                                        required={!form.shortLeave}
+                                        maxLength={500}
+                                        className={`${inputClass} resize-y`}
+                                        placeholder="Brief reason for your leave request..."
+                                    />
+                                </div>
+                            )}
 
                             {applyError && (
                                 <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
@@ -1286,14 +1550,47 @@ export default function MyLeaves() {
                                 >
                                     Cancel
                                 </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="px-6 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-600/20 hover:bg-amber-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2"
-                                >
-                                    {submitting ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-paper-plane" />}
-                                    {submitting ? "Submitting..." : "Submit Request"}
-                                </button>
+                                {form.shortLeave ? (
+                                    <>
+                                        {/* Punch In: sirf tab enabled jab employee "out" ho (Punch Out ho chuka) */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setApplyError("");
+                                                if (activeOut) handlePunchIn(activeOut);
+                                            }}
+                                            disabled={punchInDisabled}
+                                            title={!activeOut ? "Punch Out first" : ""}
+                                            className="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-sm shadow-md shadow-emerald-600/20 hover:bg-emerald-700 hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                        >
+                                            {activeOut && punchingId === activeOut.leaveId
+                                                ? <i className="fa-solid fa-spinner animate-spin" />
+                                                : <i className="fa-solid fa-right-to-bracket" />}
+                                            Punch In
+                                        </button>
+                                        {/* Punch Out: sirf tab enabled jab abhi out nahi hue */}
+                                        <button
+                                            type="button"
+                                            onClick={handleShortPunchOut}
+                                            disabled={punchOutDisabled}
+                                            className="px-5 py-2.5 bg-violet-600 text-white font-bold rounded-xl text-sm shadow-md shadow-violet-600/20 hover:bg-violet-700 hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                        >
+                                            {submitting
+                                                ? <i className="fa-solid fa-spinner animate-spin" />
+                                                : <i className="fa-solid fa-right-from-bracket" />}
+                                            {submitting ? "Please wait..." : "Punch Out"}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        type="submit"
+                                        disabled={submitting}
+                                        className="px-6 py-2.5 bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-600/20 hover:bg-amber-700 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 transition-all flex items-center gap-2"
+                                    >
+                                        {submitting ? <i className="fa-solid fa-spinner animate-spin" /> : <i className="fa-solid fa-paper-plane" />}
+                                        {submitting ? "Submitting..." : "Submit Request"}
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>
@@ -1439,18 +1736,8 @@ export default function MyLeaves() {
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm">
                                 <p className="font-bold text-slate-800">{actionTarget.req.employeeName}</p>
                                 <p className="text-slate-500 font-medium mt-1">
-                                    {actionTarget.req.fromTime ? (
-                                        <>
-                                            {fmtDate(actionTarget.req.fromDate)}
-                                            {" · "}{fmtTime(actionTarget.req.fromTime)} – {fmtTime(actionTarget.req.toTime)}
-                                            {actionTarget.req.durationHours ? ` · ${actionTarget.req.durationHours} hr(s)` : ""}
-                                        </>
-                                    ) : (
-                                        <>
-                                            {fmtDate(actionTarget.req.fromDate)} to {fmtDate(actionTarget.req.toDate)}
-                                            {" · "}{actionTarget.req.totalDays} day(s)
-                                        </>
-                                    )}
+                                    {fmtDate(actionTarget.req.fromDate)} to {fmtDate(actionTarget.req.toDate)}
+                                    {" · "}{actionTarget.req.totalDays} day(s)
                                 </p>
                                 <p className="text-slate-500 mt-1">{actionTarget.req.reason}</p>
                             </div>

@@ -30,28 +30,17 @@ namespace AkerpSuite.Server.Services
 
         private void PrepareShortLeave(SelfLeaveRequestDto request)
         {
-            if (!request.FromTime.HasValue || !request.ToTime.HasValue)
-                throw new InvalidOperationException("Both from time and to time are required for short leave.");
+            if (!request.FromDate.HasValue)
+                throw new InvalidOperationException("Date is required for short leave.");
 
-            if (request.ToTime.Value <= request.FromTime.Value)
-                throw new InvalidOperationException("To time must be after from time.");
-
-            // Short leave ek hi din ki hoti hai
+            if (request.FromDate.Value.Date < DateTime.Today)
+                throw new InvalidOperationException("Short leave cannot be applied for a past date.");
             request.ToDate = request.FromDate;
-
-            var hours = Math.Round((decimal)(request.ToTime.Value - request.FromTime.Value).TotalHours, 2);
-
-            var shiftHours = _configuration.GetValue("Leave:ShiftHours", 8m);
-            if (shiftHours <= 0) shiftHours = 8m;
-
-            // Ek din ke shift se zyada nahi, warna 1 din se zyada katouti ho jayegi
-            if (hours > shiftHours)
-                throw new InvalidOperationException(
-                    "Short leave cannot be longer than a working day. Apply a full-day leave instead.");
-
-            // Server khud nikalta hai, frontend ke bhare hue values par bharosa nahi
-            request.DurationHours = hours;
-            request.TotalDays = Math.Round(hours / shiftHours, 2);
+            request.RelieverEmployeeId = null;
+            request.FromTime = TimeSpan.Zero;
+            request.ToTime = TimeSpan.FromMinutes(1);
+            request.DurationHours = 0.02m;
+            request.TotalDays = 0.01m;
         }
 
         #region Employee Documents
@@ -315,13 +304,66 @@ namespace AkerpSuite.Server.Services
         }
         public Task<IEnumerable<LeaveTypeInfoDto>> GetLeaveTypesAsync() => _repository.GetLeaveTypesAsync();
 
+        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
+        //{
+        //    if (request == null)
+        //        throw new ArgumentNullException(nameof(request));
+
+        //    // Short leave tab hai jab time diya gaya ho. Koi leave type nahi.
+        //    var isShortLeave = request.FromTime.HasValue || request.ToTime.HasValue;
+
+        //    if (isShortLeave)
+        //    {
+        //        PrepareShortLeave(request);
+        //        request.LeaveTypeId = null;   // short leave ka type kabhi nahi hota
+        //    }
+        //    else
+        //    {
+        //        if (request.ToDate < request.FromDate)
+        //            throw new InvalidOperationException("To date cannot be before from date.");
+
+        //        // Normal leave: time fields ignore
+        //        request.FromTime = null;
+        //        request.ToTime = null;
+        //        request.DurationHours = null;
+
+        //        // Normal leave me type optional hai (HR approve pe set karta hai)
+        //        if (request.LeaveTypeId.HasValue)
+        //        {
+        //            var leaveType = await _repository.GetLeaveTypeAsync(request.LeaveTypeId.Value);
+
+        //            if (leaveType == null)
+        //                throw new InvalidOperationException("Invalid or inactive leave type.");
+        //        }
+        //    }
+
+        //    if (request.TotalDays <= 0)
+        //        throw new InvalidOperationException("Total days must be greater than zero.");
+
+        //    var result = await _repository.ApplyLeaveAsync(empId, request);
+
+        //    if (result.LeaveId <= 0)
+        //        throw new InvalidOperationException(result.ErrorMessage ?? "Leave request could not be created.");
+
+        //    // SP se ye columns aaye ya na aaye, response me hamesha sahi dikhe
+        //    result.IsShortLeave = isShortLeave;
+        //    result.FromTime ??= request.FromTime;
+        //    result.ToTime ??= request.ToTime;
+        //    result.DurationHours ??= request.DurationHours;
+
+        //    _logger.LogInformation(
+        //        "Employee {EmpId} applied for {Kind} {LeaveId}.",
+        //        empId, isShortLeave ? "short leave" : "leave", result.LeaveId);
+
+        //    return result;
+        //}
         public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            // Short leave tab hai jab time diya gaya ho. Koi leave type nahi.
-            var isShortLeave = request.FromTime.HasValue || request.ToTime.HasValue;
+            // Ab time se nahi, frontend ke flag se pehchante hain
+            var isShortLeave = request.IsShortLeave;
 
             if (isShortLeave)
             {
@@ -356,11 +398,7 @@ namespace AkerpSuite.Server.Services
             if (result.LeaveId <= 0)
                 throw new InvalidOperationException(result.ErrorMessage ?? "Leave request could not be created.");
 
-            // SP se ye columns aaye ya na aaye, response me hamesha sahi dikhe
             result.IsShortLeave = isShortLeave;
-            result.FromTime ??= request.FromTime;
-            result.ToTime ??= request.ToTime;
-            result.DurationHours ??= request.DurationHours;
 
             _logger.LogInformation(
                 "Employee {EmpId} applied for {Kind} {LeaveId}.",
@@ -368,27 +406,6 @@ namespace AkerpSuite.Server.Services
 
             return result;
         }
-
-        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
-        //{
-        //    if (request == null)
-        //        throw new ArgumentNullException(nameof(request));
-
-        //    if (request.ToDate < request.FromDate)
-        //        throw new InvalidOperationException("To date cannot be before from date.");
-
-        //    if (request.TotalDays <= 0)
-        //        throw new InvalidOperationException("Total days must be greater than zero.");
-
-        //    var result = await _repository.ApplyLeaveAsync(empId, request);
-
-        //    if (result.LeaveId <= 0)
-        //        throw new InvalidOperationException(result.ErrorMessage ?? "Leave request could not be created.");
-
-        //    _logger.LogInformation("Employee {EmpId} applied for leave {LeaveId}.", empId, result.LeaveId);
-
-        //    return result;
-        //}
 
         // Attendance
 
@@ -458,6 +475,23 @@ namespace AkerpSuite.Server.Services
 
             _logger.LogInformation("Reliever {EmpId} did {Action} on leave {LeaveId}.", empId, dto.Action, leaveId);
             return result.Message;
+        }
+
+        public async Task<string> ShortLeavePunchOutAsync(int leaveId, int empId)
+        {
+            await _repository.ShortLeavePunchOutAsync(leaveId, empId);
+            _logger.LogInformation("Employee {EmpId} punched out for short leave {LeaveId}.", empId, leaveId);
+            return "Punched out. Please punch in when you are back.";
+        }
+
+        public async Task<string> ShortLeavePunchInAsync(int leaveId, int empId)
+        {
+            var shiftHours = _configuration.GetValue("Leave:ShiftHours", 8m);
+            if (shiftHours <= 0) shiftHours = 8m;
+
+            await _repository.ShortLeavePunchInAsync(leaveId, empId, shiftHours);
+            _logger.LogInformation("Employee {EmpId} punched in for short leave {LeaveId}.", empId, leaveId);
+            return "Punched in. Your short leave has been recorded.";
         }
 
         #endregion

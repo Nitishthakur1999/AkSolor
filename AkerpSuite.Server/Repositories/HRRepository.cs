@@ -310,6 +310,31 @@ namespace AkerpSuite.Server.Repositories
             return count > 0;
         }
 
+        //public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
+        //{
+        //    using var connection = _context.CreateConnection();
+
+        //    var parameters = new DynamicParameters();
+        //    parameters.Add("p_emp_id", empId);
+        //    parameters.Add("p_status", status);
+        //    parameters.Add("p_month", month);
+        //    parameters.Add("p_year", year);
+
+        //    return await connection.QueryAsync<SelfLeaveResponseDto>(
+        //        "sp_leave_request_getall",
+        //        parameters,
+        //        commandType: CommandType.StoredProcedure);
+        //}
+
+        public async Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int relieverEmpId, string? relieverStatus)
+        {
+            using var connection = _context.CreateConnection();
+            return await connection.QueryAsync<RelieverLeaveRequestDto>(
+                "sp_leave_reliever_requests_get",
+                new { p_reliever_emp_id = relieverEmpId, p_reliever_status = relieverStatus },
+                commandType: CommandType.StoredProcedure);
+        }
+
         public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
         {
             using var connection = _context.CreateConnection();
@@ -320,18 +345,40 @@ namespace AkerpSuite.Server.Repositories
             parameters.Add("p_month", month);
             parameters.Add("p_year", year);
 
-            return await connection.QueryAsync<SelfLeaveResponseDto>(
+            var list = (await connection.QueryAsync<SelfLeaveResponseDto>(
                 "sp_leave_request_getall",
                 parameters,
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).ToList();
+
+            if (list.Count == 0) return list;
+
+            var punches = (await connection.QueryAsync<LeavePunchRow>(
+                @"SELECT leave_id        AS LeaveId,
+                 punch_out_time  AS PunchOutTime,
+                 punch_in_time   AS PunchInTime
+            FROM leave_requests
+           WHERE leave_id IN @Ids
+             AND punch_out_time IS NOT NULL",
+                new { Ids = list.Select(x => x.LeaveId).ToList() }))
+                .ToDictionary(x => x.LeaveId);
+
+            foreach (var item in list)
+            {
+                if (punches.TryGetValue(item.LeaveId, out var p))
+                {
+                    item.PunchOutTime = p.PunchOutTime;
+                    item.PunchInTime = p.PunchInTime;
+                }
+            }
+
+            return list;
         }
-        public async Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int relieverEmpId, string? relieverStatus)
+
+        private class LeavePunchRow
         {
-            using var connection = _context.CreateConnection();
-            return await connection.QueryAsync<RelieverLeaveRequestDto>(
-                "sp_leave_reliever_requests_get",
-                new { p_reliever_emp_id = relieverEmpId, p_reliever_status = relieverStatus },
-                commandType: CommandType.StoredProcedure);
+            public int LeaveId { get; set; }
+            public DateTime? PunchOutTime { get; set; }
+            public DateTime? PunchInTime { get; set; }
         }
 
         public async Task<RelieverActionResult> RelieverActionAsync(int leaveId, int relieverEmpId, string action, string? remarks)
@@ -342,35 +389,7 @@ namespace AkerpSuite.Server.Repositories
                 new { p_leave_id = leaveId, p_reliever_emp_id = relieverEmpId, p_action = action, p_remarks = remarks },
                 commandType: CommandType.StoredProcedure);
         }
-        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
-        //{
-        //    using var connection = _context.CreateConnection();
-
-        //    var parameters = new DynamicParameters();
-        //    parameters.Add("p_emp_id", empId);
-        //    parameters.Add("p_leave_type_id", request.LeaveTypeId);
-        //    parameters.Add("p_from_date", request.FromDate);
-        //    parameters.Add("p_to_date", request.ToDate);
-        //    parameters.Add("p_total_days", request.TotalDays);
-        //    parameters.Add("p_reason", request.Reason);
-        //    parameters.Add("p_reliever_emp_id", request.RelieverEmployeeId);
-        //    parameters.Add("p_reliever_emp_id", request.RelieverEmployeeId);
-        //    parameters.Add("p_from_time", request.FromTime);
-        //    parameters.Add("p_to_time", request.ToTime);
-        //    parameters.Add("p_duration_hours", request.DurationHours);
-
-        //    try
-        //    {
-        //        return await connection.QueryFirstAsync<SelfLeaveResponseDto>(
-        //            "sp_leave_request_create",
-        //            parameters,
-        //            commandType: CommandType.StoredProcedure);
-        //    }
-        //    catch (MySqlException ex) when (ex.SqlState == "45000")
-        //    {
-        //        return new SelfLeaveResponseDto { ErrorMessage = ex.Message };
-        //    }
-        //}
+        
         public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
         {
             using var connection = _context.CreateConnection();
@@ -397,6 +416,38 @@ namespace AkerpSuite.Server.Repositories
             catch (MySqlException ex) when (ex.SqlState == "45000")
             {
                 return new SelfLeaveResponseDto { ErrorMessage = ex.Message };
+            }
+        }
+
+        public async Task ShortLeavePunchOutAsync(int leaveId, int empId)
+        {
+            using var connection = _context.CreateConnection();
+            try
+            {
+                await connection.ExecuteAsync(
+                    "sp_leave_short_punch_out",
+                    new { p_leave_id = leaveId, p_emp_id = empId },
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (MySqlException ex) when (ex.SqlState == "45000")
+            {
+                throw new InvalidOperationException(ex.Message);
+            }
+        }
+
+        public async Task ShortLeavePunchInAsync(int leaveId, int empId, decimal shiftHours)
+        {
+            using var connection = _context.CreateConnection();
+            try
+            {
+                await connection.ExecuteAsync(
+                    "sp_leave_short_punch_in",
+                    new { p_leave_id = leaveId, p_emp_id = empId, p_shift_hours = shiftHours },
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (MySqlException ex) when (ex.SqlState == "45000")
+            {
+                throw new InvalidOperationException(ex.Message);
             }
         }
 

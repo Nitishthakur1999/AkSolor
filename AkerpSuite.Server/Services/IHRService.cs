@@ -44,6 +44,8 @@ namespace AkerpSuite.Server.Services
         Task<IEnumerable<EmployeeBankDetailResponseDto>> GetMyBankDetailsAsync(int empId);
         Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int empId, string? status);
         Task<string> RelieverActionAsync(int leaveId, int empId, RelieverActionDto dto);
+        Task<string> ShortLeavePunchOutAsync(int leaveId, int empId);
+        Task<string> ShortLeavePunchInAsync(int leaveId, int empId);
 
         #endregion
 

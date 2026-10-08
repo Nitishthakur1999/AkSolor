@@ -247,6 +247,23 @@ namespace AkerpSuite.Server.Controllers
             return Ok(ApiResponseDto<SelfLeaveResponseDto>.Ok(result, message));
         }
 
+        [HttpPost("leave/{leaveId:int}/punch-out")]
+        public async Task<IActionResult> PunchOut(int leaveId)
+        {
+            var empId = User.GetEmpId();
+            var message = await _service.ShortLeavePunchOutAsync(leaveId, empId);
+            return Ok(ApiResponseDto<bool>.Ok(true, message));
+        }
+
+        [HttpPost("leave/{leaveId:int}/punch-in")]
+        public async Task<IActionResult> PunchIn(int leaveId)
+        {
+            var empId = User.GetEmpId();
+            var message = await _service.ShortLeavePunchInAsync(leaveId, empId);
+            return Ok(ApiResponseDto<bool>.Ok(true, message));
+        }
+
+
         [HttpGet("leave/types")]
         public async Task<IActionResult> GetLeaveTypes()
         {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import { adminService } from "@/services/adminService";
 
@@ -21,53 +21,21 @@ const MONTHS = [
     { value: 11, label: "November" }, { value: 12, label: "December" },
 ];
 
-const ROLE_VISIBILITY_RULES = {
-    CMD: { seeAll: true },                 // CMD -> no restriction, sees everyone
-    Admin: { hideRoles: ["CMD", "Admin"] }, // Admin -> hides CMD + itself, sees everyone else
-    HR: { hideRoles: ["CMD", "Admin", "HR"] }, // HR -> hides CMD, Admin, other HRs, sees everyone else
-    Employee: { selfOnly: true },           // Employee -> sees only their own record
-};
-
-const getCurrentUser = () => {
-    try {
-        const role = localStorage.getItem("role") || "Employee";
-        const empId = localStorage.getItem("empId");
-        return {
-            role,
-            empId: empId != null ? empId : null,
-        };
-    } catch {
-        return { role: "Employee", empId: null };
-    }
-};
-
-const filterByRoleVisibility = (records, { getRecordRole, getRecordEmpId }) => {
-    const currentUser = getCurrentUser();
-    const rule = ROLE_VISIBILITY_RULES[currentUser.role];
-
-    if (!rule) {
-        return records.filter((r) => getRecordEmpId(r) === currentUser.empId);
-    }
-
-    if (rule.seeAll) {
-        return records;
-    }
-
-    if (rule.selfOnly) {
-        return records.filter((r) => getRecordEmpId(r) === currentUser.empId);
-    }
-
-    return records.filter((r) => !rule.hideRoles.includes(getRecordRole(r)));
-};
 
 const formatCurrency = (value) =>
     value != null ? `₹${Number(value).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "-";
 
-const formatDate = (value) => (value ? value.split("T")[0] : "-");
+const formatDate = (value) => (value ? String(value).split("T")[0] : "-");
 
 const formatTime = (value) => (value ? value.toString().slice(0, 5) : "-");
 
 const PAGE_SIZE = 10;
+
+
+const toYear = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 1900 && n <= 2100 ? n : new Date().getFullYear();
+};
 
 const getSearchableText = (record, tab) => {
     if (tab === "employees") {
@@ -91,6 +59,7 @@ const getSearchableText = (record, tab) => {
 
 // UI Helpers
 const inputClass = "w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm";
+const labelClass = "block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1";
 
 const getStatusBadge = (status) => {
     const s = (status || "").toLowerCase();
@@ -101,6 +70,25 @@ const getStatusBadge = (status) => {
     return "bg-slate-50 text-slate-600 border-slate-200";
 };
 
+const Th = ({ children, right = false }) => (
+    <th className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 ${right ? "text-right" : ""}`}>
+        {children}
+    </th>
+);
+
+const StatusBadge = ({ status }) => (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(status)}`}>
+        {status}
+    </span>
+);
+
+// Backend may send camelCase (success/data) or PascalCase (Success/Data)
+const unwrap = (res) => ({
+    ok: !!(res?.success ?? res?.Success),
+    message: res?.message ?? res?.Message,
+    data: res?.data ?? res?.Data ?? [],
+});
+
 export default function ReportsPage({ initialTab = "employees" }) {
     const [activeTab, setActiveTab] = useState(initialTab);
     const [records, setRecords] = useState([]);
@@ -108,67 +96,55 @@ export default function ReportsPage({ initialTab = "employees" }) {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [printAll, setPrintAll] = useState(false);
 
     const [empFilters, setEmpFilters] = useState({ departmentId: "", roleId: "", status: "", designationId: "" });
     const [attFilters, setAttFilters] = useState({ empId: "", status: "", fromDate: "", toDate: "" });
-    const [leaveFilters, setLeaveFilters] = useState({ empId: "", status: "", month: "", year: new Date().getFullYear() });
+    const [leaveFilters, setLeaveFilters] = useState({ empId: "", status: "", month: "", year: String(new Date().getFullYear()) });
     const [payrollFilters, setPayrollFilters] = useState({
         month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+        year: String(new Date().getFullYear()),
         empId: "",
     });
 
-    const fetchReport = async () => {
+    // Used to ignore responses from older / other-tab requests
+    const requestIdRef = useRef(0);
+
+    const fetchReport = async (tab = activeTab) => {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
         setError(null);
+
         try {
             let res;
-            if (activeTab === "employees") res = await adminService.getEmployeeReportData(empFilters);
-            else if (activeTab === "attendance") res = await adminService.getAttendanceReportData(attFilters);
-            else if (activeTab === "leave") res = await adminService.getLeaveReportData(leaveFilters);
-            else if (activeTab === "payroll") res = await adminService.getPayrollReportData(payrollFilters);
+            if (tab === "employees") res = await adminService.getEmployeeReportData(empFilters);
+            else if (tab === "attendance") res = await adminService.getAttendanceReportData(attFilters);
+            else if (tab === "leave") res = await adminService.getLeaveReportData({ ...leaveFilters, year: toYear(leaveFilters.year) });
+            else if (tab === "payroll") res = await adminService.getPayrollReportData({ ...payrollFilters, year: toYear(payrollFilters.year) });
 
-            if (!res?.success) {
-                setError(res?.message || "Unable to load the report. Please try again.");
+            if (requestId !== requestIdRef.current) return; // stale response
+
+            const { ok, message, data } = unwrap(res);
+
+            if (!ok) {
+                setError(message || "Unable to load the report. Please try again.");
                 setRecords([]);
                 return;
             }
 
-            let data = res.data || [];
-
-            if (activeTab === "employees") {
-                data = filterByRoleVisibility(data, {
-                    getRecordRole: (e) => e.roleName,
-                    getRecordEmpId: (e) => e.empId,
-                });
-            } else if (activeTab === "attendance") {
-                data = filterByRoleVisibility(data, {
-                    getRecordRole: (r) => r.roleName,
-                    getRecordEmpId: (r) => r.empId,
-                });
-            } else if (activeTab === "leave") {
-                data = filterByRoleVisibility(data, {
-                    getRecordRole: (r) => r.roleName,
-                    getRecordEmpId: (r) => r.empId,
-                });
-            } else if (activeTab === "payroll") {
-                data = filterByRoleVisibility(data, {
-                    getRecordRole: (r) => r.roleName,
-                    getRecordEmpId: (r) => r.empId,
-                });
-            }
-
-            setRecords(data);
+            setRecords(Array.isArray(data) ? data : []);
         } catch (err) {
+            if (requestId !== requestIdRef.current) return;
+            console.error("Report load failed:", tab, err);
             setError("Something went wrong while loading the report. Please check your connection or access permissions.");
             setRecords([]);
         } finally {
-            setLoading(false);
+            if (requestId === requestIdRef.current) setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchReport();
+        fetchReport(activeTab);
         setSearchQuery("");
         setCurrentPage(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,15 +154,36 @@ export default function ReportsPage({ initialTab = "employees" }) {
         setCurrentPage(1);
     }, [searchQuery]);
 
+    // Print: render all rows, then open print dialog
+    useEffect(() => {
+        if (!printAll) return;
+        const timer = setTimeout(() => window.print(), 150);
+        const done = () => setPrintAll(false);
+        window.addEventListener("afterprint", done);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener("afterprint", done);
+        };
+    }, [printAll]);
+
     const filteredRecords = searchQuery.trim()
         ? records.filter((r) => getSearchableText(r, activeTab).includes(searchQuery.trim().toLowerCase()))
         : records;
 
     const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
     const safePage = Math.min(currentPage, totalPages);
-    const paginatedRecords = filteredRecords.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+    const paginatedRecords = printAll
+        ? filteredRecords
+        : filteredRecords.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-    const handleTabChange = (key) => setActiveTab(key);
+    const handleTabChange = (key) => {
+        if (key === activeTab) return;
+        // Clear old tab's data immediately so wrong columns never render
+        setRecords([]);
+        setError(null);
+        setLoading(true);
+        setActiveTab(key);
+    };
 
     // ---------- Export ----------
     const handleExportExcel = () => {
@@ -235,7 +232,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
             sheetName = "Payroll";
             rows = filteredRecords.map((r) => ({
                 "Emp Code": r.empCode,
-                Name: `${r.firstName} ${r.lastName}`,
+                Name: `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim(),
                 Department: r.deptName,
                 "Present Days": r.presentDays,
                 "Absent Days": r.absentDays,
@@ -252,14 +249,14 @@ export default function ReportsPage({ initialTab = "employees" }) {
         XLSX.writeFile(workbook, `${sheetName}_Report_${Date.now()}.xlsx`);
     };
 
-    const handleExportPDF = () => window.print();
+    const handleExportPDF = () => setPrintAll(true);
 
     // ---------- Filter Bar (per tab) ----------
     const renderFilters = () => {
         if (activeTab === "employees") {
             return (
                 <div className="flex-1 min-w-[200px]">
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
+                    <label className={labelClass}>Status</label>
                     <select
                         className={`${inputClass} cursor-pointer appearance-none`}
                         value={empFilters.status}
@@ -276,7 +273,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
             return (
                 <>
                     <div className="flex-1 min-w-[150px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">From Date</label>
+                        <label className={labelClass}>From Date</label>
                         <input
                             type="date"
                             className={inputClass}
@@ -285,7 +282,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         />
                     </div>
                     <div className="flex-1 min-w-[150px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">To Date</label>
+                        <label className={labelClass}>To Date</label>
                         <input
                             type="date"
                             className={inputClass}
@@ -294,7 +291,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         />
                     </div>
                     <div className="flex-1 min-w-[180px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
+                        <label className={labelClass}>Status</label>
                         <select
                             className={`${inputClass} cursor-pointer appearance-none`}
                             value={attFilters.status}
@@ -312,7 +309,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
             return (
                 <>
                     <div className="flex-1 min-w-[160px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Month</label>
+                        <label className={labelClass}>Month</label>
                         <select
                             className={`${inputClass} cursor-pointer appearance-none`}
                             value={leaveFilters.month}
@@ -323,16 +320,16 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </select>
                     </div>
                     <div className="flex-1 min-w-[120px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year</label>
+                        <label className={labelClass}>Year</label>
                         <input
                             type="number"
                             className={inputClass}
                             value={leaveFilters.year}
-                            onChange={(e) => setLeaveFilters((p) => ({ ...p, year: Number(e.target.value) }))}
+                            onChange={(e) => setLeaveFilters((p) => ({ ...p, year: e.target.value }))}
                         />
                     </div>
                     <div className="flex-1 min-w-[160px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Status</label>
+                        <label className={labelClass}>Status</label>
                         <select
                             className={`${inputClass} cursor-pointer appearance-none`}
                             value={leaveFilters.status}
@@ -350,7 +347,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
             return (
                 <>
                     <div className="flex-1 min-w-[160px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Month</label>
+                        <label className={labelClass}>Month</label>
                         <select
                             className={`${inputClass} cursor-pointer appearance-none`}
                             value={payrollFilters.month}
@@ -360,12 +357,12 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </select>
                     </div>
                     <div className="flex-1 min-w-[120px]">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Year</label>
+                        <label className={labelClass}>Year</label>
                         <input
                             type="number"
                             className={inputClass}
                             value={payrollFilters.year}
-                            onChange={(e) => setPayrollFilters((p) => ({ ...p, year: Number(e.target.value) }))}
+                            onChange={(e) => setPayrollFilters((p) => ({ ...p, year: e.target.value }))}
                         />
                     </div>
                 </>
@@ -409,34 +406,30 @@ export default function ReportsPage({ initialTab = "employees" }) {
             );
         }
 
+        const tableBase = "w-full text-left border-collapse whitespace-nowrap";
+        const theadClass = "bg-slate-50/80 border-b border-slate-200";
+        const tbodyClass = "divide-y divide-slate-100 text-sm text-slate-700";
+        const rowClass = "hover:bg-slate-50/60 transition-colors";
+
         if (activeTab === "employees") {
             return (
-                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
-                    <thead className="bg-slate-50/80 border-b border-slate-200">
+                <table className={`${tableBase} min-w-[900px]`}>
+                    <thead className={theadClass}>
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Department</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Designation</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Role</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Joining Date</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                            <Th>Emp Code</Th><Th>Name</Th><Th>Department</Th><Th>Designation</Th>
+                            <Th>Role</Th><Th>Joining Date</Th><Th>Status</Th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                    <tbody className={tbodyClass}>
                         {paginatedRecords.map((e, i) => (
-                            <tr key={`emp-${e.empId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                            <tr key={`emp-${e.empId ?? i}-${i}`} className={rowClass}>
                                 <td className="px-6 py-4 font-mono font-bold text-amber-600">{e.empCode}</td>
                                 <td className="px-6 py-4 font-bold text-slate-900">{e.fullName}</td>
                                 <td className="px-6 py-4">{e.deptName || "—"}</td>
                                 <td className="px-6 py-4">{e.desigName || "—"}</td>
                                 <td className="px-6 py-4"><span className="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wider">{e.roleName || "—"}</span></td>
                                 <td className="px-6 py-4">{formatDate(e.dateOfJoining)}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(e.employmentStatus)}`}>
-                                        {e.employmentStatus}
-                                    </span>
-                                </td>
+                                <td className="px-6 py-4"><StatusBadge status={e.employmentStatus} /></td>
                             </tr>
                         ))}
                     </tbody>
@@ -446,32 +439,22 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
         if (activeTab === "attendance") {
             return (
-                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
-                    <thead className="bg-slate-50/80 border-b border-slate-200">
+                <table className={`${tableBase} min-w-[900px]`}>
+                    <thead className={theadClass}>
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Date</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Check In</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Check Out</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Late (min)</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Overtime (hrs)</th>
+                            <Th>Emp Code</Th><Th>Name</Th><Th>Date</Th><Th>Check In</Th>
+                            <Th>Check Out</Th><Th>Status</Th><Th>Late (min)</Th><Th>Overtime (hrs)</Th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                    <tbody className={tbodyClass}>
                         {paginatedRecords.map((r, i) => (
-                            <tr key={`att-${r.attId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                            <tr key={`att-${r.attId ?? i}-${i}`} className={rowClass}>
                                 <td className="px-6 py-4 font-mono font-bold text-amber-600">{r.empCode}</td>
                                 <td className="px-6 py-4 font-bold text-slate-900">{r.fullName}</td>
                                 <td className="px-6 py-4">{formatDate(r.attDate)}</td>
                                 <td className="px-6 py-4 font-mono font-medium">{formatTime(r.checkIn)}</td>
                                 <td className="px-6 py-4 font-mono font-medium">{formatTime(r.checkOut)}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(r.status)}`}>
-                                        {r.status}
-                                    </span>
-                                </td>
+                                <td className="px-6 py-4"><StatusBadge status={r.status} /></td>
                                 <td className="px-6 py-4 font-mono font-semibold text-rose-500">{r.lateMinutes ? `${r.lateMinutes} min` : "-"}</td>
                                 <td className="px-6 py-4 font-mono font-semibold text-emerald-600">{r.overtimeHours ? `${r.overtimeHours} hrs` : "-"}</td>
                             </tr>
@@ -483,22 +466,16 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
         if (activeTab === "leave") {
             return (
-                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[900px]">
-                    <thead className="bg-slate-50/80 border-b border-slate-200">
+                <table className={`${tableBase} min-w-[900px]`}>
+                    <thead className={theadClass}>
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Department</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Leave Type</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">From - To</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Days</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Approved By</th>
+                            <Th>Emp Code</Th><Th>Name</Th><Th>Department</Th><Th>Leave Type</Th>
+                            <Th>From - To</Th><Th>Days</Th><Th>Status</Th><Th>Approved By</Th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                    <tbody className={tbodyClass}>
                         {paginatedRecords.map((r, i) => (
-                            <tr key={`leave-${r.leaveId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                            <tr key={`leave-${r.leaveId ?? i}-${i}`} className={rowClass}>
                                 <td className="px-6 py-4 font-mono font-bold text-amber-600">{r.empCode}</td>
                                 <td className="px-6 py-4 font-bold text-slate-900">{r.fullName}</td>
                                 <td className="px-6 py-4">{r.department || "—"}</td>
@@ -507,11 +484,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                                     {formatDate(r.fromDate)} <span className="mx-1 text-slate-300">to</span> {formatDate(r.toDate)}
                                 </td>
                                 <td className="px-6 py-4 font-mono font-bold text-slate-800">{r.totalDays}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(r.status)}`}>
-                                        {r.status}
-                                    </span>
-                                </td>
+                                <td className="px-6 py-4"><StatusBadge status={r.status} /></td>
                                 <td className="px-6 py-4 text-xs font-semibold">{r.approvedByName ?? "-"}</td>
                             </tr>
                         ))}
@@ -521,25 +494,18 @@ export default function ReportsPage({ initialTab = "employees" }) {
         }
 
         if (activeTab === "payroll") {
-            const totalNetSalary = filteredRecords.reduce((sum, r) => sum + (r.netSalary || 0), 0);
+            const totalNetSalary = filteredRecords.reduce((sum, r) => sum + Number(r.netSalary || 0), 0);
             return (
-                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1000px]">
-                    <thead className="bg-slate-50/80 border-b border-slate-200">
+                <table className={`${tableBase} min-w-[1000px]`}>
+                    <thead className={theadClass}>
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Emp Code</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Name</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Department</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Present</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Absent</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Gross Earning</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Total Deduction</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-right">Net Salary</th>
-                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
+                            <Th>Emp Code</Th><Th>Name</Th><Th>Department</Th><Th>Present</Th><Th>Absent</Th>
+                            <Th right>Gross Earning</Th><Th right>Total Deduction</Th><Th right>Net Salary</Th><Th>Status</Th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                    <tbody className={tbodyClass}>
                         {paginatedRecords.map((r, i) => (
-                            <tr key={`payroll-${r.detailId}-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                            <tr key={`payroll-${r.detailId ?? i}-${i}`} className={rowClass}>
                                 <td className="px-6 py-4 font-mono font-bold text-amber-600">{r.empCode}</td>
                                 <td className="px-6 py-4 font-bold text-slate-900">{r.firstName} {r.lastName}</td>
                                 <td className="px-6 py-4">{r.deptName || "—"}</td>
@@ -548,11 +514,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                                 <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(r.grossEarning)}</td>
                                 <td className="px-6 py-4 text-right font-mono font-medium text-rose-500">{formatCurrency(r.totalDeduction)}</td>
                                 <td className="px-6 py-4 text-right font-mono font-black text-emerald-700 bg-emerald-50/30">{formatCurrency(r.netSalary)}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide border ${getStatusBadge(r.status)}`}>
-                                        {r.status}
-                                    </span>
-                                </td>
+                                <td className="px-6 py-4"><StatusBadge status={r.status} /></td>
                             </tr>
                         ))}
                     </tbody>
@@ -587,7 +549,7 @@ export default function ReportsPage({ initialTab = "employees" }) {
                 }
             `}</style>
 
-            {/* ── Premium Header Section ── */}
+            {/* ── Header ── */}
             <div className="bg-[#0b2532] rounded-[24px] px-6 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm relative overflow-hidden print:hidden">
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="flex items-center gap-4 relative z-10">
@@ -604,15 +566,15 @@ export default function ReportsPage({ initialTab = "employees" }) {
             {/* ── Main Container ── */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden print:border-none print:shadow-none">
 
-                {/* ── Tabs Navigation ── */}
+                {/* ── Tabs ── */}
                 <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50 print:hidden">
                     {TABS.map((tab) => (
                         <button
                             key={tab.key}
                             onClick={() => handleTabChange(tab.key)}
                             className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === tab.key
-                                    ? "border-amber-500 text-amber-600 bg-white"
-                                    : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                                ? "border-amber-500 text-amber-600 bg-white"
+                                : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                                 }`}
                         >
                             {tab.icon && <i className={`${tab.icon} text-[13px]`} />}
@@ -623,17 +585,14 @@ export default function ReportsPage({ initialTab = "employees" }) {
 
                 <div className="p-5 sm:p-6 min-h-[400px]">
 
-                    {/* ── Controls Row: Search + Filters + Apply + Exports ── */}
+                    {/* ── Controls: Search + Filters + Apply + Exports ── */}
                     <div className="flex flex-col xl:flex-row gap-5 mb-6 print:hidden">
 
-                        {/* Left: Search & Filters */}
                         <div className="flex-1 flex flex-wrap gap-4 items-end bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
 
                             {/* Search */}
                             <div className="flex-1 min-w-[220px]">
-                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">
-                                    Search Records
-                                </label>
+                                <label className={labelClass}>Search Records</label>
                                 <div className="relative group">
                                     <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
                                     <input
@@ -654,19 +613,17 @@ export default function ReportsPage({ initialTab = "employees" }) {
                                 </div>
                             </div>
 
-                            {/* Filters */}
                             {renderFilters()}
 
-                            {/* Apply Button */}
                             <button
-                                onClick={fetchReport}
+                                onClick={() => fetchReport(activeTab)}
                                 className="px-6 py-2.5 bg-[#0b2836] text-white font-bold rounded-xl text-sm shadow-md shadow-[#0b2836]/20 hover:bg-[#0f3345] transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 h-[42px] whitespace-nowrap w-full sm:w-auto"
                             >
                                 <i className="fa-solid fa-filter" /> Apply Filters
                             </button>
                         </div>
 
-                        {/* Right: Exports */}
+                        {/* Exports */}
                         <div className="flex flex-row xl:flex-col gap-3 justify-end w-full xl:w-auto">
                             <button
                                 onClick={handleExportExcel}
@@ -685,13 +642,13 @@ export default function ReportsPage({ initialTab = "employees" }) {
                         </div>
                     </div>
 
-                    {/* ── Table Area ── */}
-                    <div id="printable-report" className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    {/* ── Table ── */}
+                    <div id="printable-report" className="border border-slate-200 rounded-2xl overflow-x-auto bg-white shadow-sm">
                         {renderTable()}
                     </div>
 
                     {/* ── Pagination ── */}
-                    {!loading && !error && filteredRecords.length > 0 && (
+                    {hasData && (
                         <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-slate-50/50 border border-slate-200 text-sm text-slate-500 gap-4 mt-5 rounded-2xl print:hidden">
                             <div>
                                 Showing <span className="font-bold text-slate-800">{(safePage - 1) * PAGE_SIZE + 1}</span> to{" "}
@@ -723,8 +680,8 @@ export default function ReportsPage({ initialTab = "employees" }) {
                                                     key={p}
                                                     onClick={() => setCurrentPage(p)}
                                                     className={`w-9 h-9 flex items-center justify-center rounded-xl border text-sm font-bold transition-all shadow-sm ${p === safePage
-                                                            ? "bg-amber-500 border-amber-500 text-white"
-                                                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                        ? "bg-amber-500 border-amber-500 text-white"
+                                                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                                                         }`}
                                                 >
                                                     {p}

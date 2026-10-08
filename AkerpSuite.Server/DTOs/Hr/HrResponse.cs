@@ -197,6 +197,8 @@ namespace AkerpSuite.Server.DTOs.Hr
         public TimeSpan? ToTime { get; set; }
         public decimal? DurationHours { get; set; }
         public bool IsShortLeave { get; set; }
+        public DateTime? PunchOutTime { get; set; }
+        public DateTime? PunchInTime { get; set; }
     }
     public class LeaveTypeInfoDto
     {

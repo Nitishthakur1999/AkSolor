@@ -112,7 +112,7 @@ namespace AkerpSuite.Server.DTOs.Hr
         public TimeSpan? FromTime { get; set; }
         public TimeSpan? ToTime { get; set; }
         public decimal? DurationHours { get; set; }
-
+        public bool IsShortLeave { get; set; }
     }
 
     public class SelfAttendanceRegularizationRequestDto
