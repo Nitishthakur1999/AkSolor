@@ -5,9 +5,11 @@ using AkerpSuite.Server.Repositories;
 using AkerpSuite.Server.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO.Compression;
 using System.Security.Claims;
 using System.Text;
 
@@ -22,6 +24,23 @@ builder.Services.AddControllers()
     });
 builder.Services.AddScoped<FileUploadHelper>();
 
+// Response compression (Brotli + Gzip)
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "image/svg+xml",
+        "application/javascript",
+        "text/javascript",
+        "text/css",
+        "application/json"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -33,7 +52,6 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
-    // JWT Authentication in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Enter JWT Token. Example: Bearer eyJhbGciOiJIUzI1NiIs...",
@@ -71,10 +89,10 @@ builder.Services.AddScoped<IHRService, HRService>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddSingleton<JwtHelper>();
 
-// 🔔 Email Service (probation/anniversary reminders, etc.)
+// Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// 🔔 Hangfire — background job scheduler (free/open-source)
+// Hangfire
 builder.Services.AddHangfire(config => config
     .UseStorage(new Hangfire.MySql.MySqlStorage(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -110,14 +128,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly",
-        policy => policy.RequireRole("Admin"));
-
-    options.AddPolicy("HROnly",
-        policy => policy.RequireRole("HR"));
-
-    options.AddPolicy("Management",
-        policy => policy.RequireRole("CMD", "Admin", "Manager"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("HROnly", policy => policy.RequireRole("HR"));
+    options.AddPolicy("Management", policy => policy.RequireRole("CMD", "Admin", "Manager"));
 });
 
 // CORS
@@ -134,27 +147,37 @@ builder.Services.AddCors(options =>
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
 var app = builder.Build();
-app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseSwagger();
-app.UseSwaggerUI();
+
+// 1) Compression sabse pehle
+app.UseResponseCompression();
+
+// 2) HTTPS redirect
 app.UseHttpsRedirection();
 
+// 3) Static files EXCEPTION middleware se pehle, taaki index.html/assets fast serve ho
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        if (ctx.File.Name.EndsWith(".html"))
+        var headers = ctx.Context.Response.Headers;
+
+        if (ctx.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
         {
-            ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            // no-cache = ETag se revalidate (304), no-store se better
+            headers["Cache-Control"] = "no-cache";
+        }
+        else if (ctx.Context.Request.Path.StartsWithSegments("/assets"))
+        {
+            headers["Cache-Control"] = "public, max-age=31536000, immutable";
         }
         else
         {
-            ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            headers["Cache-Control"] = "public, max-age=86400";
         }
     }
 });
 
-// 🆕 Persistent uploads folder — deployment/FTP se safe rehta hai (wwwroot ke bahar)
+// 4) Persistent uploads folder
 var uploadsConfigPath = builder.Configuration["UploadsRootPath"];
 if (!string.IsNullOrWhiteSpace(uploadsConfigPath))
 {
@@ -168,8 +191,21 @@ if (!string.IsNullOrWhiteSpace(uploadsConfigPath))
     app.UseStaticFiles(new StaticFileOptions
     {
         FileProvider = new PhysicalFileProvider(uploadsPath),
-        RequestPath = ""
+        RequestPath = "",
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=2592000";
+        }
     });
+}
+
+// 5) Exception middleware + Swagger (sirf Development)
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseCors("AllowAll");
@@ -188,6 +224,13 @@ RecurringJob.AddOrUpdate<IAuthService>(
     s => s.CleanupExpiredRefreshTokensAsync(),
     Cron.Daily(3, 0));
 
-app.MapFallbackToFile("index.html");
+// SPA fallback
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+    }
+});
 
 app.Run();

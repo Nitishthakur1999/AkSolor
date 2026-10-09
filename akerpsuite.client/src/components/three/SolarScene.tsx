@@ -1,12 +1,7 @@
-// SolarScene.tsx — the site's signature 3D visual. A tilted field of solar
-// panels (real frame + wired cell-grid texture), a glowing sun with an
-// additive halo, drifting light particles, and a slow parallax camera.
-// Fully theme-aware: dark mode reads as a moody night installation, light
-// mode reads as a clean, professional daylight render — same geometry,
-// different palette, so the site never looks "off" in either mode.
-import { useRef, useMemo, Suspense, type ReactNode } from 'react'
+// SolarScene.tsx — optimized: instanced panels, shared texture, no drei,
+// render pauses when offscreen. Visual same rahega.
+import { useRef, useMemo, useEffect, useLayoutEffect, useState, Suspense, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import { useTheme } from '../../context/ThemeContext'
 
@@ -17,40 +12,40 @@ type Palette = ReturnType<typeof getScenePalette>
 export function getScenePalette(mode: Mode) {
     return mode === 'dark'
         ? {
-              bgTop: '#0b0d13',
-              bgBottom: '#05060a',
-              frame: '#20242f',
-              cell: '#0a2f2a',
-              cellLine: '#00f0c8',
-              sun: '#E4FF4E',
-              sunGlow: '#FF4D2E',
-              particle: '#FF4D2E',
-              ground: '#0a0b10',
-              fog: '#05060a',
-              ambient: 0.45,
-              key: '#E4FF4E',
-              rim: '#00F0C8',
-          }
+            bgTop: '#0b0d13',
+            bgBottom: '#05060a',
+            frame: '#20242f',
+            cell: '#0a2f2a',
+            cellLine: '#00f0c8',
+            sun: '#E4FF4E',
+            sunGlow: '#FF4D2E',
+            particle: '#FF4D2E',
+            ground: '#0a0b10',
+            fog: '#05060a',
+            ambient: 0.45,
+            key: '#E4FF4E',
+            rim: '#00F0C8',
+        }
         : {
-              bgTop: '#eef3f6',
-              bgBottom: '#dbe4ea',
-              frame: '#1f2733',
-              cell: '#123b46',
-              cellLine: '#00A88F',
-              sun: '#FFC24B',
-              sunGlow: '#E0421F',
-              particle: '#E0421F',
-              ground: '#e4eaee',
-              fog: '#dbe4ea',
-              ambient: 1.0,
-              key: '#FFC24B',
-              rim: '#00A88F',
-          }
+            bgTop: '#eef3f6',
+            bgBottom: '#dbe4ea',
+            frame: '#1f2733',
+            cell: '#123b46',
+            cellLine: '#00A88F',
+            sun: '#FFC24B',
+            sunGlow: '#E0421F',
+            particle: '#E0421F',
+            ground: '#e4eaee',
+            fog: '#dbe4ea',
+            ambient: 1.0,
+            key: '#FFC24B',
+            rim: '#00A88F',
+        }
 }
 
-// Procedural canvas texture for a wired PV-cell grid — no external assets.
+// Ek hi texture sab panels ke liye (pehle 54 the). Palette badle to purana dispose.
 function useCellTexture(cellColor: string, lineColor: string) {
-    return useMemo(() => {
+    const tex = useMemo(() => {
         const size = 256
         const c = document.createElement('canvas')
         c.width = size
@@ -84,16 +79,18 @@ function useCellTexture(cellColor: string, lineColor: string) {
         grad.addColorStop(1, 'rgba(255,255,255,0.06)')
         ctx.fillStyle = grad
         ctx.fillRect(0, 0, size, size)
-        const tex = new THREE.CanvasTexture(c)
-        tex.colorSpace = THREE.SRGBColorSpace
-        return tex
+        const t = new THREE.CanvasTexture(c)
+        t.colorSpace = THREE.SRGBColorSpace
+        return t
     }, [cellColor, lineColor])
+
+    useEffect(() => () => tex.dispose(), [tex])
+    return tex
 }
 
-// Procedural soft radial-glow sprite (used additively behind the sun).
 function useGlowTexture(color: string) {
-    return useMemo(() => {
-        const size = 256
+    const tex = useMemo(() => {
+        const size = 128
         const c = document.createElement('canvas')
         c.width = size
         c.height = size
@@ -106,58 +103,44 @@ function useGlowTexture(color: string) {
         ctx.fillRect(0, 0, size, size)
         return new THREE.CanvasTexture(c)
     }, [color])
+
+    useEffect(() => () => tex.dispose(), [tex])
+    return tex
 }
 
-function Panel({ x, z, delay, palette }: { x: number; z: number; delay: number; palette: Palette }) {
-    const mesh = useRef<THREE.Group>(null!)
-    const cellTex = useCellTexture(palette.cell, palette.cellLine)
-
-    useFrame(({ clock }) => {
-        const t = clock.getElapsedTime()
-        if (mesh.current) mesh.current.position.y = Math.sin(t * 0.6 + delay) * 0.05
-    })
-
-    return (
-        <group ref={mesh} position={[x, 0, z]} rotation={[-0.38, 0, 0]}>
-            {/* frame */}
-            <mesh>
-                <boxGeometry args={[1.2, 0.05, 0.78]} />
-                <meshStandardMaterial color={palette.frame} metalness={0.75} roughness={0.35} />
-            </mesh>
-            {/* cell surface */}
-            <mesh position={[0, 0.027, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[1.08, 0.66]} />
-                <meshStandardMaterial
-                    map={cellTex}
-                    metalness={0.4}
-                    roughness={0.5}
-                    emissive={palette.cellLine}
-                    emissiveIntensity={0.12}
-                    emissiveMap={cellTex}
-                />
-            </mesh>
-        </group>
-    )
-}
-
+// Saare panels = 2 InstancedMesh (frame + cells). Pehle 108 meshes + 54 useFrame the.
 function PanelField({ variant, palette }: { variant: Variant; palette: Palette }) {
     const group = useRef<THREE.Group>(null!)
+    const frameRef = useRef<THREE.InstancedMesh>(null!)
+    const cellRef = useRef<THREE.InstancedMesh>(null!)
     const rows = variant === 'hero' ? 6 : 4
     const cols = variant === 'hero' ? 9 : 7
+    const count = rows * cols
+    const cellTex = useCellTexture(palette.cell, palette.cellLine)
 
-    const panels = useMemo(() => {
-        const arr: { x: number; z: number; delay: number }[] = []
+    useLayoutEffect(() => {
+        const parent = new THREE.Object3D()
+        const child = new THREE.Object3D()
+        const m = new THREE.Matrix4()
+        child.position.set(0, 0.027, 0)
+        child.rotation.set(-Math.PI / 2, 0, 0)
+        child.updateMatrix()
+
+        let i = 0
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                arr.push({
-                    x: (c - (cols - 1) / 2) * 1.4,
-                    z: (r - (rows - 1) / 2) * 1.65,
-                    delay: Math.random() * Math.PI * 2,
-                })
+                parent.position.set((c - (cols - 1) / 2) * 1.4, 0, (r - (rows - 1) / 2) * 1.65)
+                parent.rotation.set(-0.38, 0, 0)
+                parent.updateMatrix()
+
+                frameRef.current.setMatrixAt(i, parent.matrix)
+                m.multiplyMatrices(parent.matrix, child.matrix)
+                cellRef.current.setMatrixAt(i, m)
+                i++
             }
         }
-        return arr
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        frameRef.current.instanceMatrix.needsUpdate = true
+        cellRef.current.instanceMatrix.needsUpdate = true
     }, [rows, cols])
 
     useFrame(({ clock }) => {
@@ -167,9 +150,21 @@ function PanelField({ variant, palette }: { variant: Variant; palette: Palette }
 
     return (
         <group ref={group} rotation={[0.48, 0.28, 0]} position={[0, -0.4, 0]}>
-            {panels.map((p, i) => (
-                <Panel key={i} x={p.x} z={p.z} delay={p.delay} palette={palette} />
-            ))}
+            <instancedMesh key={`f${count}`} ref={frameRef} args={[undefined, undefined, count]} frustumCulled={false}>
+                <boxGeometry args={[1.2, 0.05, 0.78]} />
+                <meshStandardMaterial color={palette.frame} metalness={0.75} roughness={0.35} />
+            </instancedMesh>
+            <instancedMesh key={`c${count}`} ref={cellRef} args={[undefined, undefined, count]} frustumCulled={false}>
+                <planeGeometry args={[1.08, 0.66]} />
+                <meshStandardMaterial
+                    map={cellTex}
+                    metalness={0.4}
+                    roughness={0.5}
+                    emissive={palette.cellLine}
+                    emissiveIntensity={0.12}
+                    emissiveMap={cellTex}
+                />
+            </instancedMesh>
         </group>
     )
 }
@@ -177,7 +172,7 @@ function PanelField({ variant, palette }: { variant: Variant; palette: Palette }
 function Ground({ palette }: { palette: Palette }) {
     return (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.4, 0]}>
-            <circleGeometry args={[9, 48]} />
+            <circleGeometry args={[9, 40]} />
             <meshStandardMaterial color={palette.ground} roughness={0.9} metalness={0} />
         </mesh>
     )
@@ -202,11 +197,11 @@ function Sun({ variant, palette }: { variant: Variant; palette: Palette }) {
                 <spriteMaterial map={glowTex} transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
             </sprite>
             <mesh ref={ref}>
-                <sphereGeometry args={[1, 32, 32]} />
+                <sphereGeometry args={[1, 24, 24]} />
                 <meshBasicMaterial color={palette.sun} />
             </mesh>
             <mesh ref={ring} rotation={[Math.PI / 2.4, 0, 0]}>
-                <torusGeometry args={[scale * 1.7, 0.012, 8, 64]} />
+                <torusGeometry args={[scale * 1.7, 0.012, 8, 48]} />
                 <meshBasicMaterial color={palette.rim} transparent opacity={0.35} />
             </mesh>
         </group>
@@ -223,7 +218,6 @@ function Particles({ count, color }: { count: number; color: string }) {
             arr[i * 3 + 2] = (Math.random() - 0.5) * 10
         }
         return arr
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [count])
 
     useFrame(({ clock }) => {
@@ -236,6 +230,36 @@ function Particles({ count, color }: { count: number; color: string }) {
                 <bufferAttribute attach="attributes-position" args={[positions, 3]} />
             </bufferGeometry>
             <pointsMaterial size={0.035} color={color} transparent opacity={0.6} sizeAttenuation />
+        </points>
+    )
+}
+
+// drei <Stars> ki jagah: ek chhota points cloud (dark mode only). drei import khatam.
+function StarField({ count }: { count: number }) {
+    const points = useRef<THREE.Points>(null!)
+    const positions = useMemo(() => {
+        const arr = new Float32Array(count * 3)
+        for (let i = 0; i < count; i++) {
+            const r = 25 + Math.random() * 20
+            const theta = Math.random() * Math.PI * 2
+            const phi = Math.acos(2 * Math.random() - 1)
+            arr[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+            arr[i * 3 + 1] = Math.abs(r * Math.cos(phi)) * 0.6
+            arr[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta)
+        }
+        return arr
+    }, [count])
+
+    useFrame(({ clock }) => {
+        if (points.current) points.current.rotation.y = clock.getElapsedTime() * 0.01
+    })
+
+    return (
+        <points ref={points}>
+            <bufferGeometry>
+                <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+            </bufferGeometry>
+            <pointsMaterial size={0.09} color="#ffffff" transparent opacity={0.75} sizeAttenuation depthWrite={false} fog={false} />
         </points>
     )
 }
@@ -253,26 +277,26 @@ function IntroRig({ children }: { children: ReactNode }) {
     return <group ref={group}>{children}</group>
 }
 
+// Bug fix: pehle useMemo me listener tha (cleanup nahi). Ab useEffect.
 function MouseRig({ variant }: { variant: Variant }) {
     const { camera } = useThree()
     const target = useRef({ x: 0, y: 0 })
+
+    useEffect(() => {
+        function onMove(e: PointerEvent) {
+            const nx = (e.clientX / window.innerWidth - 0.5) * 1.2
+            const ny = (e.clientY / window.innerHeight - 0.5) * 0.6
+            target.current = { x: nx, y: -ny }
+        }
+        window.addEventListener('pointermove', onMove, { passive: true })
+        return () => window.removeEventListener('pointermove', onMove)
+    }, [])
 
     useFrame(() => {
         camera.position.x += (target.current.x - camera.position.x) * 0.03
         camera.position.y += (target.current.y + (variant === 'hero' ? 1.6 : 1.1) - camera.position.y) * 0.03
         camera.lookAt(0, 0, 0)
     })
-
-    useMemo(() => {
-        function onMove(e: PointerEvent) {
-            const nx = (e.clientX / window.innerWidth - 0.5) * 1.2
-            const ny = (e.clientY / window.innerHeight - 0.5) * 0.6
-            target.current = { x: nx, y: -ny }
-        }
-        window.addEventListener('pointermove', onMove)
-        return () => window.removeEventListener('pointermove', onMove)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
 
     return null
 }
@@ -281,35 +305,47 @@ export default function SolarScene({ variant = 'hero' }: { variant?: Variant }) 
     const { theme } = useTheme()
     const palette = getScenePalette(theme as Mode)
 
+    // Scene viewport se bahar (scroll ke baad) ho to render band: CPU/GPU free
+    const wrapRef = useRef<HTMLDivElement>(null)
+    const [visible, setVisible] = useState(true)
+    useEffect(() => {
+        const el = wrapRef.current
+        if (!el || !('IntersectionObserver' in window)) return
+        const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0 })
+        io.observe(el)
+        return () => io.disconnect()
+    }, [])
+
     return (
-        <Canvas
-            className="!absolute inset-0 !h-full !w-full"
-            dpr={[1, 1.75]}
-            camera={{ position: [0, variant === 'hero' ? 1.6 : 1.1, variant === 'hero' ? 6.5 : 5], fov: 50 }}
-            gl={{ antialias: true, alpha: true }}
-            aria-hidden="true"
-        >
-            <Suspense fallback={null}>
-                <ambientLight intensity={palette.ambient} />
-                <directionalLight position={[3, 4, 2]} intensity={theme === 'dark' ? 1.1 : 1.5} color={palette.key} />
-                <pointLight position={[-4, 2, -2]} intensity={theme === 'dark' ? 0.6 : 0.35} color={palette.rim} />
+        <div ref={wrapRef} className="relative h-full w-full">
+            <Canvas
+                className="!absolute inset-0 !h-full !w-full"
+                frameloop={visible ? 'always' : 'never'}
+                dpr={[1, 1.5]}
+                camera={{ position: [0, variant === 'hero' ? 1.6 : 1.1, variant === 'hero' ? 6.5 : 5], fov: 50 }}
+                gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+                aria-hidden="true"
+            >
+                <Suspense fallback={null}>
+                    <ambientLight intensity={palette.ambient} />
+                    <directionalLight position={[3, 4, 2]} intensity={theme === 'dark' ? 1.1 : 1.5} color={palette.key} />
+                    <pointLight position={[-4, 2, -2]} intensity={theme === 'dark' ? 0.6 : 0.35} color={palette.rim} />
 
-                {theme === 'dark' && (
-                    <Stars radius={40} depth={30} count={variant === 'hero' ? 1400 : 700} factor={2} saturation={0} fade speed={0.4} />
-                )}
+                    {theme === 'dark' && <StarField count={variant === 'hero' ? 600 : 300} />}
 
-                <IntroRig>
-                    <group scale={variant === 'hero' ? 1 : 0.82}>
-                        <PanelField variant={variant} palette={palette} />
-                        <Ground palette={palette} />
-                        <Sun variant={variant} palette={palette} />
-                        <Particles count={variant === 'hero' ? 220 : 120} color={palette.particle} />
-                    </group>
-                </IntroRig>
+                    <IntroRig>
+                        <group scale={variant === 'hero' ? 1 : 0.82}>
+                            <PanelField variant={variant} palette={palette} />
+                            <Ground palette={palette} />
+                            <Sun variant={variant} palette={palette} />
+                            <Particles count={variant === 'hero' ? 160 : 90} color={palette.particle} />
+                        </group>
+                    </IntroRig>
 
-                <fog attach="fog" args={[palette.fog, 6, variant === 'hero' ? 13 : 10]} />
-                <MouseRig variant={variant} />
-            </Suspense>
-        </Canvas>
+                    <fog attach="fog" args={[palette.fog, 6, variant === 'hero' ? 13 : 10]} />
+                    <MouseRig variant={variant} />
+                </Suspense>
+            </Canvas>
+        </div>
     )
 }

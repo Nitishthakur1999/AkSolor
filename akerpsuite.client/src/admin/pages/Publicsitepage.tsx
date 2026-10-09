@@ -70,7 +70,7 @@ const MODULES: ModuleConfig[] = [
         key: "banner",
         label: "Banners",
         singularLabel: "Banner",
-        icon: "fa-solid fa-images", // updated to font-awesome
+        icon: "fa-solid fa-images", 
         image: "single",
         idField: "id",
         list: adminService.getBanners,

@@ -6,7 +6,10 @@ import App from '../app/route'
 import { ThemeProvider } from './context/ThemeContext'
 import { startAutoRefresh } from "./services/tokenService";
 
-startAutoRefresh();
+// Public visitor ke liye token refresh timer bekar hai
+if (localStorage.getItem("token")) {
+    startAutoRefresh();
+}
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

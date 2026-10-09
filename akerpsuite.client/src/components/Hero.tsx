@@ -1,6 +1,10 @@
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import { useCountUp } from '../hooks/useCountUp'
-import SolarScene from './three/SolarScene'
+
+// 3D alag chunk, Hero ke baad load hoga
+const SolarScene = lazy(() => import('./three/SolarScene'))
 
 interface HeroStatProps {
     target: number
@@ -27,22 +31,67 @@ function HeroStat({ target, label, suffix = '' }: HeroStatProps) {
     )
 }
 
+// 3D tab mount hoga jab: page load ho chuka + browser idle ho.
+// Skip: mobile, reduced-motion, data-saver. Text pehle dikhta hai, scene baad me fade-in.
+function useSceneReady() {
+    const [ready, setReady] = useState(false)
+
+    useEffect(() => {
+        const nav = navigator as Navigator & { connection?: { saveData?: boolean } }
+        const skip =
+            window.matchMedia('(max-width: 768px)').matches ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+            nav.connection?.saveData === true
+        if (skip) return
+
+        const w = window as Window & {
+            requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number
+            cancelIdleCallback?: (id: number) => void
+        }
+        let idleId: number | undefined
+        let timerId: number | undefined
+
+        const start = () => {
+            if (w.requestIdleCallback) {
+                idleId = w.requestIdleCallback(() => setReady(true), { timeout: 3000 })
+            } else {
+                timerId = window.setTimeout(() => setReady(true), 2000)
+            }
+        }
+
+        if (document.readyState === 'complete') start()
+        else window.addEventListener('load', start, { once: true })
+
+        return () => {
+            window.removeEventListener('load', start)
+            if (idleId !== undefined) w.cancelIdleCallback?.(idleId)
+            if (timerId !== undefined) window.clearTimeout(timerId)
+        }
+    }, [])
+
+    return ready
+}
+
 export default function Hero() {
+    const sceneReady = useSceneReady()
+
     return (
         <section
             id="hero"
             className="relative flex min-h-screen min-h-[100svh] items-center overflow-hidden"
             style={{ background: 'var(--color-chalk)' }}
         >
-            {/* live 3D scene: solar-panel field, glowing sun, drifting particles — the site's showpiece visual.
-                Theme-aware: reads as a moody night installation in dark mode, a clean daylight render in light mode. */}
+            {/* 3D scene: lazy + idle. Pehle sirf background gradient dikhta hai. */}
             <div className="absolute inset-0 z-0">
-                <SolarScene variant="hero" />
+                {sceneReady && (
+                    <Suspense fallback={null}>
+                        <div className="h-full w-full animate-[fadeIn_0.8s_ease-out_both]">
+                            <SolarScene variant="hero" />
+                        </div>
+                    </Suspense>
+                )}
             </div>
 
-            {/* text-legibility backdrop: a solid "spotlight" plate centered on the copy column (so text
-                always reads clearly regardless of what the 3D scene is doing behind it), fading out toward
-                the edges so the scene stays visible around it. Built from the theme's own chalk token. */}
             <div
                 className="absolute inset-0 z-[1]"
                 style={{
@@ -51,39 +100,40 @@ export default function Hero() {
                 }}
             ></div>
 
-            {/* ember/gold ambient glow, centered behind headline */}
             <div
                 className="pointer-events-none absolute left-1/2 top-0 z-[2] h-[90%] w-[90%] -translate-x-1/2"
                 style={{ background: 'radial-gradient(circle at 50% 30%, rgba(255,77,46,0.18) 0%, rgba(228,255,78,0.1) 34%, transparent 65%)' }}
             ></div>
 
             <div className="container relative z-[5] mx-auto flex w-full max-w-[880px] flex-col items-center px-4 pt-24 pb-14 text-center xs:px-5 xs:pt-28 sm:px-7 sm:pt-24 sm:pb-16 md:px-8 md:pt-20">
-                <div className="mb-5 flex items-center gap-2 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-gold opacity-0 animate-hero-fade-up [animation-delay:0.15s] sm:mb-6 sm:gap-2.5 sm:text-[0.78rem] sm:tracking-[0.16em]">
+                {/* LCP text: NO opacity-0 / animation. Turant dikhna chahiye. */}
+                <div className="mb-5 flex items-center gap-2 font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-gold sm:mb-6 sm:gap-2.5 sm:text-[0.78rem] sm:tracking-[0.16em]">
                     <span className="h-0.5 w-5 bg-gold sm:w-[26px]"></span>
                     Future Energy Solutions
                     <span className="h-0.5 w-5 bg-gold sm:w-[26px]"></span>
                 </div>
 
                 <h1
-                    className="mb-6 font-display text-[clamp(2.2rem,9vw,4.8rem)] font-bold leading-[1.02] tracking-[-0.02em] text-charcoal opacity-0 animate-hero-fade-up [animation-delay:0.3s] sm:mb-[26px] sm:leading-[1] sm:tracking-[-0.025em]"
+                    className="mb-6 font-display text-[clamp(2.2rem,9vw,4.8rem)] font-bold leading-[1.02] tracking-[-0.02em] text-charcoal sm:mb-[26px] sm:leading-[1] sm:tracking-[-0.025em]"
                 >
                     Today's resource<br />
                     for a <span className="text-transparent" style={{ WebkitTextStroke: '1.5px var(--color-gold)' }}>brighter</span> tomorrow.
                 </h1>
 
                 <p
-                    className="mb-8 max-w-[560px] font-sans text-[0.94rem] leading-[1.7] text-charcoal-soft opacity-0 animate-hero-fade-up [animation-delay:0.45s] sm:mb-10 sm:text-base lg:text-[1.05rem] lg:leading-[1.75]"
+                    className="mb-8 max-w-[560px] font-sans text-[0.94rem] leading-[1.7] text-charcoal-soft sm:mb-10 sm:text-base lg:text-[1.05rem] lg:leading-[1.75]"
                 >
                     AKS Solar Systems Private Limited designs, installs, and maintains solar power plants, rooftop and
                     off-grid systems, solar geysers, and street lights — based in Sunder Nagar, Mandi, Himachal Pradesh.
                 </p>
 
-                <div className="mb-12 flex flex-col gap-3 opacity-0 animate-hero-fade-up [animation-delay:0.6s] xs:flex-row xs:flex-wrap xs:justify-center sm:mb-14 sm:flex-row sm:gap-3.5">
+                {/* Buttons + stats: animation theek hai (LCP nahi hain) */}
+                <div className="mb-12 flex flex-col gap-3 opacity-0 animate-hero-fade-up [animation-delay:0.15s] xs:flex-row xs:flex-wrap xs:justify-center sm:mb-14 sm:flex-row sm:gap-3.5">
                     <Link
                         to="/contact"
                         className="inline-flex items-center justify-center gap-2.5 rounded-full bg-gold-deep px-7 py-4 font-sans text-[0.88rem] font-extrabold uppercase tracking-wide text-white shadow-glow-ember transition-all hover:-translate-y-[3px] hover:shadow-[0_18px_42px_rgba(255,77,46,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:w-auto sm:px-8 sm:py-[17px] sm:text-[0.92rem]"
                     >
-                        Get Free Quote <i className="fas fa-arrow-right"></i>
+                        Get Free Quote <ArrowRight size={16} aria-hidden="true" />
                     </Link>
                     <a
                         href="#services"
@@ -93,7 +143,7 @@ export default function Hero() {
                     </a>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3.5 opacity-0 animate-hero-fade-up [animation-delay:0.75s] xs:gap-6 sm:gap-10 md:gap-14">
+                <div className="grid grid-cols-3 gap-3.5 opacity-0 animate-hero-fade-up [animation-delay:0.3s] xs:gap-6 sm:gap-10 md:gap-14">
                     <HeroStat target={6} label="Solar Services" />
                     <HeroStat target={2023} label="Incorporated" />
                     <HeroStat target={6} label="+ States Served" />
