@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { adminService } from "@/services/adminService";
 
@@ -44,7 +44,7 @@ const formatDateOnly = (value) => {
     });
 };
 
-// FIX: punch / from / to time pehle se IST (naive) hai -> koi timezone conversion nahi.
+// punch / from / to time pehle se IST (naive) hai -> koi timezone conversion nahi.
 // Accepts "10:49:00", "10:49", "2026-10-08T10:49:00", "2026-10-08 10:49:00" -> "10:49 AM"
 const fmtClock = (value) => {
     if (!value) return "-";
@@ -97,6 +97,9 @@ const STATUS_NOTE = {
     Forwarded: "text-sky-600",
 };
 
+// Status tabs: Forwarded nahi chahiye to yahan se hata do
+const STATUS_TABS = ["All", "Pending", "Approved", "Rejected", "Forwarded"];
+
 export default function LeaveRequests() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -105,11 +108,17 @@ export default function LeaveRequests() {
 
     const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "manager" ? "manager" : "hr");
+    const [statusFilter, setStatusFilter] = useState("All"); // All | Pending | Approved | Rejected | Forwarded
     const [loading, setLoading] = useState(false);
     const [leaveRequests, setLeaveRequests] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    // top scrollbar sync
+    const topScrollRef = useRef(null);
+    const tableScrollRef = useRef(null);
+    const [tableScrollWidth, setTableScrollWidth] = useState(0);
 
     // leaveId currently showing the "forward to..." choice
     const [forwardPickerId, setForwardPickerId] = useState(null);
@@ -143,7 +152,7 @@ export default function LeaveRequests() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab]);
+    }, [activeTab, statusFilter]);
 
     const loadRequests = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -225,6 +234,7 @@ export default function LeaveRequests() {
         }
     };
 
+    // HR / Manager tab filter
     const tabFilteredBase = leaveRequests.filter(item => {
         if (activeTab === "hr") return true;
 
@@ -234,8 +244,23 @@ export default function LeaveRequests() {
         return item.status === "Forwarded";
     });
 
+    // Status tab counts (current HR/Manager tab ke hisaab se)
+    const statusCounts = STATUS_TABS.reduce((acc, s) => {
+        acc[s] = s === "All"
+            ? tabFilteredBase.length
+            : tabFilteredBase.filter(i => i.status === s).length;
+        return acc;
+    }, {});
+
+    // Status filter
+    const statusFilteredBase =
+        statusFilter === "All"
+            ? tabFilteredBase
+            : tabFilteredBase.filter(i => i.status === statusFilter);
+
+    // Search
     const SEARCHABLE_FIELDS = ["fullName", "leaveName", "reason", "status"];
-    const filteredData = tabFilteredBase.filter(item => {
+    const filteredData = statusFilteredBase.filter(item => {
         if (!searchTerm) return true;
         const q = searchTerm.toLowerCase();
         return SEARCHABLE_FIELDS.some(f => (item[f] ?? "").toString().toLowerCase().includes(q));
@@ -245,6 +270,22 @@ export default function LeaveRequests() {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Top scrollbar: dummy div ki width = table ki scrollWidth
+    useEffect(() => {
+        const update = () => {
+            if (tableScrollRef.current) setTableScrollWidth(tableScrollRef.current.scrollWidth);
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [currentItems.length, loading, activeTab, statusFilter]);
+
+    const syncScroll = (from, to) => {
+        if (from.current && to.current && to.current.scrollLeft !== from.current.scrollLeft) {
+            to.current.scrollLeft = from.current.scrollLeft;
+        }
+    };
 
     return (
         <div className="space-y-5 pb-10 font-sans">
@@ -264,7 +305,7 @@ export default function LeaveRequests() {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {/* Main Tabs */}
             <div className="flex gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-fit">
                 <button
                     onClick={() => setActiveTab("hr")}
@@ -280,6 +321,24 @@ export default function LeaveRequests() {
                 >
                     CMD / Director Approval
                 </button>
+            </div>
+
+            {/* Status Tabs */}
+            <div className="flex flex-wrap gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-fit">
+                {STATUS_TABS.map((s) => (
+                    <button
+                        key={s}
+                        onClick={() => setStatusFilter(s)}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 ${statusFilter === s ? "bg-[#0b2532] text-white" : "text-slate-500 hover:bg-slate-50"
+                            }`}
+                    >
+                        {s}
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${statusFilter === s ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+                            }`}>
+                            {statusCounts[s]}
+                        </span>
+                    </button>
+                ))}
             </div>
 
             {/* Search */}
@@ -309,7 +368,25 @@ export default function LeaveRequests() {
 
             {/* Table */}
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
-                <div className="overflow-x-auto min-h-[300px]">
+
+                {/* TOP scrollbar (dummy, table ke saath sync) */}
+                {!loading && currentItems.length > 0 && (
+                    <div
+                        ref={topScrollRef}
+                        onScroll={() => syncScroll(topScrollRef, tableScrollRef)}
+                        className="overflow-x-auto overflow-y-hidden border-b border-slate-100"
+                        style={{ height: 14 }}
+                    >
+                        <div style={{ width: tableScrollWidth, height: 1 }} />
+                    </div>
+                )}
+
+                {/* Real table container: niche ka scrollbar hidden */}
+                <div
+                    ref={tableScrollRef}
+                    onScroll={() => syncScroll(tableScrollRef, topScrollRef)}
+                    className="overflow-x-auto min-h-[300px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
                     {loading ? (
                         <div className="py-24 flex flex-col items-center justify-center gap-4">
                             <div className="relative w-12 h-12 flex items-center justify-center">
@@ -327,11 +404,13 @@ export default function LeaveRequests() {
                             <p className="text-sm text-slate-400 mt-1 font-medium">
                                 {searchTerm
                                     ? "Try adjusting your search query."
-                                    : activeTab === "hr"
-                                        ? "No requests in HR queue."
-                                        : isManagerRole
-                                            ? `No requests forwarded to ${user?.role}.`
-                                            : "No requests forwarded to CMD/Director."}
+                                    : statusFilter !== "All"
+                                        ? `No ${statusFilter.toLowerCase()} requests.`
+                                        : activeTab === "hr"
+                                            ? "No requests in HR queue."
+                                            : isManagerRole
+                                                ? `No requests forwarded to ${user?.role}.`
+                                                : "No requests forwarded to CMD/Director."}
                             </p>
                         </div>
                     ) : (
@@ -603,7 +682,7 @@ export default function LeaveRequests() {
                             </button>
                             <div className="hidden sm:flex gap-1.5">
                                 {[...Array(totalPages)].map((_, index) => (
-                                    <button 
+                                    <button
                                         key={index}
                                         onClick={() => setCurrentPage(index + 1)}
                                         className={`w-8 h-8 rounded-lg border text-sm font-bold transition-all shadow-sm flex items-center justify-center ${currentPage === index + 1
