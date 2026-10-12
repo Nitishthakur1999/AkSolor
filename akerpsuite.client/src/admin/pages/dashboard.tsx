@@ -9,6 +9,68 @@ const ANNOUNCEMENT_WRITE_ROLES = ["CMD", "Director", "Sr. Manager (HR & Social M
 // Baaki roles ko card + count dikhega, detail nahi.
 const DETAIL_VIEW_ROLES = ["CMD", "Director", "Sr. Manager (HR & Social Media)"];
 
+// ── Quick links: jo page user ke menu (localStorage "pages") mein hai wahi dikhega ──
+const QUICK_LINK_DEFS = [
+    { label: "Leave", match: ["leave"], icon: "fa-calendar-check", tone: "bg-amber-50 text-amber-600" },
+    { label: "Attendance", match: ["attendance"], icon: "fa-user-clock", tone: "bg-emerald-50 text-emerald-600" },
+    { label: "Employees", match: ["employee"], icon: "fa-users", tone: "bg-sky-50 text-sky-600" },
+    { label: "Payroll", match: ["payroll"], icon: "fa-wallet", tone: "bg-violet-50 text-violet-600" },
+    { label: "Recruitment", match: ["recruit", "job", "candidate"], icon: "fa-briefcase", tone: "bg-rose-50 text-rose-600" },
+    { label: "Sales Leads", match: ["lead"], icon: "fa-chart-line", tone: "bg-indigo-50 text-indigo-600" },
+];
+
+function resolveQuickLinks() {
+    let pages = [];
+    try {
+        pages = JSON.parse(localStorage.getItem("pages") || "[]");
+    } catch { /* no-op */ }
+
+    return QUICK_LINK_DEFS.map((def) => {
+        const page = pages.find((p) => {
+            const name = String(p.pageName || "").trim().toLowerCase();
+            return (
+                p.pageLink &&
+                !name.includes("report") &&
+                !name.startsWith("add ") &&
+                def.match.some((m) => name.includes(m))
+            );
+        });
+        return page ? { ...def, to: page.pageLink } : null;
+    }).filter(Boolean);
+}
+
+function QuickLinks() {
+    const navigate = useNavigate();
+    const [links] = useState(resolveQuickLinks);
+
+    if (links.length === 0) return null;
+
+    return (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-3 sm:p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2.5">
+                Quick Access
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                {links.map((l) => (
+                    <button
+                        key={l.label}
+                        onClick={() => navigate(l.to)}
+                        className="group flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-slate-200 bg-white
+                                   hover:border-amber-300 hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98]
+                                   transition-all duration-200 text-left"
+                    >
+                        <span className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${l.tone}`}>
+                            <i className={`fa-solid ${l.icon} text-xs`} />
+                        </span>
+                        <span className="text-[13px] font-semibold text-slate-700 truncate">{l.label}</span>
+                        <i className="fa-solid fa-arrow-right text-[10px] text-slate-300 group-hover:text-amber-500 ml-auto transition-colors" />
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const navigate = useNavigate();
     const [cards, setCards] = useState([]);
@@ -337,6 +399,9 @@ export default function Dashboard() {
                 <AnnouncementsManageTab onChanged={loadAnnouncements} />
             ) : (
                 <>
+                    {/* ── Quick access links ── */}
+                    <QuickLinks />
+
                     {/* ── Announcements widget (everyone) ── */}
                     {announcements.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-5 space-y-2">
@@ -373,7 +438,7 @@ export default function Dashboard() {
                         </div>
                     ) : (
                         <>
-                            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                            <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
                                 {cards.map((card) => (
                                     <DashboardCard
                                         key={card.cardKey}
@@ -590,7 +655,7 @@ function AnnouncementsManageTab({ onChanged }) {
     );
 }
 
-// ─── Single Card Component ────────────────────────────────────────────────────
+// ─── Single Card Component (compact) ──────────────────────────────────────────
 function DashboardCard({ card, onClick, isActive, clickable }) {
     const formattedValue = formatValue(card.cardValue, card.prefix);
 
@@ -602,7 +667,7 @@ function DashboardCard({ card, onClick, isActive, clickable }) {
             onKeyDown={(e) => {
                 if (clickable && (e.key === "Enter" || e.key === " ")) onClick(card);
             }}
-            className={`group relative bg-white border rounded-xl p-3 sm:p-4 shadow-sm transition-all duration-300 ${clickable
+            className={`group relative bg-white border rounded-xl px-3 py-2.5 shadow-sm transition-all duration-200 flex items-center gap-2.5 ${clickable
                 ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
                 : "cursor-default"
                 } ${isActive
@@ -613,28 +678,28 @@ function DashboardCard({ card, onClick, isActive, clickable }) {
                 }`}
         >
             <div
-                className={`absolute top-0 left-3 right-3 h-0.5 rounded-full ${card.bgColor} opacity-70`}
-            />
-            <div className="flex items-start justify-between gap-2">
-                <p className="text-slate-500 text-[10px] sm:text-[11px] font-sans font-bold uppercase tracking-wider leading-snug">
-                    {card.cardTitle}
-                </p>
-                <div
-                    className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${card.bgColor} flex items-center justify-center border border-white shadow-sm`}
-                >
-                    <i className={`ti ${card.cardIcon} ${card.iconColor} text-sm sm:text-base`} />
-                </div>
+                className={`shrink-0 w-8 h-8 rounded-lg ${card.bgColor} flex items-center justify-center border border-white shadow-sm`}
+            >
+                <i className={`ti ${card.cardIcon} ${card.iconColor} text-sm`} />
             </div>
-            <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
-                <h2 className="font-display text-xl sm:text-[26px] font-bold text-slate-900 tracking-tight tabular-nums">
+
+            <div className="min-w-0 flex-1">
+                <h2 className="font-display text-lg font-bold text-slate-900 tracking-tight tabular-nums leading-none">
                     {formattedValue}
                 </h2>
-                {clickable && (
-                    <i
-                        className={`fa-solid ${isActive ? "fa-chevron-up text-amber-500" : "fa-chevron-down text-slate-300 group-hover:text-amber-500"} text-[10px] transition-colors ml-auto self-center`}
-                    />
-                )}
+                <p
+                    title={card.cardTitle}
+                    className="mt-1 text-slate-500 text-[10px] font-sans font-bold uppercase tracking-wide leading-tight line-clamp-2"
+                >
+                    {card.cardTitle}
+                </p>
             </div>
+
+            {clickable && (
+                <i
+                    className={`fa-solid ${isActive ? "fa-chevron-up text-amber-500" : "fa-chevron-down text-slate-300 group-hover:text-amber-500"} text-[9px] transition-colors shrink-0`}
+                />
+            )}
         </div>
     );
 }

@@ -160,10 +160,10 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
     return (
         <>
-            <aside className="h-full w-full flex flex-col bg-gradient-to-b from-[#0b2836] via-[#0b2836] to-[#081e29] text-white font-sans border-r border-white/5 select-none">
+            <aside className="h-full min-h-0 w-full flex flex-col bg-gradient-to-b from-[#0b2836] via-[#0b2836] to-[#081e29] text-white font-sans border-r border-white/5 select-none">
 
-                {/* ── Brand Header ── */}
-                <div className="relative px-4 py-4 sm:px-5 sm:py-5 border-b border-white/[0.08] flex items-center justify-between">
+                {/* ── Brand Header (fixed) ── */}
+                <div className="shrink-0 relative px-4 py-4 sm:px-5 sm:py-5 border-b border-white/[0.08] flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-xl bg-white ring-1 ring-white/10 flex items-center justify-center shrink-0 overflow-hidden p-1.5 shadow-inner">
                             <img
@@ -198,8 +198,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                                 onClick={() => setShowReminders((prev) => !prev)}
                                 aria-label="Reminders"
                                 className={`relative p-2 rounded-xl transition-all duration-200 ${showReminders
-                                        ? "bg-white/15 text-white ring-1 ring-white/20"
-                                        : "text-slate-300 hover:text-white hover:bg-white/[0.08]"
+                                    ? "bg-white/15 text-white ring-1 ring-white/20"
+                                    : "text-slate-300 hover:text-white hover:bg-white/[0.08]"
                                     }`}
                             >
                                 <i className="fa-solid fa-bell text-sm" />
@@ -266,8 +266,17 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     </div>
                 </div>
 
-                {/* ── Navigation Links ── */}
-                <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {/* ── Navigation Links (ONLY this scrolls) ── */}
+                <nav
+                    className="flex-1 min-h-0 px-3 py-4 overflow-y-auto overscroll-contain space-y-1.5
+                               [-webkit-overflow-scrolling:touch]
+                               [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent]
+                               [&::-webkit-scrollbar]:w-1
+                               [&::-webkit-scrollbar-track]:bg-transparent
+                               [&::-webkit-scrollbar-thumb]:rounded-full
+                               [&::-webkit-scrollbar-thumb]:bg-white/20
+                               hover:[&::-webkit-scrollbar-thumb]:bg-white/35"
+                >
                     {activeGroups.map((groupName) => {
                         const items = groupedPages[groupName];
                         const icon = getGroupIcon(groupName);
@@ -282,8 +291,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                                     to={page.pageLink}
                                     onClick={onNavigate}
                                     className={`group relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${active
-                                            ? "bg-white/[0.12] text-white shadow-sm ring-1 ring-white/10"
-                                            : "text-slate-300 hover:text-white hover:bg-white/[0.06]"
+                                        ? "bg-white/[0.12] text-white shadow-sm ring-1 ring-white/10"
+                                        : "text-slate-300 hover:text-white hover:bg-white/[0.06]"
                                         }`}
                                 >
                                     {active && (
@@ -309,8 +318,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                                 <button
                                     onClick={() => toggleGroup(groupName)}
                                     className={`group relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${hasActiveChild && !isOpen
-                                            ? "bg-white/[0.07] text-white"
-                                            : "text-slate-300 hover:text-white hover:bg-white/[0.06]"
+                                        ? "bg-white/[0.07] text-white"
+                                        : "text-slate-300 hover:text-white hover:bg-white/[0.06]"
                                         }`}
                                 >
                                     {hasActiveChild && (
@@ -346,8 +355,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                                                         to={page.pageLink}
                                                         onClick={onNavigate}
                                                         className={`group relative py-1.5 px-3 rounded-lg text-xs font-normal transition-all duration-150 flex items-center gap-2 ${active
-                                                                ? "text-white font-medium bg-white/[0.09]"
-                                                                : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                                                            ? "text-white font-medium bg-white/[0.09]"
+                                                            : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                                                             }`}
                                                     >
                                                         <span
@@ -366,8 +375,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     })}
                 </nav>
 
-                {/* ── User Profile & Logout Section ── */}
-                <div className="p-3 border-t border-white/[0.08]">
+                {/* ── User Profile & Logout Section (fixed) ── */}
+                <div className="shrink-0 p-3 border-t border-white/[0.08]">
                     <div className="bg-white/[0.04] p-2.5 rounded-2xl border border-white/[0.06] backdrop-blur-sm">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-[#cfcb9e] flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-white/10 shadow-sm">
@@ -409,7 +418,6 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </div>
             </aside>
 
-            {/* ── Logout Modal ── */}
             {/* ── Logout Modal ── */}
             {showLogoutModal && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
