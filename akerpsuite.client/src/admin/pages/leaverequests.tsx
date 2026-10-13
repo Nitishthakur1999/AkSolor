@@ -97,6 +97,13 @@ const STATUS_NOTE = {
     Forwarded: "text-sky-600",
 };
 
+// Reliever ke response ka badge (Reliever column me)
+const RELIEVER_BADGE = {
+    Pending: "bg-violet-50 text-violet-700 border-violet-200/50",
+    Accepted: "bg-emerald-50 text-emerald-700 border-emerald-200/50",
+    Rejected: "bg-rose-50 text-rose-700 border-rose-200/50",
+};
+
 // Status tabs: Forwarded nahi chahiye to yahan se hata do
 const STATUS_TABS = ["All", "Pending", "Approved", "Rejected", "Forwarded"];
 
@@ -259,7 +266,7 @@ export default function LeaveRequests() {
             : tabFilteredBase.filter(i => i.status === statusFilter);
 
     // Search
-    const SEARCHABLE_FIELDS = ["fullName", "leaveName", "reason", "status"];
+    const SEARCHABLE_FIELDS = ["fullName", "leaveName", "reason", "status", "relieverName"];
     const filteredData = statusFilteredBase.filter(item => {
         if (!searchTerm) return true;
         const q = searchTerm.toLowerCase();
@@ -349,7 +356,7 @@ export default function LeaveRequests() {
                         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Search by employee, type, reason or status..."
+                            placeholder="Search by employee, type, reliever, reason or status..."
                             value={searchTerm}
                             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                             className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-slate-50 focus:bg-white transition-all shadow-sm"
@@ -414,12 +421,13 @@ export default function LeaveRequests() {
                             </p>
                         </div>
                     ) : (
-                        <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1050px]">
+                        <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1250px]">
                             <thead>
                                 <tr className="bg-slate-50/80 border-b border-slate-200">
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Employee</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Applied On</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Leave Type</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Reliever</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Duration</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Reason</th>
                                     <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</th>
@@ -472,6 +480,30 @@ export default function LeaveRequests() {
                                                         ? "Short Leave"
                                                         : (req.leaveName || `Type-${req.leaveTypeId}`)}
                                                 </span>
+                                            </td>
+
+                                            {/* Reliever: naam + uska response (short leave me reliever nahi hota) */}
+                                            <td className="px-6 py-4 align-middle">
+                                                {short || !req.relieverName ? (
+                                                    <span className="text-slate-300">—</span>
+                                                ) : (
+                                                    <>
+                                                        <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                                                            <i className="fa-solid fa-user-shield text-xs text-slate-400" />
+                                                            {req.relieverName}
+                                                        </div>
+                                                        {req.relieverStatus && (
+                                                            <span className={`inline-flex mt-1 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wide ${RELIEVER_BADGE[req.relieverStatus] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                                                                {req.relieverStatus}
+                                                            </span>
+                                                        )}
+                                                        {req.relieverStatus === "Rejected" && req.relieverRemarks && (
+                                                            <div className="text-[10px] text-rose-500 mt-1 max-w-[160px] truncate" title={req.relieverRemarks}>
+                                                                {req.relieverRemarks}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
                                             </td>
 
                                             {/* Duration: short leave = punch time (already IST) + time away, normal = dates + days */}

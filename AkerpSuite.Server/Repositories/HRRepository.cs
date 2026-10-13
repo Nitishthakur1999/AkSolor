@@ -310,22 +310,6 @@ namespace AkerpSuite.Server.Repositories
             return count > 0;
         }
 
-        //public async Task<IEnumerable<SelfLeaveResponseDto>> GetMyLeaveRequestsAsync(int empId, string? status, int? month, int? year)
-        //{
-        //    using var connection = _context.CreateConnection();
-
-        //    var parameters = new DynamicParameters();
-        //    parameters.Add("p_emp_id", empId);
-        //    parameters.Add("p_status", status);
-        //    parameters.Add("p_month", month);
-        //    parameters.Add("p_year", year);
-
-        //    return await connection.QueryAsync<SelfLeaveResponseDto>(
-        //        "sp_leave_request_getall",
-        //        parameters,
-        //        commandType: CommandType.StoredProcedure);
-        //}
-
         public async Task<IEnumerable<RelieverLeaveRequestDto>> GetRelieverRequestsAsync(int relieverEmpId, string? relieverStatus)
         {
             using var connection = _context.CreateConnection();

@@ -263,6 +263,10 @@ namespace AkerpSuite.Server.DTOs.Role
         public bool IsShortLeave { get; set; }
         public DateTime? PunchOutTime { get; set; }
         public DateTime? PunchInTime { get; set; }
+        public int? RelieverEmployeeId { get; set; }
+        public string? RelieverName { get; set; }
+        public string? RelieverStatus { get; set; }
+        public string? RelieverRemarks { get; set; }
     }
     public class NotificationDto
     {

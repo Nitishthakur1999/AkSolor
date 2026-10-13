@@ -304,59 +304,6 @@ namespace AkerpSuite.Server.Services
         }
         public Task<IEnumerable<LeaveTypeInfoDto>> GetLeaveTypesAsync() => _repository.GetLeaveTypesAsync();
 
-        //public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
-        //{
-        //    if (request == null)
-        //        throw new ArgumentNullException(nameof(request));
-
-        //    // Short leave tab hai jab time diya gaya ho. Koi leave type nahi.
-        //    var isShortLeave = request.FromTime.HasValue || request.ToTime.HasValue;
-
-        //    if (isShortLeave)
-        //    {
-        //        PrepareShortLeave(request);
-        //        request.LeaveTypeId = null;   // short leave ka type kabhi nahi hota
-        //    }
-        //    else
-        //    {
-        //        if (request.ToDate < request.FromDate)
-        //            throw new InvalidOperationException("To date cannot be before from date.");
-
-        //        // Normal leave: time fields ignore
-        //        request.FromTime = null;
-        //        request.ToTime = null;
-        //        request.DurationHours = null;
-
-        //        // Normal leave me type optional hai (HR approve pe set karta hai)
-        //        if (request.LeaveTypeId.HasValue)
-        //        {
-        //            var leaveType = await _repository.GetLeaveTypeAsync(request.LeaveTypeId.Value);
-
-        //            if (leaveType == null)
-        //                throw new InvalidOperationException("Invalid or inactive leave type.");
-        //        }
-        //    }
-
-        //    if (request.TotalDays <= 0)
-        //        throw new InvalidOperationException("Total days must be greater than zero.");
-
-        //    var result = await _repository.ApplyLeaveAsync(empId, request);
-
-        //    if (result.LeaveId <= 0)
-        //        throw new InvalidOperationException(result.ErrorMessage ?? "Leave request could not be created.");
-
-        //    // SP se ye columns aaye ya na aaye, response me hamesha sahi dikhe
-        //    result.IsShortLeave = isShortLeave;
-        //    result.FromTime ??= request.FromTime;
-        //    result.ToTime ??= request.ToTime;
-        //    result.DurationHours ??= request.DurationHours;
-
-        //    _logger.LogInformation(
-        //        "Employee {EmpId} applied for {Kind} {LeaveId}.",
-        //        empId, isShortLeave ? "short leave" : "leave", result.LeaveId);
-
-        //    return result;
-        //}
         public async Task<SelfLeaveResponseDto> ApplyLeaveAsync(int empId, SelfLeaveRequestDto request)
         {
             if (request == null)

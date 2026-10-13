@@ -85,6 +85,10 @@ namespace AkerpSuite.Server.DTOs.Hr
         public string RelieverStatus { get; set; } = default!;
         public string Status { get; set; } = default!;
         public DateTime CreatedAt { get; set; }
+
+        public int? RelieverEmployeeId { get; set; }
+        public string? RelieverName { get; set; }
+        public string? RelieverRemarks { get; set; }
     }
 
     public class SelfLeaveRequestDto
