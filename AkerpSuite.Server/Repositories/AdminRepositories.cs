@@ -2062,6 +2062,17 @@ namespace AkerpSuite.Server.Repositories
             return result.ToList();
         }
 
+        public async Task<List<HolidayDto>> GetHolidaysByMonthAsync(int month, int year)
+        {
+            using var conn = _context.CreateConnection();
+            var result = await conn.QueryAsync<HolidayDto>(
+                "sp_holiday_list_by_month",
+                new { p_year = year, p_month = month },
+                commandType: CommandType.StoredProcedure);
+            return result.ToList();
+        }
+
+
         public async Task<List<SundayLedgerRecord>> GetSundayLedgerAsync(int month, int year)
         {
             using var conn = _context.CreateConnection();

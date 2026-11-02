@@ -978,11 +978,34 @@ export default function Attendance() {
         });
     const filteredRequests = filterBySearch(scopeToEmployee(regRequests), ["fullName", "reason", "status"]);
     const filteredSummaries = filterBySearch(scopeToEmployee(summaries), ["fullName"]);
-    const sundayDateColumns = (
-        sundayHolidayMeta?.sundayDates ||
-        sundayHolidayMeta?.SundayDates ||
-        []
-    ).map((d: any) => new Date(d));
+
+
+    const monthColumns = (() => {
+        const meta = sundayHolidayMeta || {};
+        const sundayKeys = new Set(
+            (meta.sundayDates || meta.SundayDates || []).map((d: any) => String(d).slice(0, 10))
+        );
+        const holidayMap = new Map<string, string>();
+        (meta.holidays || meta.Holidays || []).forEach((h: any) => {
+            const key = String(h.holidayDate ?? h.HolidayDate).slice(0, 10);
+            holidayMap.set(key, h.holidayName ?? h.HolidayName ?? "Holiday");
+        });
+
+        const { year, month } = sundayHolidayPeriod;
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const cols: { key: string; label: string; type: "sunday" | "holiday"; name?: string }[] = [];
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const key = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const label = new Date(year, month - 1, day).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+            if (holidayMap.has(key)) {
+                cols.push({ key, label, type: "holiday", name: holidayMap.get(key) });
+            } else if (sundayKeys.has(key)) {
+                cols.push({ key, label, type: "sunday" });
+            }
+        }
+        return cols;
+    })();    
 
     const filteredSundayHolidayData = filterBySearch(
         scopeToEmployee((sundayHolidayData || []).map(r => ({
@@ -1704,80 +1727,184 @@ export default function Attendance() {
                         </table>
                         <PaginationBar />
                     </div>
-                ) : activeTab === "sundayWorking" && isTeamLevel ? (
-                    <div className="flex-1 flex flex-col">
-                        <div className="overflow-x-auto flex-1">
-                            <table className="w-full text-left border-collapse min-w-[900px]">
-                                <thead>
-                                    <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
-                                        <th className="px-4 py-4 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Employee</th>
-                                        {sundayDateColumns.map((d: Date, i: number) => (
-                                            <th key={i} className="px-3 py-4 text-center whitespace-nowrap border-l border-slate-200/50">
-                                                {d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                                            </th>
-                                        ))}
-                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Duty</th>
-                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Comp-Off</th>
-                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Prev Bal</th>
-                                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Final Dues</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 text-sm">
-                                    {filteredSundayHolidayData.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={sundayDateColumns.length + 5} className="px-6 py-16 text-center text-slate-400 font-medium">
-                                                {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
-                                            </td>
-                                        </tr>
-                                    ) : pagedSundayHoliday.map((row, idx) => {
-                                        const cells = row.cells || row.Cells || [];
-                                        const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
-                                        // 🆕 Duty count cells se: Present / ON-DUTY = 1, Half-Day = 0.5
-                                        const computedDuty = sundayDateColumns.reduce((sum: number, d: Date) => {
-                                            const cell = cells.find((c: any) => new Date(c.date || c.Date).toDateString() === d.toDateString());
-                                            const st = String(cell?.status || cell?.Status || "").toUpperCase();
-                                            if (st.startsWith("ON-DUTY") || st === "PRESENT") return sum + 1;
-                                            if (st === "HALF-DAY") return sum + 0.5;
-                                            return sum;
-                                        }, 0);
-                                        const backendDuty = Number(row.monthDutyCount ?? row.MonthDutyCount ?? 0);
-                                        const dutyCount = Math.max(computedDuty, backendDuty);
-                                        return (
-                                            <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/60 transition-colors">
-                                                <td className="px-4 py-3 font-bold text-slate-900 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
-                                                    {empName}
-                                                </td>
-                                                {sundayDateColumns.map((d: Date, i: number) => {
-                                                    const cell = cells.find((c: any) => new Date(c.date || c.Date).toDateString() === d.toDateString());
-                                                    const status = cell?.status || cell?.Status || "OFF";
-                                                    const isOnDuty = status.startsWith("ON-DUTY") || status === "Present";
-                                                    const isAbsent = status === "Absent";
-                                                    const isHalfDay = status === "Half-Day";
-                                                    return (
-                                                        <td key={i} className="px-3 py-3 text-center border-l border-slate-100">
-                                                            <span
-                                                                title={status}
-                                                                className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider whitespace-nowrap border ${isOnDuty ? "bg-emerald-50 text-emerald-700 border-emerald-200/50"
-                                                                    : isAbsent ? "bg-rose-50 text-rose-700 border-rose-200/50"
-                                                                        : isHalfDay ? "bg-amber-50 text-amber-700 border-amber-200/50"
-                                                                            : "bg-slate-50 text-slate-400 border-slate-200"
-                                                                    }`}
-                                                            >
-                                                                {status === "N/A" ? "N/A" : status.toUpperCase()}
-                                                            </span>
-                                                        </td>
-                                                    );
-                                                })}
-                                                <td className="px-4 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{dutyCount}</td>
-                                                <td className="px-4 py-3 text-center font-mono font-bold text-amber-600 border-l border-slate-100">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
-                                                <td className="px-4 py-3 text-center font-mono font-semibold text-slate-500 border-l border-slate-100">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
-                                                <td className="px-4 py-3 text-center font-mono font-black text-[#0b2836] border-l border-slate-100 bg-slate-50/50">{row.finalDues ?? row.FinalDues ?? 0}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+               ) : activeTab === "sundayWorking" && isTeamLevel ? (
+    <div className="flex-1 flex flex-col">
+        <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead>
+                    <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                        <th className="px-4 py-4 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Employee</th>
+                        {monthColumns.map((c) => (
+                            <th
+                                key={c.key}
+                                title={c.name ?? "Sunday"}
+                                className={`px-3 py-4 text-center whitespace-nowrap border-l border-slate-200/50 ${c.type === "holiday" ? "bg-amber-50 text-amber-700" : ""}`}
+                            >
+                                {c.label}
+                                {c.type === "holiday" && (
+                                    <span className="block text-[9px] font-semibold normal-case tracking-normal text-amber-600 max-w-[90px] truncate mx-auto">
+                                        {c.name}
+                                    </span>
+                                )}
+                            </th>
+                        ))}
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Duty</th>
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Comp-Off</th>
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Prev Bal</th>
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Final Dues</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                    {filteredSundayHolidayData.length === 0 ? (
+                        <tr>
+                            <td colSpan={monthColumns.length + 5} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
+                            </td>
+                        </tr>
+                    ) : pagedSundayHoliday.map((row, idx) => {
+                        const cells = row.cells || row.Cells || [];
+                        const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
+
+                        // Duty count: Present / ON-DUTY = 1, Half-Day = 0.5 (sirf monthColumns ke dates par)
+                        const computedDuty = monthColumns.reduce((sum: number, c) => {
+                            const cell = cells.find((x: any) => String(x.date ?? x.Date).slice(0, 10) === c.key);
+                            const st = String(cell?.status || cell?.Status || "").toUpperCase();
+                            if (st.startsWith("ON-DUTY") || st === "PRESENT") return sum + 1;
+                            if (st === "HALF-DAY") return sum + 0.5;
+                            return sum;
+                        }, 0);
+                        const backendDuty = Number(row.monthDutyCount ?? row.MonthDutyCount ?? 0);
+                        const dutyCount = Math.max(computedDuty, backendDuty);
+
+                        return (
+                            <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-4 py-3 font-bold text-slate-900 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
+                                    {empName}
+                                </td>
+                                {monthColumns.map((c) => {
+                                    const cell = cells.find((x: any) => String(x.date ?? x.Date).slice(0, 10) === c.key);
+                                    const status: string = cell?.status || cell?.Status || (c.type === "holiday" ? "HOLIDAY" : "OFF");
+                                    const up = status.toUpperCase();
+                                    const isOnDuty = up.startsWith("ON-DUTY") || up === "PRESENT";
+                                    const isAbsent = up === "ABSENT";
+                                    const isHalfDay = up === "HALF-DAY";
+                                    const isHoliday = up === "HOLIDAY";
+                                    return (
+                                        <td key={c.key} className={`px-3 py-3 text-center border-l border-slate-100 ${c.type === "holiday" ? "bg-amber-50/50" : ""}`}>
+                                            <span
+                                                title={status}
+                                                className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider whitespace-nowrap border ${isOnDuty ? "bg-emerald-50 text-emerald-700 border-emerald-200/50"
+                                                    : isAbsent ? "bg-rose-50 text-rose-700 border-rose-200/50"
+                                                        : isHalfDay ? "bg-amber-50 text-amber-700 border-amber-200/50"
+                                                            : isHoliday ? "bg-violet-50 text-violet-700 border-violet-200/50"
+                                                                : "bg-slate-50 text-slate-400 border-slate-200"
+                                                    }`}
+                                            >
+                                                {up}
+                                            </span>
+                                        </td>
+                                    );
+                                })}
+                                <td className="px-4 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{dutyCount}</td>
+                                <td className="px-4 py-3 text-center font-mono font-bold text-amber-600 border-l border-slate-100">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
+                                <td className="px-4 py-3 text-center font-mono font-semibold text-slate-500 border-l border-slate-100">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
+                                <td className="px-4 py-3 text-center font-mono font-black text-[#0b2836] border-l border-slate-100 bg-slate-50/50">{row.finalDues ?? row.FinalDues ?? 0}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+        <PaginationBar />
+    </div>) : activeTab === "sundayWorking" && isTeamLevel ? (
+    <div className="flex-1 flex flex-col">
+        <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead>
+                    <tr className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
+                        <th className="px-4 py-4 sticky left-0 bg-slate-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Employee</th>
+                        {monthColumns.map((c) => (
+                            <th
+                                key={c.key}
+                                title={c.name ?? "Sunday"}
+                                className={`px-3 py-4 text-center whitespace-nowrap border-l border-slate-200/50 ${c.type === "holiday" ? "bg-amber-50 text-amber-700" : ""}`}
+                            >
+                                {c.label}
+                                {c.type === "holiday" && (
+                                    <span className="block text-[9px] font-semibold normal-case tracking-normal text-amber-600 max-w-[90px] truncate mx-auto">
+                                        {c.name}
+                                    </span>
+                                )}
+                            </th>
+                        ))}
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Duty</th>
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Comp-Off</th>
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Prev Bal</th>
+                        <th className="px-4 py-4 text-center border-l border-slate-200/50">Final Dues</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                    {filteredSundayHolidayData.length === 0 ? (
+                        <tr>
+                            <td colSpan={monthColumns.length + 5} className="px-6 py-16 text-center text-slate-400 font-medium">
+                                {searchTerm ? "No matching employees found" : "No Sunday/Holiday data found for this period"}
+                            </td>
+                        </tr>
+                    ) : pagedSundayHoliday.map((row, idx) => {
+                        const cells = row.cells || row.Cells || [];
+                        const empName = row.employeeName || row.EmployeeName || `EMP-${row.empId ?? row.EmpId}`;
+
+                        // Duty count: Present / ON-DUTY = 1, Half-Day = 0.5 (sirf monthColumns ke dates par)
+                        const computedDuty = monthColumns.reduce((sum: number, c) => {
+                            const cell = cells.find((x: any) => String(x.date ?? x.Date).slice(0, 10) === c.key);
+                            const st = String(cell?.status || cell?.Status || "").toUpperCase();
+                            if (st.startsWith("ON-DUTY") || st === "PRESENT") return sum + 1;
+                            if (st === "HALF-DAY") return sum + 0.5;
+                            return sum;
+                        }, 0);
+                        const backendDuty = Number(row.monthDutyCount ?? row.MonthDutyCount ?? 0);
+                        const dutyCount = Math.max(computedDuty, backendDuty);
+
+                        return (
+                            <tr key={row.empId ?? row.EmpId ?? idx} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="px-4 py-3 font-bold text-slate-900 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] whitespace-nowrap">
+                                    {empName}
+                                </td>
+                                {monthColumns.map((c) => {
+                                    const cell = cells.find((x: any) => String(x.date ?? x.Date).slice(0, 10) === c.key);
+                                    const status: string = cell?.status || cell?.Status || (c.type === "holiday" ? "HOLIDAY" : "OFF");
+                                    const up = status.toUpperCase();
+                                    const isOnDuty = up.startsWith("ON-DUTY") || up === "PRESENT";
+                                    const isAbsent = up === "ABSENT";
+                                    const isHalfDay = up === "HALF-DAY";
+                                    const isHoliday = up === "HOLIDAY";
+                                    return (
+                                        <td key={c.key} className={`px-3 py-3 text-center border-l border-slate-100 ${c.type === "holiday" ? "bg-amber-50/50" : ""}`}>
+                                            <span
+                                                title={status}
+                                                className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider whitespace-nowrap border ${isOnDuty ? "bg-emerald-50 text-emerald-700 border-emerald-200/50"
+                                                    : isAbsent ? "bg-rose-50 text-rose-700 border-rose-200/50"
+                                                        : isHalfDay ? "bg-amber-50 text-amber-700 border-amber-200/50"
+                                                            : isHoliday ? "bg-violet-50 text-violet-700 border-violet-200/50"
+                                                                : "bg-slate-50 text-slate-400 border-slate-200"
+                                                    }`}
+                                            >
+                                                {up}
+                                            </span>
+                                        </td>
+                                    );
+                                })}
+                                <td className="px-4 py-3 text-center font-mono font-bold text-slate-700 border-l border-slate-100">{dutyCount}</td>
+                                <td className="px-4 py-3 text-center font-mono font-bold text-amber-600 border-l border-slate-100">{row.monthCompOff ?? row.MonthCompOff ?? 0}</td>
+                                <td className="px-4 py-3 text-center font-mono font-semibold text-slate-500 border-l border-slate-100">{row.previousBalance ?? row.PreviousBalance ?? 0}</td>
+                                <td className="px-4 py-3 text-center font-mono font-black text-[#0b2836] border-l border-slate-100 bg-slate-50/50">{row.finalDues ?? row.FinalDues ?? 0}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+
                         <PaginationBar />
                     </div>
                 ) : activeTab === "summaries" && isAdminLevel ? (

@@ -584,6 +584,14 @@ namespace AkerpSuite.Server.Controllers
             return Ok(new { Success = true, Data = data });
         }
 
+        //[HttpGet("sunday-holiday-status")]
+        //[RequirePermission("Attendance", "View")]
+        //public async Task<IActionResult> GetSundayHolidayStatus([FromQuery] int month, [FromQuery] int year)
+        //{
+        //    var data = await _service.GetSundayHolidayStatusAsync(month, year);
+        //    return Ok(new { Success = true, Data = data });
+        //}
+
         [HttpGet("sunday-holiday-status")]
         [RequirePermission("Attendance", "View")]
         public async Task<IActionResult> GetSundayHolidayStatus([FromQuery] int month, [FromQuery] int year)

@@ -1659,6 +1659,67 @@ namespace AkerpSuite.Server.Services
         #endregion
 
         #region Sunday work
+        //public async Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year)
+        //{
+        //    var sundayDates = GetSundaysInMonth(month, year);
+
+        //    var employees = await _repository.GetActiveEmployeesBasicAsync();
+
+        //    var monthStart = new DateTime(year, month, 1);
+        //    var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+        //    var dutyRecords = await _repository.GetSundayDutyRecordsAsync(monthStart, monthEnd);
+        //    var ledgerRecords = await _repository.GetSundayLedgerAsync(month, year);
+
+        //    var report = new SundayHolidayStatusReportDto
+        //    {
+        //        Month = month,
+        //        Year = year,
+        //        MonthName = $"{CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(month).ToUpper()} {year}",
+        //        SundayDates = sundayDates
+        //    };
+
+        //    int sr = 1;
+        //    foreach (var emp in employees)
+        //    {
+        //        var ledger = ledgerRecords.FirstOrDefault(l => l.EmpId == emp.EmpId);
+
+        //        var row = new SundayHolidayStatusRowDto
+        //        {
+        //            SrNo = sr++,
+        //            EmpId = emp.EmpId,
+        //            EmployeeName = emp.FullName.ToUpper(),
+        //            PreviousBalance = ledger?.OpeningBalance ?? 0,
+        //            MonthDutyCount = ledger?.DutyCount ?? 0,
+        //            MonthCompOff = ledger?.CompOffUsed ?? 0,
+        //        };
+
+        //        foreach (var date in sundayDates)
+        //        {
+        //            var record = dutyRecords.FirstOrDefault(d => d.EmpId == emp.EmpId && d.DutyDate.Date == date.Date);
+
+        //            string cellStatus;
+        //            if (record != null)
+        //            {
+        //                cellStatus = record.Status == "ON-DUTY" && !string.IsNullOrWhiteSpace(record.Location)
+        //                    ? $"ON-DUTY-{record.Location.ToUpper()}"
+        //                    : record.Status;
+        //            }
+        //            else
+        //            {
+        //                cellStatus = (emp.JoiningDate == null || emp.JoiningDate <= date) ? "OFF" : "N/A";
+        //            }
+
+        //            row.Cells.Add(new SundayCellDto { Date = date, Status = cellStatus });
+        //        }
+
+        //        row.FinalDues = row.PreviousBalance + row.MonthDutyCount - row.MonthCompOff;
+        //        report.Rows.Add(row);
+        //    }
+
+        //    return report;
+        //}
+
         public async Task<SundayHolidayStatusReportDto> GetSundayHolidayStatusAsync(int month, int year)
         {
             var sundayDates = GetSundaysInMonth(month, year);
@@ -1670,13 +1731,15 @@ namespace AkerpSuite.Server.Services
 
             var dutyRecords = await _repository.GetSundayDutyRecordsAsync(monthStart, monthEnd);
             var ledgerRecords = await _repository.GetSundayLedgerAsync(month, year);
+            var holidays = await _repository.GetHolidaysByMonthAsync(month, year);
 
             var report = new SundayHolidayStatusReportDto
             {
                 Month = month,
                 Year = year,
                 MonthName = $"{CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(month).ToUpper()} {year}",
-                SundayDates = sundayDates
+                SundayDates = sundayDates,
+                Holidays = holidays
             };
 
             int sr = 1;
@@ -1694,9 +1757,16 @@ namespace AkerpSuite.Server.Services
                     MonthCompOff = ledger?.CompOffUsed ?? 0,
                 };
 
-                foreach (var date in sundayDates)
+                // Sunday + holiday dates, sorted (holiday priority: same din par holiday)
+                var columnDates = sundayDates
+                    .Concat(holidays.Select(h => h.HolidayDate.Date))
+                    .Distinct()
+                    .OrderBy(d => d)
+                    .ToList();
+
+                foreach (var date in columnDates)
                 {
-                    var record = dutyRecords.FirstOrDefault(d => d.EmpId == emp.EmpId && d.DutyDate.Date == date.Date);
+                    var record = dutyRecords.FirstOrDefault(d => d.EmpId == emp.EmpId && d.DutyDate.Date == date);
 
                     string cellStatus;
                     if (record != null)
@@ -1704,6 +1774,10 @@ namespace AkerpSuite.Server.Services
                         cellStatus = record.Status == "ON-DUTY" && !string.IsNullOrWhiteSpace(record.Location)
                             ? $"ON-DUTY-{record.Location.ToUpper()}"
                             : record.Status;
+                    }
+                    else if (holidays.Any(h => h.HolidayDate.Date == date))
+                    {
+                        cellStatus = "HOLIDAY";
                     }
                     else
                     {
@@ -1719,7 +1793,6 @@ namespace AkerpSuite.Server.Services
 
             return report;
         }
-
         public async Task<byte[]> GetSundayHolidayStatusPdfAsync(int month, int year)
         {
             var report = await GetSundayHolidayStatusAsync(month, year);

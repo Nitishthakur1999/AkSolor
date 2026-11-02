@@ -248,6 +248,7 @@ namespace AkerpSuite.Server.Repositories
         Task<List<EmployeeBasicDto>> GetActiveEmployeesBasicAsync();
         Task<List<SundayDutyRecord>> GetSundayDutyRecordsAsync(DateTime monthStart, DateTime monthEnd);
         Task<List<SundayLedgerRecord>> GetSundayLedgerAsync(int month, int year);
+        Task<List<HolidayDto>> GetHolidaysByMonthAsync(int month, int year);
         Task UpsertSundayDutyAsync(SundayDutyRequestDto request, int createdBy);
         Task RecalculateLedgerAsync(int empId, int month, int year);
         Task<IEnumerable<MonthlyAttendanceReportDto>> GetMonthlyAttendanceReportAsync(int month, int year, int? empId);

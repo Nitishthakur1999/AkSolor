@@ -586,6 +586,25 @@ namespace AkerpSuite.Server.DTOs.Role
         public decimal FinalDues { get; set; }
     }
 
+    //public class SundayHolidayStatusReportDto
+    //{
+    //    public string CompanyName { get; set; } = "AKS SOLAR SYSTEMS PRIVATE LIMITED";
+    //    public int Month { get; set; }
+    //    public int Year { get; set; }
+    //    public string MonthName { get; set; } = string.Empty;
+
+    //    public List<DateTime> SundayDates { get; set; } = new();
+    //    public List<SundayHolidayStatusRowDto> Rows { get; set; } = new();
+
+    //    public string PreparedByName { get; set; } = "Asha Thakur";
+    //    public string PreparedByDesignation { get; set; } = "Sr. Manager (HR & Social Media)";
+
+    //    public string VerifiedByName { get; set; } = "Vivek Grover";
+    //    public string VerifiedByDesignation { get; set; } = "Director-Operations, Sales & Marketing";
+
+    //    public string FinalVerifiedByName { get; set; } = "Kapil Sharma";
+    //    public string FinalVerifiedByDesignation { get; set; } = "Chairman Cum Managing Director";
+    //}
     public class SundayHolidayStatusReportDto
     {
         public string CompanyName { get; set; } = "AKS SOLAR SYSTEMS PRIVATE LIMITED";
@@ -594,6 +613,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public string MonthName { get; set; } = string.Empty;
 
         public List<DateTime> SundayDates { get; set; } = new();
+        public List<HolidayDto> Holidays { get; set; } = new();
         public List<SundayHolidayStatusRowDto> Rows { get; set; } = new();
 
         public string PreparedByName { get; set; } = "Asha Thakur";
@@ -604,6 +624,12 @@ namespace AkerpSuite.Server.DTOs.Role
 
         public string FinalVerifiedByName { get; set; } = "Kapil Sharma";
         public string FinalVerifiedByDesignation { get; set; } = "Chairman Cum Managing Director";
+    }
+
+    public class HolidayDto
+    {
+        public DateTime HolidayDate { get; set; }
+        public string HolidayName { get; set; } = string.Empty;
     }
 
     public class SundayDutyRecord
