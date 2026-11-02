@@ -20,13 +20,101 @@ const emptyLeadForm = {
     queryType: "",
     remarks: "",
     label: "",
-    status: "New"
+    status: "New",
+    // Not editable in this form, but carried through on update so the SP never wipes them
+    nextFollowup: null,
+    assignedTo: null
+};
+
+// Full class names on purpose — Tailwind cannot see classes built with `bg-${x}` at runtime,
+// so the old dot colour was never generated in production builds.
+const STATUS_STYLES = {
+    new: { badge: "bg-blue-50 text-blue-700 border-blue-200/50", dot: "bg-blue-500" },
+    followup: { badge: "bg-amber-50 text-amber-700 border-amber-200/50", dot: "bg-amber-500" },
+    survey: { badge: "bg-amber-50 text-amber-700 border-amber-200/50", dot: "bg-amber-500" },
+    proposal: { badge: "bg-purple-50 text-purple-700 border-purple-200/50", dot: "bg-purple-500" },
+    negotiation: { badge: "bg-orange-50 text-orange-700 border-orange-200/50", dot: "bg-orange-500" },
+    won: { badge: "bg-emerald-50 text-emerald-700 border-emerald-200/50", dot: "bg-emerald-500" },
+    lost: { badge: "bg-rose-50 text-rose-700 border-rose-200/50", dot: "bg-rose-500" },
+    notfeasible: { badge: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-400" },
+};
+const DEFAULT_STATUS_STYLE = { badge: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" };
+
+const getStatusVisuals = (status) => {
+    const key = (status || "").toLowerCase().replace(/\s+/g, "");
+    const s = STATUS_STYLES[key] || DEFAULT_STATUS_STYLE;
+    return { dotColor: s.dot, finalStatusClass: s.badge };
+};
+
+const editBtnClass = "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200/50 transition-all shadow-sm";
+
+const escapeHtml = (v) =>
+    String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const fmtDate = (d) => {
+    if (!d) return "—";
+    const [y, m, day] = String(d).split("T")[0].split("-");
+    return y && m && day ? `${day}-${m}-${y}` : "—";
+};
+
+// Prints the given leads as a clean A4-landscape table via a hidden iframe
+// (no popup, so popup blockers can't stop it).
+const printLeads = (rows, searchTerm) => {
+    const printedOn = new Date().toLocaleString("en-IN");
+    const body = rows.map((l, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td>#${escapeHtml(l.leadId)}</td>
+            <td>${fmtDate(l.leadDate)}</td>
+            <td><b>${escapeHtml(l.name)}</b>${l.label ? `<br/><small>${escapeHtml(l.label)}</small>` : ""}</td>
+            <td>${escapeHtml(l.contactNo)}${l.alternateContactNo ? `<br/><small>Alt: ${escapeHtml(l.alternateContactNo)}</small>` : ""}</td>
+            <td>${escapeHtml(l.email || "—")}</td>
+            <td>${escapeHtml(l.segmentName || "General")}</td>
+            <td>${escapeHtml(l.reference || "—")}</td>
+            <td>${escapeHtml(l.status)}</td>
+        </tr>`).join("");
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Leads Report</title>
+        <style>
+            @page { size: A4 landscape; margin: 12mm; }
+            * { box-sizing: border-box; }
+            body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #0f172a; }
+            h1 { font-size: 18px; margin: 0 0 2px; }
+            .meta { color: #64748b; font-size: 10px; margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+            tr { page-break-inside: avoid; }
+            thead { display: table-header-group; }
+            small { color: #64748b; }
+        </style></head><body>
+        <h1>Leads Report</h1>
+        <div class="meta">Total: ${rows.length} lead(s)${searchTerm ? ` &nbsp;|&nbsp; Filter: "${escapeHtml(searchTerm)}"` : ""} &nbsp;|&nbsp; Printed on: ${escapeHtml(printedOn)}</div>
+        <table>
+            <thead><tr>
+                <th>#</th><th>Lead ID</th><th>Date</th><th>Name</th><th>Contact</th><th>Email</th><th>Segment</th><th>Reference</th><th>Status</th>
+            </tr></thead>
+            <tbody>${body}</tbody>
+        </table></body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    document.body.appendChild(iframe);
+    const win = iframe.contentWindow;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => {
+        win.focus();
+        win.print();
+        setTimeout(() => iframe.remove(), 1000);
+    }, 300);
 };
 
 export default function Leads() {
     const navigate = useNavigate();
 
-    // Tabs: 'table' (All Leads), 'form' (Create New Lead)
+    // Tabs: 'table' (All Leads), 'form' (Create / Edit Lead)
     const [activeTab, setActiveTab] = useState("table");
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
@@ -35,23 +123,25 @@ export default function Leads() {
 
     // Data States
     const [leads, setLeads] = useState([]);
-    const [segments, setSegments] = useState([]);
+    const [segments, setSegments] = useState([]); // ALL segments (active + inactive)
 
     // Table & Pagination States (All Leads tab)
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // Table & Pagination States (mini table on Create New Lead tab)
+    // Table & Pagination States (mini table on Create tab)
     const [createSearchTerm, setCreateSearchTerm] = useState("");
     const [createPage, setCreatePage] = useState(1);
     const createItemsPerPage = 5;
 
-    // Form State — matches doc's Step 1 (General Data Entry) requirement
+    // Form State
     const [leadForm, setLeadForm] = useState(emptyLeadForm);
 
     // Edit mode — when set, form edits this lead instead of creating a new one
     const [editingLeadId, setEditingLeadId] = useState(null);
+    // Which tab edit started from, so Cancel / Save can take the user back there
+    const [editOrigin, setEditOrigin] = useState(null);
 
     // ── Add Segment Modal state ──
     const [showSegmentModal, setShowSegmentModal] = useState(false);
@@ -84,15 +174,21 @@ export default function Leads() {
 
     const loadSegments = async () => {
         try {
-            // Only Active segments should be selectable while creating a lead
             const res = await adminService.getSegments();
             if (res?.success) {
-                setSegments((res.data || []).filter(s => s.isActive));
+                setSegments(res.data || []);
             }
         } catch (err) {
             console.error("Failed to load segments", err);
         }
     };
+
+    // Active segments are selectable. While editing, the lead's current segment is also
+    // kept in the list even if it was deactivated later, otherwise the dropdown goes blank.
+    const segmentOptions = useMemo(
+        () => segments.filter(s => s.isActive || String(s.segmentId) === String(leadForm.segmentId)),
+        [segments, leadForm.segmentId]
+    );
 
     // ── Add Segment handler ──
     const handleAddSegment = async (e) => {
@@ -104,7 +200,7 @@ export default function Leads() {
         try {
             const res = await adminService.createSegment({
                 segmentName: segmentName.trim(),
-                segmentCode: segmentName.trim().toUpperCase().replace(/\s+/g, "_"), // auto-generate unique code from name
+                segmentCode: segmentName.trim().toUpperCase().replace(/\s+/g, "_"),
                 isActive: true
             });
             if (res?.success) {
@@ -125,9 +221,10 @@ export default function Leads() {
     // --- ALL LEADS TAB: TABLE & SEARCH LOGIC ---
     const filteredLeads = useMemo(() => {
         if (!searchTerm) return leads;
+        const q = searchTerm.toLowerCase();
         return leads.filter(item => {
             const searchStr = `${item.name} ${item.contactNo} ${item.leadId} ${item.status} ${item.segmentName || ""} ${item.reference || ""} ${item.label || ""}`.toLowerCase();
-            return searchStr.includes(searchTerm.toLowerCase());
+            return searchStr.includes(q);
         });
     }, [leads, searchTerm]);
 
@@ -139,12 +236,13 @@ export default function Leads() {
     const endEntry = Math.min(currentPage * itemsPerPage, totalItems);
     const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-    // --- CREATE NEW LEAD TAB: mini editable table logic ---
+    // --- CREATE TAB: mini table logic ---
     const createFilteredLeads = useMemo(() => {
         if (!createSearchTerm) return leads;
+        const q = createSearchTerm.toLowerCase();
         return leads.filter(item => {
             const searchStr = `${item.name} ${item.contactNo} ${item.leadId} ${item.status} ${item.segmentName || ""}`.toLowerCase();
-            return searchStr.includes(createSearchTerm.toLowerCase());
+            return searchStr.includes(q);
         });
     }, [leads, createSearchTerm]);
 
@@ -154,7 +252,22 @@ export default function Leads() {
     const createStartEntry = createTotalItems === 0 ? 0 : (createPage - 1) * createItemsPerPage + 1;
     const createEndEntry = Math.min(createPage * createItemsPerPage, createTotalItems);
 
+    // Keep page numbers valid after a delete / reload shrinks the list
+    useEffect(() => {
+        if (currentPage > totalPages) setCurrentPage(totalPages);
+    }, [currentPage, totalPages]);
+    useEffect(() => {
+        if (createPage > createTotalPages) setCreatePage(createTotalPages);
+    }, [createPage, createTotalPages]);
+
     // --- FORM LOGIC (handles both Create + Edit) ---
+    const resetForm = () => {
+        setLeadForm(emptyLeadForm);
+        setEditingLeadId(null);
+        setEditOrigin(null);
+        setErrorMsg("");
+    };
+
     const handleSaveLead = async (e) => {
         e.preventDefault();
         if (!leadForm.segmentId) {
@@ -169,15 +282,19 @@ export default function Leads() {
                 ...leadForm,
                 segmentId: Number(leadForm.segmentId)
             };
-            const res = editingLeadId
+            const wasEditing = !!editingLeadId;
+            const goBackToTable = wasEditing && editOrigin === "table";
+
+            const res = wasEditing
                 ? await adminService.updateLead({ leadId: editingLeadId, ...payload })
                 : await adminService.createLead(payload);
 
             if (res?.success) {
                 resetForm();
                 await loadLeads();
+                if (goBackToTable) setActiveTab("table");
             } else {
-                setErrorMsg(res?.message || `Could not ${editingLeadId ? "update" : "save"} the lead.`);
+                setErrorMsg(res?.message || `Could not ${wasEditing ? "update" : "save"} the lead.`);
             }
         } catch (err) {
             console.error(err);
@@ -187,14 +304,8 @@ export default function Leads() {
         }
     };
 
-    const resetForm = () => {
-        setLeadForm(emptyLeadForm);
-        setEditingLeadId(null);
-        setErrorMsg("");
-    };
-
-    // Populate form with lead data for editing (used by mini table on Create tab)
-    const handleEditLead = (lead) => {
+    // Populate form with lead data for editing. `origin` = tab the click came from.
+    const handleEditLead = (lead, origin = "form") => {
         setLeadForm({
             leadDate: lead.leadDate ? lead.leadDate.split("T")[0] : todayISO(),
             name: lead.name || "",
@@ -207,11 +318,21 @@ export default function Leads() {
             queryType: lead.queryType || "",
             remarks: lead.remarks || "",
             label: lead.label || "",
-            status: lead.status || "New"
+            status: lead.status || "New",
+            nextFollowup: lead.nextFollowup || null,
+            assignedTo: lead.assignedTo || null
         });
         setEditingLeadId(lead.leadId);
+        setEditOrigin(origin);
         setErrorMsg("");
+        setActiveTab("form");
         window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleCancelEdit = () => {
+        const goBackToTable = editOrigin === "table";
+        resetForm();
+        if (goBackToTable) setActiveTab("table");
     };
 
     const handleDeleteLead = async (lead) => {
@@ -235,25 +356,11 @@ export default function Leads() {
         }
     };
 
-    const statusStyles = {
-        new: "bg-blue-50 text-blue-700 border-blue-200/50 dot-blue-500",
-        followup: "bg-amber-50 text-amber-700 border-amber-200/50 dot-amber-500",
-        survey: "bg-amber-50 text-amber-700 border-amber-200/50 dot-amber-500",
-        proposal: "bg-purple-50 text-purple-700 border-purple-200/50 dot-purple-500",
-        negotiation: "bg-orange-50 text-orange-700 border-orange-200/50 dot-orange-500",
-        won: "bg-emerald-50 text-emerald-700 border-emerald-200/50 dot-emerald-500",
-        lost: "bg-rose-50 text-rose-700 border-rose-200/50 dot-rose-500",
-        notfeasible: "bg-slate-100 text-slate-600 border-slate-200 dot-slate-400",
-    };
-
-    const getStatusVisuals = (status) => {
-        const statusKey = (status || "").toLowerCase().replace(/\s+/g, "");
-        const statusClass = statusStyles[statusKey] || "bg-slate-50 text-slate-600 border-slate-200 dot-slate-400";
-        const dotMatch = statusClass.match(/dot-([a-z]+-[0-9]+)/);
-        const dotColor = dotMatch ? `bg-${dotMatch[1]}` : "bg-slate-400";
-        const finalStatusClass = statusClass.replace(/dot-[a-z]+-[0-9]+/, "").trim();
-        return { dotColor, finalStatusClass };
-    };
+    const tabClass = (active) =>
+        `px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${active
+            ? "border-amber-500 text-amber-600 bg-white"
+            : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+        }`;
 
     return (
         <div className="space-y-5 pb-10 font-sans relative z-0">
@@ -283,25 +390,13 @@ export default function Leads() {
 
                 {/* ── Tabs Navigation ── */}
                 <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50/50">
-                    <button
-                        onClick={() => { setActiveTab("table"); }}
-                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === "table"
-                            ? "border-amber-500 text-amber-600 bg-white"
-                            : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                            }`}
-                    >
+                    <button onClick={() => setActiveTab("table")} className={tabClass(activeTab === "table")}>
                         <i className="fa-solid fa-table-list text-[13px]" />
                         All Leads
                     </button>
-                    <button
-                        onClick={() => setActiveTab("form")}
-                        className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap flex items-center gap-2 focus:outline-none ${activeTab === "form"
-                            ? "border-amber-500 text-amber-600 bg-white"
-                            : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                            }`}
-                    >
-                        <i className="fa-solid fa-plus text-[13px]" />
-                        Create New Lead
+                    <button onClick={() => setActiveTab("form")} className={tabClass(activeTab === "form")}>
+                        <i className={`fa-solid ${editingLeadId ? "fa-pen" : "fa-plus"} text-[13px]`} />
+                        {editingLeadId ? "Edit Lead" : "Create New Lead"}
                     </button>
                 </div>
 
@@ -313,7 +408,7 @@ export default function Leads() {
                         </div>
                     ) : (
                         <>
-                            {/* TAB 1: ALL LEADS (view only) */}
+                            {/* TAB 1: ALL LEADS */}
                             {activeTab === "table" && (
                                 <div className="space-y-4 animate-in fade-in duration-200">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -327,9 +422,19 @@ export default function Leads() {
                                                 className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors shadow-sm"
                                             />
                                         </div>
-                                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
-                                            {filteredLeads.length} Lead(s) found
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+                                                {filteredLeads.length} Lead(s) found
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => printLeads(filteredLeads, searchTerm)}
+                                                disabled={filteredLeads.length === 0}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                <i className="fa-solid fa-print text-[11px]" /> Print
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm">
@@ -360,14 +465,14 @@ export default function Leads() {
                                                     const { dotColor, finalStatusClass } = getStatusVisuals(lead.status);
                                                     const initial = (lead.name || "?").trim().charAt(0).toUpperCase();
                                                     return (
-                                                        <tr key={lead.leadId || idx} className="hover:bg-slate-50/60 transition-colors duration-150 group align-top">
+                                                        <tr key={lead.leadId || idx} className="hover:bg-slate-50/60 transition-colors duration-150 group align-middle">
                                                             <td className="px-6 py-4">
                                                                 <div className="flex items-center gap-3.5">
                                                                     <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-sm flex-shrink-0 border border-amber-200/60 shadow-sm">
                                                                         {initial}
                                                                     </div>
                                                                     <div className="flex flex-col gap-0.5">
-                                                                        <div className="flex items-center gap-2">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
                                                                             <span className="font-bold text-slate-900 group-hover:text-amber-700 transition-colors">{lead.name}</span>
                                                                             {lead.label && (
                                                                                 <span className="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100/50 rounded-md text-[9px] font-black uppercase tracking-wider shadow-sm">
@@ -400,13 +505,21 @@ export default function Leads() {
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <button
-                                                                    onClick={() => navigate(`/sales/leads/${lead.leadId}`)}
-                                                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 border border-amber-200/50 transition-all shadow-sm"
-                                                                >
-                                                                    View Pipeline
-                                                                    <i className="fa-solid fa-arrow-right text-[10px]" />
-                                                                </button>
+                                                                <div className="flex justify-end items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => handleEditLead(lead, "table")}
+                                                                        className={editBtnClass}
+                                                                    >
+                                                                        <i className="fa-solid fa-pen text-[10px]" /> Edit
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => navigate(`/sales/leads/${lead.leadId}`)}
+                                                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 border border-amber-200/50 transition-all shadow-sm whitespace-nowrap"
+                                                                    >
+                                                                        View Pipeline
+                                                                        <i className="fa-solid fa-arrow-right text-[10px]" />
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     );
@@ -458,7 +571,7 @@ export default function Leads() {
                                 </div>
                             )}
 
-                            {/* TAB 2: CREATE / EDIT LEAD + editable mini table below */}
+                            {/* TAB 2: CREATE / EDIT LEAD + mini table below */}
                             {activeTab === "form" && (
                                 <div className="max-w-4xl mx-auto animate-in fade-in duration-200 space-y-8">
                                     <div className="flex justify-end">
@@ -484,7 +597,7 @@ export default function Leads() {
                                             {editingLeadId && (
                                                 <button
                                                     type="button"
-                                                    onClick={resetForm}
+                                                    onClick={handleCancelEdit}
                                                     className="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1"
                                                 >
                                                     <i className="fa-solid fa-xmark" /> Cancel Edit
@@ -501,8 +614,10 @@ export default function Leads() {
                                                 <label className={labelClass}>Type of Query (Segment) *</label>
                                                 <select required value={leadForm.segmentId} onChange={e => setLeadForm({ ...leadForm, segmentId: e.target.value })} className={`${inputClass} cursor-pointer appearance-none`}>
                                                     <option value="" disabled>-- Select Segment --</option>
-                                                    {segments.map(seg => (
-                                                        <option key={seg.segmentId} value={seg.segmentId}>{seg.segmentName}</option>
+                                                    {segmentOptions.map(seg => (
+                                                        <option key={seg.segmentId} value={String(seg.segmentId)}>
+                                                            {seg.segmentName}{seg.isActive ? "" : " (inactive)"}
+                                                        </option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -564,7 +679,16 @@ export default function Leads() {
                                             <textarea placeholder="Any additional notes about this query..." value={leadForm.remarks} onChange={e => setLeadForm({ ...leadForm, remarks: e.target.value })} rows={3} className={`${inputClass} resize-y`} />
                                         </div>
 
-                                        <div className="flex justify-end pt-5 border-t border-slate-100">
+                                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-5 border-t border-slate-100">
+                                            {editingLeadId && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelEdit}
+                                                    className="w-full sm:w-auto px-6 py-3 text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
                                             <button type="submit" disabled={actionLoading}
                                                 className="w-full sm:w-auto px-8 py-3 text-sm font-bold text-white bg-[#0b2836] hover:bg-[#0f3345] rounded-xl shadow-lg shadow-[#0b2836]/20 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:translate-y-0"
                                             >
@@ -622,7 +746,7 @@ export default function Leads() {
                                                         const { dotColor, finalStatusClass } = getStatusVisuals(lead.status);
                                                         const isBeingEdited = editingLeadId === lead.leadId;
                                                         return (
-                                                            <tr key={lead.leadId || idx} className={`transition-colors duration-150 align-top ${isBeingEdited ? "bg-amber-50/60" : "hover:bg-slate-50/60"}`}>
+                                                            <tr key={lead.leadId || idx} className={`transition-colors duration-150 align-middle ${isBeingEdited ? "bg-amber-50/60" : "hover:bg-slate-50/60"}`}>
                                                                 <td className="px-6 py-4">
                                                                     <div className="flex flex-col gap-0.5">
                                                                         <span className="font-bold text-slate-900">{lead.name}</span>
@@ -652,8 +776,8 @@ export default function Leads() {
                                                                 <td className="px-6 py-4 text-right">
                                                                     <div className="flex justify-end gap-2">
                                                                         <button
-                                                                            onClick={() => handleEditLead(lead)}
-                                                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200/50 transition-all shadow-sm"
+                                                                            onClick={() => handleEditLead(lead, "form")}
+                                                                            className={editBtnClass}
                                                                         >
                                                                             <i className="fa-solid fa-pen text-[10px]" /> Edit
                                                                         </button>
@@ -730,9 +854,7 @@ export default function Leads() {
 
                         <form onSubmit={handleAddSegment} className="space-y-6">
                             <div>
-                                <label className={labelClass}>
-                                    Segment Name *
-                                </label>
+                                <label className={labelClass}>Segment Name *</label>
                                 <input
                                     type="text"
                                     required

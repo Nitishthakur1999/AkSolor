@@ -135,6 +135,21 @@ const fmtDuration = (h: any) => {
 const fmtDate = (d: string) =>
     parseLocalDate(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
+// "2026-11-02T10:44:00Z" -> "02 Nov 2026, 10:44 AM" (browser ke local time me)
+const fmtDateTime = (v?: string | null) => {
+    if (!v) return "—";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
+};
+
 // ── Short leave punch helpers ──
 // Flow: date + Short Leave tick -> "Punch Out" (jab jaye) -> "Punch In" (jab wapas aaye) -> tab HR ko request dikhti hai
 // Punch Out ho gaya par Punch In baaki = employee "out" hai
@@ -1294,10 +1309,11 @@ export default function MyLeaves() {
                     </div>
 
                     <div className="overflow-x-auto min-h-[260px]">
-                        <table className="w-full text-sm text-left border-collapse min-w-[900px]">
+                        <table className="w-full text-sm text-left border-collapse min-w-[1000px]">
                             <thead className="bg-slate-50/80 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-200">
                                 <tr>
                                     <th className="px-6 py-4">Employee</th>
+                                    <th className="px-6 py-4">Requested On</th>
                                     <th className="px-6 py-4">Leave Type</th>
                                     <th className="px-6 py-4">Duration</th>
                                     <th className="px-6 py-4">Days</th>
@@ -1309,13 +1325,13 @@ export default function MyLeaves() {
                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                                 {relieverLoading ? (
                                     <tr>
-                                        <td colSpan={7} className="py-16 text-center text-sm font-semibold text-slate-400 animate-pulse">
+                                        <td colSpan={8} className="py-16 text-center text-sm font-semibold text-slate-400 animate-pulse">
                                             Loading requests...
                                         </td>
                                     </tr>
                                 ) : relieverRequests.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="py-16 text-center">
+                                        <td colSpan={8} className="py-16 text-center">
                                             <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 text-xl mb-3 border border-slate-100">
                                                 <i className="fa-solid fa-user-check" />
                                             </div>
@@ -1334,9 +1350,18 @@ export default function MyLeaves() {
                                         const awaiting = r.relieverStatus === "Pending" && r.status === "Pending";
                                         // Short leave me reliever hota hi nahi, par agar DTO se aaye to safe rehne ke liye
                                         const relShort = !!r.isShortLeave;
+                                        // Backend se apply date (created_at) aati hai. Field na ho to "—" dikhega.
+                                        const requestedAt = r.createdAt ?? r.appliedOn ?? r.requestedOn ?? null;
                                         return (
                                             <tr key={r.leaveId} className="hover:bg-slate-50/60 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-slate-900">{r.employeeName}</td>
+                                                <td className="px-6 py-4 font-medium text-violet-800 whitespace-nowrap bg-violet-50/60">
+                                                 <span className="inline-flex items-center gap-2">
+                                                    <i className="fa-regular fa-clock text-xs text-violet-400" />
+                                                          {fmtDateTime(requestedAt)}
+                                                 </span>
+                                               </td>
+                                
                                                 <td className="px-6 py-4 font-medium text-slate-600">
                                                     {relShort ? "Short Leave" : (r.leaveType || r.leaveName || "—")}
                                                 </td>
@@ -1801,3 +1826,4 @@ export default function MyLeaves() {
         </div>
     );
 }
+
