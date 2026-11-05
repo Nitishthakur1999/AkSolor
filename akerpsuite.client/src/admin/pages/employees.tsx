@@ -18,6 +18,8 @@ export default function Employees() {
         }
     })();
 
+    const EMPLOYEE_ROLE_ID = 3;
+
     const loggedInEmpId = (() => {
         try {
             const token = localStorage.getItem("token");
@@ -1111,24 +1113,24 @@ export default function Employees() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Reporting Manager</label>
-                                        <select
-                                            value={createForm.reportingManager}
-                                            onChange={e => setCreateForm({ ...createForm, reportingManager: e.target.value })}
-                                            className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
-                                        >
-                                            <option value="">-- No Reporting Manager --</option>
-                                            {employees
-                                                .filter(emp =>
-                                                    (emp.employmentStatus === "Active" && ![1, 2, 5].includes(emp.roleId)) ||
-                                                    String(emp.empId) === String(createForm.reportingManager)
-                                                )
-                                                .map(emp => (
-                                                    <option key={emp.empId} value={String(emp.empId)}>
-                                                        {emp.firstName} {emp.lastName} ({emp.empCode})
-                                                    </option>
-                                                ))}
-                                        </select>
+                                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Reporting Manager</label>
+                                            <select
+                                                value={createForm.reportingManager}
+                                                onChange={e => setCreateForm({ ...createForm, reportingManager: e.target.value })}
+                                                className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all cursor-pointer"
+                                            >
+                                                <option value="">-- No Reporting Manager --</option>
+                                                {employees
+                                                    .filter(emp =>
+                                                        (emp.employmentStatus === "Active" && emp.roleId !== EMPLOYEE_ROLE_ID) ||
+                                                        String(emp.empId) === String(createForm.reportingManager)
+                                                    )
+                                                    .map(emp => (
+                                                        <option key={emp.empId} value={String(emp.empId)}>
+                                                            {emp.firstName} {emp.lastName} ({emp.empCode})
+                                                        </option>
+                                                    ))}
+                                            </select>
                                     </div>
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Category</label>
