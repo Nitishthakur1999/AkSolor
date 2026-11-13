@@ -492,11 +492,22 @@ export default function LeaveRequests() {
                                                             <i className="fa-solid fa-user-shield text-xs text-slate-400" />
                                                             {req.relieverName}
                                                         </div>
+
                                                         {req.relieverStatus && (
-                                                            <span className={`inline-flex mt-1 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wide ${RELIEVER_BADGE[req.relieverStatus] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
-                                                                {req.relieverStatus}
-                                                            </span>
-                                                        )}
+                                                            <>
+                                                                <span className={`inline-flex mt-1 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wide ${RELIEVER_BADGE[req.relieverStatus] || "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                                                                    {req.relieverStatus}
+                                                                </span>
+                                                                {req.relieverStatus !== "Pending" && (() => {
+                                                                    const resp = formatDateTime(req.relieverActionAt);
+                                                                    return resp ? (
+                                                                        <div className="text-[10px] font-medium text-slate-500 mt-1">
+                                                                            {resp.date}, {resp.time}
+                                                                        </div>
+                                                                    ) : null;
+                                                                })()}
+                                                            </>
+                                                        )}  
                                                         {req.relieverStatus === "Rejected" && req.relieverRemarks && (
                                                             <div className="text-[10px] text-rose-500 mt-1 max-w-[160px] truncate" title={req.relieverRemarks}>
                                                                 {req.relieverRemarks}

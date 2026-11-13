@@ -1740,12 +1740,16 @@ export default function Attendance() {
                                 title={c.name ?? "Sunday"}
                                 className={`px-3 py-4 text-center whitespace-nowrap border-l border-slate-200/50 ${c.type === "holiday" ? "bg-amber-50 text-amber-700" : ""}`}
                             >
-                                {c.label}
-                                {c.type === "holiday" && (
-                                    <span className="block text-[9px] font-semibold normal-case tracking-normal text-amber-600 max-w-[90px] truncate mx-auto">
-                                        {c.name}
-                                    </span>
-                                )}
+                               {c.label}
+                            {c.type === "holiday" ? (
+                                <span className="block text-[9px] font-semibold normal-case tracking-normal text-amber-600 max-w-[90px] truncate mx-auto">
+                                    {c.name}
+                                </span>
+                            ) : (
+                                <span className="block text-[9px] font-semibold normal-case tracking-normal text-slate-400 mx-auto">
+                                    Sunday
+                                </span>
+                             )}
                             </th>
                         ))}
                         <th className="px-4 py-4 text-center border-l border-slate-200/50">Duty</th>

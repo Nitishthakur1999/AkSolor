@@ -267,6 +267,7 @@ namespace AkerpSuite.Server.DTOs.Role
         public string? RelieverName { get; set; }
         public string? RelieverStatus { get; set; }
         public string? RelieverRemarks { get; set; }
+        public DateTime? RelieverActionAt { get; set; }
     }
     public class NotificationDto
     {
